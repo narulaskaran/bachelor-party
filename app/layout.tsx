@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteNav } from "@/components/site-nav";
 import { Toaster } from "@/components/ui/sonner";
 import { TRIP } from "@/lib/party";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +45,7 @@ export default function RootLayout({
           {TRIP.location} · {TRIP.elevation} · {TRIP.dateLabel}
         </footer>
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
