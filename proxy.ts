@@ -6,7 +6,8 @@ import { AUTH_COOKIE } from "@/lib/auth";
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname === "/login") {
+  // /login and /api/admin gate themselves (admin uses its own bearer token).
+  if (pathname === "/login" || pathname.startsWith("/api/admin")) {
     return NextResponse.next();
   }
 

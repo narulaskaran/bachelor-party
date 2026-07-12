@@ -35,6 +35,10 @@ npm run dev
 
 ## Adding or updating a party
 
+Two ways to manage parties — same underlying data, pick whichever's handy.
+
+**Locally, with direct DB access:**
+
 1. Write a party file under `party-data/` (gitignored). Shape:
    `{ "slug": "...", "password": "...", "content": { ... } }` — content shape
    in `lib/party-types.ts`, fictional example in `lib/demo-party.ts`.
@@ -46,6 +50,28 @@ DATABASE_URL='postgres://…' npm run seed party-data/my-party.json
 
 Re-running updates the party in place (upsert by slug), so edit + reseed is
 the content workflow.
+
+**Remotely, via the admin API** (no DB credentials needed — meant for
+scripts/agents managing parties against a live deployment):
+
+```bash
+curl https://your-deploy.vercel.app/api/admin/parties \
+  -H "Authorization: Bearer $ADMIN_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d @party-data/my-party.json
+```
+
+| Route | Method | Does |
+| --- | --- | --- |
+| `/api/admin/parties` | GET | List parties (no passwords/content) |
+| `/api/admin/parties` | POST | Create a party — 409 if the slug exists |
+| `/api/admin/parties/:slug` | GET | Full record, including password + content |
+| `/api/admin/parties/:slug` | PATCH | Update `password` and/or `content` |
+| `/api/admin/parties/:slug` | DELETE | Delete the party and its guest RSVPs |
+| `/api/admin/parties/:slug/guests` | GET | List that party's RSVPs |
+
+All routes require `Authorization: Bearer $ADMIN_API_TOKEN` and are excluded
+from the site's login gate (they have their own auth).
 
 ## Database schema
 
