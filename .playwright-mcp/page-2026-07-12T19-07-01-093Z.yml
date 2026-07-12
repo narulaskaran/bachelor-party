@@ -1,0 +1,15 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - paragraph [ref=e6]: Private Trip
+        - heading "Who Goes There" [level=1] [ref=e7]
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - generic [ref=e11]: Password
+            - textbox "Password" [active] [ref=e12]
+          - button "Enter" [ref=e13]
+        - paragraph [ref=e14]: Password’s in the group chat.
+  - region "Notifications alt+T"
+  - alert [ref=e15]

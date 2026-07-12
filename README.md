@@ -69,6 +69,7 @@ curl https://your-deploy.vercel.app/api/admin/parties \
 | `/api/admin/parties/:slug` | PATCH | Update `password` and/or `content` |
 | `/api/admin/parties/:slug` | DELETE | Delete the party and its guest RSVPs |
 | `/api/admin/parties/:slug/guests` | GET | List that party's RSVPs |
+| `/api/admin/parties/:slug/guests/:id` | DELETE | Remove one guest RSVP |
 
 All routes require `Authorization: Bearer $ADMIN_API_TOKEN` and are excluded
 from the site's login gate (they have their own auth).
