@@ -43,3 +43,8 @@ next-env.d.ts
 
 # Private party content — never commit
 party-data/
+
+# local browser-test artifacts
+.playwright-mcp/
+*.jpeg
+*.png
