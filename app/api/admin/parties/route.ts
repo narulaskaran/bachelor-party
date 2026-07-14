@@ -75,6 +75,19 @@ export async function POST(request: Request) {
     );
   }
 
+  // Check password uniqueness — password is the login key, must not collide.
+  const [passwordConflict] = await db
+    .select({ id: schema.parties.id })
+    .from(schema.parties)
+    .where(eq(schema.parties.password, parsed.data.password))
+    .limit(1);
+  if (passwordConflict) {
+    return NextResponse.json(
+      { error: "Password already in use by another party" },
+      { status: 409 }
+    );
+  }
+
   try {
     const [party] = await db
       .insert(schema.parties)
