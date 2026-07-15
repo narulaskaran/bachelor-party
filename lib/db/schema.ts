@@ -17,6 +17,7 @@ export const parties = pgTable("parties", {
   id: serial("id").primaryKey(),
   slug: text("slug").notNull().unique(),
   password: text("password").notNull().unique(),
+  adminToken: text("admin_token").unique(), // optional per-party admin API token
   content: jsonb("content").$type<PartyContent>().notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
