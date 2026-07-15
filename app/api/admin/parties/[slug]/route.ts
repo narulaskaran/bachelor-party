@@ -54,6 +54,21 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
+  // If password is being changed, check it doesn't collide with another party.
+  if (parsed.data.password) {
+    const [conflict] = await db
+      .select({ slug: schema.parties.slug })
+      .from(schema.parties)
+      .where(eq(schema.parties.password, parsed.data.password))
+      .limit(1);
+    if (conflict && conflict.slug !== slug) {
+      return NextResponse.json(
+        { error: "Password already in use by another party" },
+        { status: 409 }
+      );
+    }
+  }
+
   try {
     const [party] = await db
       .update(schema.parties)
