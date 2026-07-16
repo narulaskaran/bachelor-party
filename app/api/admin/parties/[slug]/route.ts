@@ -20,7 +20,14 @@ export async function GET(request: Request, ctx: Params) {
 
   const { slug }: { slug: string } = await ctx.params;
   const [party] = await db
-    .select()
+    .select({
+      id: schema.parties.id,
+      slug: schema.parties.slug,
+      adminToken: schema.parties.adminToken,
+      content: schema.parties.content,
+      createdAt: schema.parties.createdAt,
+      updatedAt: schema.parties.updatedAt,
+    })
     .from(schema.parties)
     .where(eq(schema.parties.slug, slug))
     .limit(1);
