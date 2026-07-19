@@ -2,13 +2,23 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
 // Bearer-token gate for /api/admin/**. Meant for agents/scripts, not
-// browsers — no cookie, no UI.
-// If *partyToken* is provided, it is checked first (per-party token). The global
-// ADMIN_API_TOKEN always remains a superadmin override.
+// browsers — no cookie, no UI. Token lives in ADMIN_API_TOKEN or
+// the party-scoped admin_token column. Supports two signatures:
+//   requireAdmin(request)                           → global-only mode (superadmin)
+//   requireAdmin(request, { partyToken })           → party-scoped mode
+// In party-scoped mode the party token takes priority; if it matches the
+// party's admin_token column the caller is authorized as that party's admin.
+// The global ADMIN_API_TOKEN always works as a superadmin override regardless
+// of which overload was used — callers that have the global token never lose it.
 
+export function requireAdmin(request: Request): NextResponse | null;
 export function requireAdmin(
   request: Request,
-  partyToken: string | null = null,
+  options: { partyToken?: string },
+): NextResponse | null;
+export function requireAdmin(
+  request: Request,
+  options?: { partyToken?: string },
 ): NextResponse | null {
   const header = request.headers.get("authorization") ?? "";
   const [scheme, token] = header.split(" ");
@@ -16,18 +26,19 @@ export function requireAdmin(
     return NextResponse.json({ error: "Missing bearer token" }, { status: 401 });
   }
 
-  const a = Buffer.from(token);
+  const requestBuf = Buffer.from(token);
 
-  // Per-party token (if supplied and non-empty)
+  // 1. Per-party token (if supplied and non-empty) — checked first so party
+  //    admins work even when ADMIN_API_TOKEN is not set on this deployment.
+  const partyToken = options?.partyToken;
   if (partyToken && partyToken.length > 0) {
-    const b = Buffer.from(partyToken);
-    const valid = a.length === b.length && timingSafeEqual(a, b);
-    if (valid) {
+    const partyBuf = Buffer.from(partyToken);
+    if (requestBuf.length === partyBuf.length && timingSafeEqual(requestBuf, partyBuf)) {
       return null; // authorized as this party's admin
     }
   }
 
-  // Fallback → global superadmin token
+  // 2. Fallback → global superadmin token
   const globalExpected = process.env.ADMIN_API_TOKEN;
   if (!globalExpected) {
     return NextResponse.json(
@@ -36,9 +47,8 @@ export function requireAdmin(
     );
   }
 
-  const bGlobal = Buffer.from(globalExpected);
-  const valid = a.length === bGlobal.length && timingSafeEqual(a, bGlobal);
-  if (!valid) {
+  const globalBuf = Buffer.from(globalExpected);
+  if (requestBuf.length !== globalBuf.length || !timingSafeEqual(requestBuf, globalBuf)) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 

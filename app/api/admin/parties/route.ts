@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { count, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
@@ -45,6 +46,8 @@ export async function GET(request: Request) {
 }
 
 // POST /api/admin/parties — create a new party. 409 if the slug exists.
+// Auto-generates an `admin_token` for the new party (32-char hex). Returns it
+// in the response so callers can persist it as the per-party admin credential.
 export async function POST(request: Request) {
   const denied = requireAdmin(request);
   if (denied) return denied;
@@ -62,6 +65,9 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+
+  // Auto-generate a hex token for the new party's admin_token column.
+  const rawAdminToken = randomBytes(16).toString("hex");
 
   const [existing] = await db
     .select({ id: schema.parties.id })
@@ -91,9 +97,12 @@ export async function POST(request: Request) {
   try {
     const [party] = await db
       .insert(schema.parties)
-      .values(parsed.data)
-      .returning({ id: schema.parties.id, slug: schema.parties.slug });
-    return NextResponse.json({ party }, { status: 201 });
+      .values({ ...parsed.data, adminToken: rawAdminToken })
+      .returning();
+    return NextResponse.json(
+      { party: { id: party.id, slug: party.slug, adminToken: party.adminToken } },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("create party failed", err);
     return NextResponse.json({ error: "Failed to create party" }, { status: 500 });
