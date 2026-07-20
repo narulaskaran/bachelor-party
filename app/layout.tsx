@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteNav } from "@/components/site-nav";
 import { Toaster } from "@/components/ui/sonner";
 import { getCurrentParty } from "@/lib/current-party";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,6 +49,7 @@ export default async function RootLayout({
         />
         <main className="flex-1">{children}</main>
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
