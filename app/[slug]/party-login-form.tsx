@@ -1,18 +1,20 @@
 "use client";
 
 import { useActionState } from "react";
-import { login } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function LoginForm({ from }: { from: string }) {
-  const [state, formAction, isPending] = useActionState(login, {});
+type LoginAction = (
+  state: { error?: string },
+  formData: FormData
+) => Promise<{ error?: string }>;
+
+export function PartyLoginForm({ loginAction }: { loginAction: LoginAction }) {
+  const [state, formAction, isPending] = useActionState(loginAction, {});
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <input type="hidden" name="from" value={from} />
-
       <div className="flex flex-col gap-2">
         <Label htmlFor="password">Password</Label>
         <Input
