@@ -32,17 +32,19 @@ export function SiteNav({
           )}
         </Link>
         <div className="flex items-center gap-1">
-          <nav className="flex items-center gap-1 overflow-x-auto">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+          {siteName && (
+            <nav className="flex items-center gap-1 overflow-x-auto">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          )}
           <ThemeToggle />
         </div>
       </div>
