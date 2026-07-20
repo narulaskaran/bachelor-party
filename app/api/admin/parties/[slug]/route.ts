@@ -8,10 +8,11 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ slug: string }> };
 
-// GET /api/admin/parties/:slug — returns the full party record + its admin_token.
-// Auth: validates bearer token against ADMIN_API_TOKEN (superadmin override) or
-// the returned party's admin_token (per-party auth). If global token is not set
-// on this request, checks the retrieved row's admin_token for a match.
+// GET /api/admin/parties/:slug — full record, including password and content.
+// Auth: bearer token must match either ADMIN_API_TOKEN (superadmin override) or
+// this party's own admin_token. Auth is resolved before any not-found response
+// is returned, so an unauthenticated caller can't distinguish a missing slug
+// from a wrong token by status code.
 export async function GET(request: Request, ctx: Params) {
   const db = getDb();
   if (!db) {
@@ -20,39 +21,19 @@ export async function GET(request: Request, ctx: Params) {
 
   const { slug }: { slug: string } = await ctx.params;
   const [party] = await db
-    .select({
-      id: schema.parties.id,
-      slug: schema.parties.slug,
-      adminToken: schema.parties.adminToken,
-      content: schema.parties.content,
-      createdAt: schema.parties.createdAt,
-      updatedAt: schema.parties.updatedAt,
-    })
+    .select()
     .from(schema.parties)
     .where(eq(schema.parties.slug, slug))
     .limit(1);
+
+  const denied = requireAdmin(request, { partyToken: party?.adminToken ?? undefined });
+  if (denied) return denied;
+
   if (!party) {
     return NextResponse.json({ error: "Party not found" }, { status: 404 });
   }
 
-  // Global token always wins as superadmin override. If denied there, check
-  // the party's own admin_token for per-party admins.
-  let denied = requireAdmin(request);
-  if (denied) {
-    denied = requireAdmin(request, { partyToken: party.adminToken ?? undefined });
-  }
-  if (denied) return denied;
-
-  return NextResponse.json({
-    party: {
-      id: party.id,
-      slug: party.slug,
-      content: party.content,
-      adminToken: party.adminToken ?? null,
-      createdAt: party.createdAt,
-      updatedAt: party.updatedAt,
-    },
-  });
+  return NextResponse.json({ party });
 }
 
 // PATCH /api/admin/parties/:slug — update password, content, or admin_token.
@@ -74,7 +55,7 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
-  // Validate auth on the target row before updating.
+  // Resolve auth before revealing whether the slug exists.
   const { slug }: { slug: string } = await params;
   const [party] = await db
     .select({ adminToken: schema.parties.adminToken })
@@ -82,15 +63,12 @@ export async function PATCH(request: Request, { params }: Params) {
     .where(eq(schema.parties.slug, slug))
     .limit(1);
 
-  let denied: NextResponse | null;
+  const denied = requireAdmin(request, { partyToken: party?.adminToken ?? undefined });
+  if (denied) return denied;
+
   if (!party) {
     return NextResponse.json({ error: "Party not found" }, { status: 404 });
   }
-  denied = requireAdmin(request);
-  if (denied) {
-    denied = requireAdmin(request, { partyToken: party.adminToken ?? undefined });
-  }
-  if (denied) return denied;
 
   // If password is being changed, check it doesn't collide with another party.
   if (parsed.data.password) {
@@ -130,22 +108,20 @@ export async function DELETE(request: Request, ctx: Params) {
     return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 
-  // Validate auth on the target row before deleting.
+  // Resolve auth before revealing whether the slug exists.
   const { slug }: { slug: string } = await ctx.params;
   const [party] = await db
     .select({ id: schema.parties.id, adminToken: schema.parties.adminToken })
     .from(schema.parties)
     .where(eq(schema.parties.slug, slug))
     .limit(1);
+
+  const denied = requireAdmin(request, { partyToken: party?.adminToken ?? undefined });
+  if (denied) return denied;
+
   if (!party) {
     return NextResponse.json({ error: "Party not found" }, { status: 404 });
   }
-
-  let denied = requireAdmin(request);
-  if (denied) {
-    denied = requireAdmin(request, { partyToken: party.adminToken ?? undefined });
-  }
-  if (denied) return denied;
 
   try {
     await db.delete(schema.guests).where(eq(schema.guests.partyId, party.id));
