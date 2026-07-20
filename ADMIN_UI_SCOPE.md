@@ -12,8 +12,10 @@ this project's threat model (you, occasionally, from a browser):
   its own cookie (`bp_admin`, httpOnly, distinct from the party cookie so
   the two sessions don't collide). Same SHA-256-cookie pattern already used
   for party login, just a second instance of it.
-- `/admin/**` gated in `proxy.ts` by that cookie, same as `/` is gated
-  today.
+- `/admin/**` gated via self-check: each route checks the `bp_admin`
+  cookie (SHA-256 hashed password) before rendering — mirroring how
+  `app/[slug]/page.tsx` gates party access with `cookieAuthenticatesParty`.
+  No longer routed through `proxy.ts` (that's now purely a party auth gate).
 
 ## Pages
 
