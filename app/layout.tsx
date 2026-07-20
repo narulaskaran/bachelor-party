@@ -45,7 +45,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">
-        <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange enableSystem={false}>
           <SiteNav
             siteName={current?.content.trip.siteName}
             dateLabel={current?.content.trip.dateLabel}
