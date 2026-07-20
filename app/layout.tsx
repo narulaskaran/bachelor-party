@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "next-themes";
 import { SiteNav } from "@/components/site-nav";
 import { Toaster } from "@/components/ui/sonner";
 import { getCurrentParty } from "@/lib/current-party";
@@ -40,15 +41,18 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} h-full scroll-smooth antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} h-full scroll-smooth antialiased`}
+      suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col">
-        <SiteNav
-          siteName={current?.content.trip.siteName}
-          dateLabel={current?.content.trip.dateLabel}
-        />
-        <main className="flex-1">{children}</main>
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+          <SiteNav
+            siteName={current?.content.trip.siteName}
+            dateLabel={current?.content.trip.dateLabel}
+          />
+          <main className="flex-1">{children}</main>
+          <Toaster />
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>
