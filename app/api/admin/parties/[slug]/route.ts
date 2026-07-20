@@ -9,21 +9,26 @@ export const dynamic = "force-dynamic";
 type Params = { params: Promise<{ slug: string }> };
 
 // GET /api/admin/parties/:slug — full record, including password and content.
-export async function GET(request: Request, { params }: Params) {
-  const denied = requireAdmin(request);
-  if (denied) return denied;
-
+// Auth: bearer token must match either ADMIN_API_TOKEN (superadmin override) or
+// this party's own admin_token. Auth is resolved before any not-found response
+// is returned, so an unauthenticated caller can't distinguish a missing slug
+// from a wrong token by status code.
+export async function GET(request: Request, ctx: Params) {
   const db = getDb();
   if (!db) {
     return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 
-  const { slug } = await params;
+  const { slug }: { slug: string } = await ctx.params;
   const [party] = await db
     .select()
     .from(schema.parties)
     .where(eq(schema.parties.slug, slug))
     .limit(1);
+
+  const denied = requireAdmin(request, { partyToken: party?.adminToken ?? undefined });
+  if (denied) return denied;
+
   if (!party) {
     return NextResponse.json({ error: "Party not found" }, { status: 404 });
   }
@@ -31,17 +36,13 @@ export async function GET(request: Request, { params }: Params) {
   return NextResponse.json({ party });
 }
 
-// PATCH /api/admin/parties/:slug — update password and/or content.
+// PATCH /api/admin/parties/:slug — update password, content, or admin_token.
 export async function PATCH(request: Request, { params }: Params) {
-  const denied = requireAdmin(request);
-  if (denied) return denied;
-
   const db = getDb();
   if (!db) {
     return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 
-  const { slug } = await params;
   const json = await request.json().catch(() => null);
   const parsed = updatePartySchema.safeParse(json);
   if (!parsed.success) {
@@ -52,6 +53,21 @@ export async function PATCH(request: Request, { params }: Params) {
   }
   if (Object.keys(parsed.data).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  }
+
+  // Resolve auth before revealing whether the slug exists.
+  const { slug }: { slug: string } = await params;
+  const [party] = await db
+    .select({ adminToken: schema.parties.adminToken })
+    .from(schema.parties)
+    .where(eq(schema.parties.slug, slug))
+    .limit(1);
+
+  const denied = requireAdmin(request, { partyToken: party?.adminToken ?? undefined });
+  if (denied) return denied;
+
+  if (!party) {
+    return NextResponse.json({ error: "Party not found" }, { status: 404 });
   }
 
   // If password is being changed, check it doesn't collide with another party.
@@ -86,21 +102,23 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 // DELETE /api/admin/parties/:slug — removes the party and its guest RSVPs.
-export async function DELETE(request: Request, { params }: Params) {
-  const denied = requireAdmin(request);
-  if (denied) return denied;
-
+export async function DELETE(request: Request, ctx: Params) {
   const db = getDb();
   if (!db) {
     return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 
-  const { slug } = await params;
+  // Resolve auth before revealing whether the slug exists.
+  const { slug }: { slug: string } = await ctx.params;
   const [party] = await db
-    .select({ id: schema.parties.id })
+    .select({ id: schema.parties.id, adminToken: schema.parties.adminToken })
     .from(schema.parties)
     .where(eq(schema.parties.slug, slug))
     .limit(1);
+
+  const denied = requireAdmin(request, { partyToken: party?.adminToken ?? undefined });
+  if (denied) return denied;
+
   if (!party) {
     return NextResponse.json({ error: "Party not found" }, { status: 404 });
   }
