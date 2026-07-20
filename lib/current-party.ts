@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
-import { AUTH_COOKIE, authCookieValue } from "@/lib/auth";
+import { AUTH_COOKIE } from "@/lib/auth";
+import { cookieAuthenticatesParty } from "@/lib/party-auth";
 import { getDb, schema } from "@/lib/db";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import type { PartyContent } from "@/lib/party-types";
@@ -21,7 +22,7 @@ export async function getCurrentParty(): Promise<CurrentParty | null> {
   if (!db) {
     const expected = process.env.PARTY_PASSWORD;
     if (!expected) return { partyId: "demo", content: DEMO_PARTY };
-    if (raw && raw === (await authCookieValue("demo", expected))) {
+    if (await cookieAuthenticatesParty(raw, "demo", expected)) {
       return { partyId: "demo", content: DEMO_PARTY };
     }
     return null;
@@ -40,7 +41,7 @@ export async function getCurrentParty(): Promise<CurrentParty | null> {
       .where(eq(schema.parties.id, id))
       .limit(1);
     if (!party) return null;
-    if (raw !== (await authCookieValue(party.id, party.password))) return null;
+    if (!(await cookieAuthenticatesParty(raw, party.id, party.password))) return null;
     return { partyId: party.id, content: party.content };
   } catch (err) {
     console.error("getCurrentParty failed", err);
