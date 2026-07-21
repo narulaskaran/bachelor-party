@@ -2,8 +2,8 @@
 // Follows the same Drizzle query shape as app/api/admin/parties/route.ts.
 
 import Link from "next/link";
+import { count, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
-import * as drizzle from "drizzle-orm";
 
 export default async function Page() {
   const db = getDb();
@@ -24,13 +24,10 @@ export default async function Page() {
       slug: schema.parties.slug,
       content: schema.parties.content,
       updatedAt: schema.parties.updatedAt,
-      guestCount: drizzle.count(schema.guests.id),
+      guestCount: count(schema.guests.id),
     })
     .from(schema.parties)
-    .leftJoin(
-      schema.guests,
-      drizzle.eq(schema.guests.partyId, schema.parties.id) as any // drizzle leftJoin typing quirk
-    )
+    .leftJoin(schema.guests, eq(schema.guests.partyId, schema.parties.id))
     .groupBy(schema.parties.id)
     .orderBy(schema.parties.createdAt);
 
@@ -54,6 +51,7 @@ export default async function Page() {
             <th className="text-left px-3 py-2 font-medium">Groom</th>
             <th className="text-left px-3 py-2 font-medium">Date</th>
             <th className="text-center px-3 py-2 font-medium">Guests</th>
+            <th className="text-left px-3 py-2 font-medium">Updated</th>
           </tr>
         </thead>
         <tbody>
@@ -69,13 +67,16 @@ export default async function Page() {
                 {row.content?.trip?.dateLabel}
               </td>
               <td className="px-3 py-2 text-center">{Number(row.guestCount)}</td>
+              <td className="px-3 py-2 text-muted-foreground">
+                {new Date(row.updatedAt).toLocaleDateString()}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
 
       <p className="mt-4 text-xs text-muted-foreground">
-        {rows.length} party{rows.length !== 1 ? "ies" : ""}. Row-click \u2192 edit (Phase 2).
+        {rows.length} party{rows.length !== 1 ? "ies" : ""}. Row-click → edit (Phase 2).
       </p>
     </div>
   );

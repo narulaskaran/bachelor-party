@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ADMIN_COOKIE } from "@/lib/admin-cookie-auth";
+import { ADMIN_COOKIE, cookieAuthenticatesAdmin } from "@/lib/admin-cookie-auth";
 
 export default async function AdminLayout({
   children,
@@ -22,7 +22,8 @@ export default async function AdminLayout({
 
   // Check auth before rendering anything. Mirrors how app/[slug]/page.tsx
   // gates party access — resolve auth before rendering, no middleware.
-  const { cookieAuthenticatesAdmin } = await import("@/lib/admin-cookie-auth");
+  // Lives in a (protected) route group so /admin/login, a sibling route,
+  // isn't wrapped by this layout and doesn't redirect-loop against itself.
   const rawCookie = (await cookies()).get(ADMIN_COOKIE)?.value;
 
   if (!rawCookie || !await cookieAuthenticatesAdmin(rawCookie, expected)) {
