@@ -4,7 +4,6 @@
 import Link from "next/link";
 import { getDb, schema } from "@/lib/db";
 import * as drizzle from "drizzle-orm";
-import type { PartyContent } from "@/lib/party-types";
 
 export default async function Page() {
   const db = getDb();
@@ -12,7 +11,7 @@ export default async function Page() {
     return (
       <div className="mx-auto max-w-4xl py-20 text-center">
         <p className="text-sm text-muted-foreground">
-          Database unavailable — can't load parties.
+          Database unavailable — can&rsquo;t load parties.
         </p>
       </div>
     );
@@ -23,7 +22,7 @@ export default async function Page() {
     .select({
       id: schema.parties.id,
       slug: schema.parties.slug,
-      content: schema.parties.content as PartyContent,
+      content: schema.parties.content,
       updatedAt: schema.parties.updatedAt,
       guestCount: drizzle.count(schema.guests.id),
     })
@@ -61,13 +60,13 @@ export default async function Page() {
           {rows.map((row) => (
             <tr key={row.id} className="border-b hover:bg-muted/30">
               <td className="px-3 py-2 font-medium">
-                {(row.content as any)?.trip?.siteName ?? "\u2014"}
+                {row.content?.trip?.siteName ?? "\u2014"}
               </td>
               <td className="px-3 py-2 text-muted-foreground">
-                {(row.content as any)?.trip?.groomName ?? "\u2014"}
+                {row.content?.trip?.groomName ?? "\u2014"}
               </td>
               <td className="px-3 py-2 text-muted-foreground">
-                {(row.content as any)?.trip?.dateLabel}
+                {row.content?.trip?.dateLabel}
               </td>
               <td className="px-3 py-2 text-center">{Number(row.guestCount)}</td>
             </tr>
