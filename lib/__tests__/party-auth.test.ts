@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { authCookieValue } from "../auth";
-import { cookieAuthenticatesParty } from "../party-auth";
+import { authCookieValue } from "@/lib/auth";
+import { cookieAuthenticatesParty } from "@/lib/party-auth";
 
 describe("cookieAuthenticatesParty", () => {
   it("returns false when no cookie is present", async () => {
