@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { count, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
+import { Button } from "@/components/ui/button";
 
 export default async function Page() {
   const db = getDb();
@@ -39,9 +40,14 @@ export default async function Page() {
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold">Admin Dashboard</h1>
-        <Link href="/" className="text-sm text-muted-foreground underline underline-offset-4">
-          ← Back to site
-        </Link>
+        <div className="flex items-center gap-4">
+          <Button asChild size="sm">
+            <Link href="/admin/parties/new">+ New party</Link>
+          </Button>
+          <Link href="/" className="text-sm text-muted-foreground underline underline-offset-4">
+            ← Back to site
+          </Link>
+        </div>
       </div>
 
       <table className="w-full table-auto text-sm border-collapse">
@@ -58,7 +64,12 @@ export default async function Page() {
           {rows.map((row) => (
             <tr key={row.id} className="border-b hover:bg-muted/30">
               <td className="px-3 py-2 font-medium">
-                {row.content?.trip?.siteName ?? "\u2014"}
+                <Link
+                  href={`/admin/parties/${row.slug}`}
+                  className="underline underline-offset-4 hover:text-foreground"
+                >
+                  {row.content?.trip?.siteName ?? "\u2014"}
+                </Link>
               </td>
               <td className="px-3 py-2 text-muted-foreground">
                 {row.content?.trip?.groomName ?? "\u2014"}
@@ -76,7 +87,7 @@ export default async function Page() {
       </table>
 
       <p className="mt-4 text-xs text-muted-foreground">
-        {rows.length} party{rows.length !== 1 ? "ies" : ""}. Row-click → edit (Phase 2).
+        {rows.length} party{rows.length !== 1 ? "ies" : ""}. Click a row to edit.
       </p>
     </div>
   );
