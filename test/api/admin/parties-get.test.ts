@@ -1,44 +1,106 @@
-/** Tests for GET /admin/parties/:slug — covers auth gating + DB error + not-found */
+/** Route-level tests for GET /api/admin/parties/:slug — app/api/admin/parties/[slug]/route.ts */
 
-import { describe, it, expect, afterEach } from "vitest";
-import { requireAdmin } from "@/lib/admin-auth";
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { GET } from "@/app/api/admin/parties/[slug]/route";
+import { getDb } from "@/lib/db";
 
-// Test helpers.
+vi.mock("@/lib/db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/db")>();
+  return { ...actual, getDb: vi.fn() };
+});
+
+// Chainable stand-in for `db.select().from().where().limit()` — resolves to
+// whatever rows the test configures, regardless of the actual query shape.
+function fakeDb(rows: Record<string, unknown>[]) {
+  return {
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: async () => rows,
+        }),
+      }),
+    }),
+  };
+}
+
 function makeRequest(token: string | null): Request {
   const headers = new Headers();
   if (token) headers.set("authorization", `Bearer ${token}`);
   return new Request("http://localhost/api/admin/parties/test-party", { headers });
 }
 
-describe("GET /api/admin/parties/:slug route-level", () => {
+function ctx(slug: string) {
+  return { params: Promise.resolve({ slug }) };
+}
+
+const partyRow = {
+  id: "party-1",
+  slug: "test-party",
+  password: "party-secret-pw",
+  adminToken: "party-scoped-token",
+  content: { trip: { siteName: "Test Trip" } },
+};
+
+describe("GET /api/admin/parties/:slug", () => {
   afterEach(() => {
     delete process.env.ADMIN_API_TOKEN;
+    vi.mocked(getDb).mockReset();
   });
 
-  // --- Auth gating (verified via requireAdmin, route uses the same pattern) ---
-  it("requires auth — no token returns denial", () => {
-    const res = requireAdmin(makeRequest(null));
-    expect(res!.status).toBe(401);
+  it("returns 503 when database is unavailable", async () => {
+    vi.mocked(getDb).mockReturnValue(null);
+    const res = await GET(makeRequest("anything"), ctx("test-party"));
+    expect(res.status).toBe(503);
   });
 
-  it("rejects wrong token and falls through", () => {
+  it("no token → 401, even when the party exists", async () => {
+    vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
+    const res = await GET(makeRequest(null), ctx("test-party"));
+    expect(res.status).toBe(401);
+  });
+
+  it("no token → 401, not 404, when the slug doesn't exist (enumeration-leak regression)", async () => {
+    vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
+    const res = await GET(makeRequest(null), ctx("nonexistent"));
+    expect(res.status).toBe(401);
+  });
+
+  it("wrong token → 401", async () => {
     process.env.ADMIN_API_TOKEN = "global-token";
-    const res = requireAdmin(makeRequest("wrong"));
-    // wrong doesn't match party or global → 401
-    expect(res!.status).toBe(401);
+    vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
+    const res = await GET(makeRequest("wrong"), ctx("test-party"));
+    expect(res.status).toBe(401);
   });
 
-  it("accepts correct global token", () => {
+  it("correct global ADMIN_API_TOKEN → 200 with the full record, including password", async () => {
     process.env.ADMIN_API_TOKEN = "global-token";
-    const res = requireAdmin(makeRequest("global-token"), { partyToken: "party-key" });
-    // falls through to global → null (success)
-    expect(res).toBeNull();
+    vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
+    const res = await GET(makeRequest("global-token"), ctx("test-party"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.party.password).toBe("party-secret-pw");
+    expect(body.party.slug).toBe("test-party");
   });
 
-  // Require seeded DB data / a running server — tracked for the next cycle
-  // rather than faked with no-op assertions.
-  it.todo("returns 503 when database is unavailable");
-  it.todo("returns notFound when party exists but is requested");
-  it.todo("extracts siteName, dateLabel, groom from JSONB correctly");
-  it.todo("includes guest count from left-joined guests table");
+  it("correct party-scoped admin_token → 200", async () => {
+    vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
+    const res = await GET(makeRequest("party-scoped-token"), ctx("test-party"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.party.slug).toBe("test-party");
+  });
+
+  it("party-scoped token for a different party → 401, not leaked access", async () => {
+    process.env.ADMIN_API_TOKEN = "global-token";
+    vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
+    const res = await GET(makeRequest("some-other-partys-token"), ctx("test-party"));
+    expect(res.status).toBe(401);
+  });
+
+  it("valid token but slug doesn't exist → 404", async () => {
+    process.env.ADMIN_API_TOKEN = "global-token";
+    vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
+    const res = await GET(makeRequest("global-token"), ctx("nonexistent"));
+    expect(res.status).toBe(404);
+  });
 });
