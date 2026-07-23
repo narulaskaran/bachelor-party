@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS "parties" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"slug" text NOT NULL,
 	"password" text NOT NULL,
-	"admin_token" text,
 	"content" jsonb NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,

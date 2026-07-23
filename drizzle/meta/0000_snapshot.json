@@ -1,5 +1,5 @@
 {
-  "id": "c15b84e3-dd97-4df0-8732-26ac67f410d3",
+  "id": "c2712b8b-7cec-41a4-96e2-ce1d895bf34f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -160,12 +160,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "admin_token": {
-          "name": "admin_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "content": {
           "name": "content",
