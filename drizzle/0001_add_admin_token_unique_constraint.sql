@@ -1,0 +1,1 @@
+ALTER TABLE "parties" ADD CONSTRAINT "parties_admin_token_unique" UNIQUE("admin_token");
