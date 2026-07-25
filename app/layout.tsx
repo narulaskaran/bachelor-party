@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+export const dynamic = "force-dynamic"; // re-fetch cookies per navigation so SiteNav branding updates when switching parties (#22)
 import { Geist, Geist_Mono, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
