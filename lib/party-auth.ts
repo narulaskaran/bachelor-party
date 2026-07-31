@@ -1,4 +1,4 @@
-import { authCookieValue } from "./auth";
+import { authCookieValue } from "@/lib/auth";
 
 // Pure check: does this raw cookie value authenticate this specific party?
 // No DB/cookies() dependency, so it's directly unit-testable.
