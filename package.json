@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/db-push-if-url.mjs && next build",
+    "build": "node scripts/db-migrate-if-url.mjs && next build",
     "start": "next start",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node scripts/db-migrate-if-url.mjs",
     "seed": "node scripts/seed-party.mjs",
     "test": "vitest run"
   },
