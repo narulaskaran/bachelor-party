@@ -84,12 +84,13 @@ const slugSchema = z
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "slug must be lowercase-kebab-case");
 
 export const createPartySchema = z.object({
-  slug: slugSchema,
-  password: z.string().min(4).max(200),
+  slug: slugSchema.optional(),
+  password: z.string().min(4).max(200).optional(),
   content: partyContentSchema,
 });
 
 export const updatePartySchema = z.object({
   password: z.string().min(4).max(200).optional(),
-  content: partyContentSchema.optional(),
+  // Content is a JSON Merge Patch, not a full PartyContent document.
+  content: z.record(z.string(), z.unknown()).optional(),
 });
