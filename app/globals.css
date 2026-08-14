@@ -139,3 +139,9 @@
 .font-display {
   font-family: var(--font-display), var(--font-geist-sans), sans-serif;
 }
+
+/* Trip chrome mounts in app/[slug]/layout.tsx; hide the root marketing header
+   so `/` stays "The Big Send" while `/{slug}` still gets one sticky nav. */
+body:has([data-trip-chrome]) #site-nav-marketing {
+  display: none;
+}

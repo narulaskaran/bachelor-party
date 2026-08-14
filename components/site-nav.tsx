@@ -27,7 +27,11 @@ export function SiteNav({
   );
 
   return (
-    <header className="sticky top-0 z-50 min-w-0 border-b border-border bg-background/90 backdrop-blur">
+    <header
+      id={siteName ? undefined : "site-nav-marketing"}
+      data-trip-chrome={siteName ? "" : undefined}
+      className="sticky top-0 z-50 min-w-0 border-b border-border bg-background/90 backdrop-blur"
+    >
       <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-3 px-4 py-3">
         <Link
           href={homeHref}

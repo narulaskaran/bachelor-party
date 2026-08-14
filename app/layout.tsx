@@ -4,8 +4,6 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { SiteNav } from "@/components/site-nav";
 import { Toaster } from "@/components/ui/sonner";
-import { getCurrentParty } from "@/lib/current-party";
-import { visibleSections } from "@/lib/trip-sections";
 import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
@@ -31,14 +29,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Nav shows trip branding only after login resolves a party.
-  const current = await getCurrentParty();
-
+  // Marketing chrome only. Trip branding lives in app/[slug]/layout.tsx so a
+  // leftover bp_access cookie cannot paint `/` (or admin/404) with the private
+  // trip name, dates, or in-trip section links.
   return (
     <html
       lang="en"
@@ -47,12 +45,7 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full min-w-0 flex-col">
         <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
-          <SiteNav
-            siteName={current?.content.trip.siteName}
-            dateLabel={current?.content.trip.dateLabel}
-            slug={current?.slug}
-            sections={current ? visibleSections(current.content) : undefined}
-          />
+          <SiteNav />
           <main className="min-w-0 flex-1">{children}</main>
           <Toaster />
         </ThemeProvider>

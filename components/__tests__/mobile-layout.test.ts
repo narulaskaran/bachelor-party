@@ -57,12 +57,15 @@ describe("mobile trip layout", () => {
     expect(html).toContain("Activities");
     expect(html).toContain("Basecamp");
     expect(html).toContain("Your Info");
+    expect(html).not.toContain('id="site-nav-marketing"');
+    expect(html).toContain("data-trip-chrome");
   });
 
   it("does not render the hamburger on the public landing nav", () => {
     const html = renderToStaticMarkup(createElement(SiteNav));
     expect(html).not.toContain('aria-label="Open menu"');
     expect(html).not.toContain("<details");
+    expect(html).toContain('id="site-nav-marketing"');
     expect(html).toContain("Create a trip");
     expect(html).toContain('href="/#create"');
     expect(html).not.toContain('href="/admin"');
