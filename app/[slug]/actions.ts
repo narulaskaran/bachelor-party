@@ -2,9 +2,9 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
 import { AUTH_COOKIE, authCookieValue } from "@/lib/auth";
-import { getDb, schema } from "@/lib/db";
+import { resolvePartyBySlug } from "@/lib/resolve-party";
+import type { ResolvedSlugParty } from "@/lib/resolve-party";
 
 const NINETY_DAYS = 60 * 60 * 24 * 90;
 
@@ -16,37 +16,26 @@ export async function login(
   const attempt = String(formData.get("password") ?? "").trim();
   if (!attempt) return { error: "Enter the password." };
 
-  const db = getDb();
-  let cookieValue: string | null = null;
-
-  if (db) {
-    try {
-      const [party] = await db
-        .select({ id: schema.parties.id, password: schema.parties.password })
-        .from(schema.parties)
-        .where(and(eq(schema.parties.slug, slug), eq(schema.parties.password, attempt)))
-        .limit(1);
-      if (party) cookieValue = await authCookieValue(party.id, party.password);
-    } catch (err) {
-      console.error("login lookup failed", err);
-      return { error: "Couldn't check that — try again in a minute." };
-    }
-  } else if (slug === "demo") {
-    const expected = process.env.PARTY_PASSWORD;
-    if (!expected) {
-      return { error: "Site isn't configured yet. Ping the organizer." };
-    }
-    if (attempt === expected) {
-      cookieValue = await authCookieValue("demo", expected);
-    }
+  let resolved: ResolvedSlugParty;
+  try {
+    resolved = await resolvePartyBySlug(slug);
+  } catch (err) {
+    console.error("login lookup failed", err);
+    return { error: "Couldn't check that — try again in a minute." };
   }
 
-  if (!cookieValue) {
+  // Open sample trip needs no password. redirect() throws; keep it
+  // outside the lookup try/catch so it isn't swallowed as a DB error.
+  if (resolved.status === "open") {
+    redirect(`/${slug}`);
+  }
+
+  if (resolved.status !== "gated" || attempt !== resolved.password) {
     return { error: "Wrong password. Ask the group chat." };
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(AUTH_COOKIE, cookieValue, {
+  cookieStore.set(AUTH_COOKIE, await authCookieValue(resolved.id, resolved.password), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
