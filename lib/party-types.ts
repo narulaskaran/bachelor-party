@@ -34,7 +34,7 @@ export type ScheduleEntry = {
   time?: string; // omit when timing is still loose
   title: string;
   note?: string;
-  marquee?: boolean; // gets the ember highlight
+  marquee?: boolean; // gets the primary highlight
 };
 
 export type ScheduleDay = {
