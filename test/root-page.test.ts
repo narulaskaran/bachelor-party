@@ -181,7 +181,10 @@ describe("GET /{slug} chrome", () => {
     vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
 
     const html = renderToStaticMarkup(
-      await TripLayout({ children: createElement("p", null, "TRIP_BODY") }),
+      await TripLayout({
+        children: createElement("p", null, "TRIP_BODY"),
+        params: Promise.resolve({ slug: "qa-tester-e2e" }),
+      }),
     );
 
     expect(html).toContain(TRIP_NAME);
@@ -190,5 +193,53 @@ describe("GET /{slug} chrome", () => {
     expect(html).toContain("TRIP_BODY");
     expect(html).toContain("data-trip-chrome");
     expect(html).not.toContain("Create a trip");
+  });
+
+  it("does not brand another trip's login gate with leftover cookie chrome", async () => {
+    const cookie = await authCookieValue(42, PASSWORD);
+    vi.mocked(cookies).mockResolvedValue({
+      get: (name: string) =>
+        name === AUTH_COOKIE ? { name: AUTH_COOKIE, value: cookie } : undefined,
+      set: vi.fn(),
+    } as never);
+    vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
+
+    const gate = await TripLayout({
+      children: createElement("p", null, "Who Goes There"),
+      params: Promise.resolve({ slug: "qa-host-create" }),
+    });
+    const html = renderToStaticMarkup(RootLayout({ children: gate }));
+
+    expect(html).toContain("Who Goes There");
+    expect(html).toContain("The Big Send");
+    expect(html).toContain('id="site-nav-marketing"');
+    expect(html).toContain("Create a trip");
+    expect(html).not.toContain(TRIP_NAME);
+    expect(html).not.toContain(DATE_LABEL);
+    expect(html).not.toContain("data-trip-chrome");
+    expect(html).not.toContain("/qa-tester-e2e#schedule");
+    expect(html).not.toContain("/qa-tester-e2e#activities");
+    expect(html).not.toContain("/qa-host-create#schedule");
+  });
+
+  it("anonymous locked slug keeps marketing nav only", async () => {
+    vi.mocked(cookies).mockResolvedValue({
+      get: () => undefined,
+      set: vi.fn(),
+    } as never);
+    vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
+
+    const gate = await TripLayout({
+      children: createElement("p", null, "Who Goes There"),
+      params: Promise.resolve({ slug: "qa-host-create" }),
+    });
+    const html = renderToStaticMarkup(RootLayout({ children: gate }));
+
+    expect(html).toContain("Who Goes There");
+    expect(html).toContain('id="site-nav-marketing"');
+    expect(html).toContain("The Big Send");
+    expect(html).not.toContain(TRIP_NAME);
+    expect(html).not.toContain("/qa-tester-e2e#schedule");
+    expect(html).not.toContain("data-trip-chrome");
   });
 });

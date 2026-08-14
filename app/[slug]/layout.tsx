@@ -4,19 +4,24 @@ import { visibleSections } from "@/lib/trip-sections";
 
 export default async function TripLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ slug: string }>;
 }>) {
+  const { slug } = await params;
   const current = await getCurrentParty();
+  // Cookie for trip A must not brand trip B's login gate (or /demo, 404, …).
+  const tripChrome = current?.slug === slug ? current : null;
 
   return (
     <>
-      {current ? (
+      {tripChrome ? (
         <SiteNav
-          siteName={current.content.trip.siteName}
-          dateLabel={current.content.trip.dateLabel}
-          slug={current.slug}
-          sections={visibleSections(current.content)}
+          siteName={tripChrome.content.trip.siteName}
+          dateLabel={tripChrome.content.trip.dateLabel}
+          slug={tripChrome.slug}
+          sections={visibleSections(tripChrome.content)}
         />
       ) : null}
       {children}
