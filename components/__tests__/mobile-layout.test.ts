@@ -61,6 +61,26 @@ describe("mobile trip layout", () => {
     expect(html).toContain("data-trip-chrome");
   });
 
+  it("paints hamburger labels on an opaque panel (no alpha, no transparent parent)", () => {
+    const html = renderToStaticMarkup(
+      createElement(SiteNav, {
+        siteName: DEMO_PARTY.trip.siteName,
+        dateLabel: DEMO_PARTY.trip.dateLabel,
+        slug: "demo",
+        sections: tripSections,
+      }),
+    );
+
+    const detailsHtml = html.slice(html.indexOf("<details"));
+    expect(detailsHtml).toContain("<details");
+    expect(detailsHtml).toContain("bg-background");
+    expect(detailsHtml).not.toMatch(/bg-background\/\d+/);
+    expect(detailsHtml).not.toContain("backdrop-blur");
+    expect(detailsHtml).not.toContain("bg-transparent");
+    expect(detailsHtml).toContain("md:hidden");
+    expect(html).toContain("bg-background/90");
+  });
+
   it("does not render the hamburger on the public landing nav", () => {
     const html = renderToStaticMarkup(createElement(SiteNav));
     expect(html).not.toContain('aria-label="Open menu"');
