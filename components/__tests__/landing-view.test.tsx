@@ -34,6 +34,23 @@ describe("homepage trip entry", () => {
     cleanup();
   });
 
+  it("offers Create a trip on the marketing landing without /admin", () => {
+    const { container } = render(<LandingView />);
+
+    expect(screen.getByRole("link", { name: /^create a trip$/i }).getAttribute("href")).toBe(
+      "#create",
+    );
+    expect(document.getElementById("create")).toBeTruthy();
+    expect(screen.getByLabelText(/trip name/i)).toBeTruthy();
+    expect(screen.getByLabelText(/start date/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /try a sample trip/i }).getAttribute("href")).toBe(
+      "/demo",
+    );
+    expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
+    expect(container.innerHTML).not.toContain("ADMIN_UI_PASSWORD");
+    expect(container.innerHTML).not.toContain('href="/admin"');
+  });
+
   it("renders a trip-entry form on every legacy hash the old pages 307 to", () => {
     render(<LandingView />);
 

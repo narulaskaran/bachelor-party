@@ -1,0 +1,124 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { OrganizerPacketView } from "@/components/organizer-packet-view";
+import {
+  createTripFromUi,
+  type CreateTripFields,
+  type CreateTripResult,
+  type OrganizerPacket,
+} from "@/lib/create-trip";
+
+export function CreateTripForm({
+  create = createTripFromUi,
+}: {
+  create?: (fields: CreateTripFields) => Promise<CreateTripResult>;
+} = {}) {
+  const [packet, setPacket] = useState<OrganizerPacket | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  if (packet) {
+    return (
+      <OrganizerPacketView
+        packet={packet}
+        onCreateAnother={() => {
+          setPacket(null);
+          setError(null);
+        }}
+      />
+    );
+  }
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const siteName = String(form.get("siteName") ?? "");
+    const startDate = String(form.get("startDate") ?? "").trim();
+    const endDate = String(form.get("endDate") ?? "").trim();
+    setError(null);
+    setPending(true);
+    try {
+      const result = await create({
+        siteName,
+        ...(startDate ? { startDate } : {}),
+        ...(endDate ? { endDate } : {}),
+      });
+      if (result.ok) {
+        setPacket(result.packet);
+      } else {
+        setError(result.error);
+      }
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <>
+      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+        Host
+      </p>
+      <h2
+        id="create-trip-heading"
+        className="mt-2 font-display text-2xl font-bold uppercase tracking-wide sm:text-3xl"
+      >
+        Create a trip
+      </h2>
+      <p id="create-trip-hint" className="mt-2 max-w-xl text-muted-foreground">
+        Name it — that&apos;s enough. Dates are optional. You&apos;ll get an
+        invite link, a guest password, and an admin token once. No account
+        required.
+      </p>
+      <form onSubmit={onSubmit} className="mt-6 flex max-w-md flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="siteName">Trip name</Label>
+          <Input
+            id="siteName"
+            name="siteName"
+            type="text"
+            required
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="Jackson Hole '26"
+            aria-describedby={error ? "create-trip-error create-trip-hint" : "create-trip-hint"}
+            aria-invalid={error ? true : undefined}
+            disabled={pending}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="startDate">Start date</Label>
+            <Input
+              id="startDate"
+              name="startDate"
+              type="date"
+              disabled={pending}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="endDate">End date</Label>
+            <Input
+              id="endDate"
+              name="endDate"
+              type="date"
+              disabled={pending}
+            />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">Dates are optional.</p>
+        {error ? (
+          <p id="create-trip-error" className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <Button type="submit" disabled={pending}>
+          {pending ? "Creating…" : "Create a trip"}
+        </Button>
+      </form>
+    </>
+  );
+}

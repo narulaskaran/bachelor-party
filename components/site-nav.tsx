@@ -42,7 +42,7 @@ export function SiteNav({
           )}
         </Link>
         <div className="flex shrink-0 items-center gap-1">
-          {siteName && (
+          {siteName ? (
             <>
               <nav className="hidden items-center gap-1 md:flex" aria-label="Trip sections">
                 {links.map((link) => (
@@ -57,6 +57,13 @@ export function SiteNav({
               </nav>
               <MobileNav links={links} />
             </>
+          ) : (
+            <Link
+              href="/#create"
+              className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Create a trip
+            </Link>
           )}
           <ThemeToggle />
         </div>

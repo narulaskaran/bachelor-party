@@ -63,6 +63,9 @@ describe("mobile trip layout", () => {
     const html = renderToStaticMarkup(createElement(SiteNav));
     expect(html).not.toContain('aria-label="Open menu"');
     expect(html).not.toContain("<details");
+    expect(html).toContain("Create a trip");
+    expect(html).toContain('href="/#create"');
+    expect(html).not.toContain('href="/admin"');
   });
 
   it("keeps trip page shells from forcing a min-content width past ~390px", () => {

@@ -86,6 +86,10 @@ describe("GET /", () => {
 
     expect(html).toContain("The Big Send");
     expect(html).toContain("Got an invite link from your organizer");
+    expect(html).toContain("Create a trip");
+    expect(html).toContain('href="#create"');
+    expect(html).not.toContain("ADMIN_UI_PASSWORD");
+    expect(html).not.toContain('href="/admin"');
     expect(html).not.toContain("PRIVATE_TRIP_VIEW");
     expect(html).not.toContain(TRIP_NAME);
     expect(html).not.toContain(SCHEDULE_TITLE);

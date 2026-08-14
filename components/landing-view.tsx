@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { CreateTripForm } from "@/components/create-trip-form";
 import { TripEntryForm } from "@/components/trip-entry-form";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 
@@ -72,9 +73,14 @@ export function LandingView() {
         </div>
 
         <div className="mt-8 flex flex-col items-start gap-4">
-          <Button asChild>
-            <Link href="/demo">Try a sample trip</Link>
-          </Button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button asChild>
+              <a href="#create">Create a trip</a>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/demo">Try a sample trip</Link>
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground">
             Got an invite link from your organizer?{" "}
             <a href="#rsvp" className="text-foreground underline-offset-4 hover:underline">
@@ -83,6 +89,14 @@ export function LandingView() {
             below — or paste the link you were sent.
           </p>
         </div>
+      </section>
+
+      <section
+        id="create"
+        className="scroll-mt-20 border-t border-border py-10 sm:py-12"
+        aria-labelledby="create-trip-heading"
+      >
+        <CreateTripForm />
       </section>
 
       <section
