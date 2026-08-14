@@ -16,7 +16,7 @@ export default async function Page({ params }: Params) {
   const { slug } = await params;
   const resolved = await resolvePartyBySlug(slug);
 
-  // Fallback if proxy didn't rewrite this slug to /_not-found first.
+  // Fallback if proxy didn't rewrite this missing slug first.
   if (resolved.status === "missing") notFound();
 
   if (resolved.status === "open") {

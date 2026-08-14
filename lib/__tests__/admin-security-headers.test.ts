@@ -88,6 +88,20 @@ describe("proxy (admin HTML matcher)", () => {
       "/((?!api|_next|_not-found|favicon.ico|icon.svg|admin).*)",
     ]);
   });
+
+  it("rewrites unknown guest slugs to an unmatched path (HTTP 404), not /_not-found", async () => {
+    const res = await proxy(new NextRequest("http://localhost/foo"));
+    const rewritten = res.headers.get("x-middleware-rewrite");
+    expect(rewritten).toMatch(/\/_not-found\/guest$/);
+    expect(rewritten).not.toMatch(/\/_not-found$/);
+  });
+
+  it("does not rewrite /demo or home", async () => {
+    const demo = await proxy(new NextRequest("http://localhost/demo"));
+    expect(demo.headers.get("x-middleware-rewrite")).toBeNull();
+    const home = await proxy(new NextRequest("http://localhost/"));
+    expect(home.headers.get("x-middleware-rewrite")).toBeNull();
+  });
 });
 
 describe("next.config headers()", () => {

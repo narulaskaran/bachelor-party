@@ -3,22 +3,23 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement, type ReactElement, type ReactNode } from "react";
+import { NextRequest } from "next/server";
+import {
+  getAccessFallbackHTTPStatus,
+  isHTTPAccessFallbackError,
+} from "next/dist/client/components/http-access-fallback/http-access-fallback";
 import { getDb } from "@/lib/db";
+import { MISSING_GUEST_REWRITE } from "@/lib/party-exists";
 import { TripNotFound } from "@/components/trip-not-found";
 import RootNotFound from "@/app/not-found";
 import SlugNotFound from "@/app/[slug]/not-found";
 import Page from "@/app/[slug]/page";
+import { proxy } from "@/proxy";
 
 vi.mock("@/lib/db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/db")>();
   return { ...actual, getDb: vi.fn() };
 });
-
-vi.mock("next/navigation", () => ({
-  notFound: vi.fn(() => {
-    throw new Error("NEXT_HTTP_ERROR_FALLBACK;404");
-  }),
-}));
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => undefined }),
@@ -36,6 +37,10 @@ vi.mock("next/link", () => ({
   }) => createElement("a", { href, ...props }, children),
 }));
 
+vi.mock("@/components/party-view", () => ({
+  PartyView: () => "DEMO_TRIP",
+}));
+
 function fakeDb(rows: Record<string, unknown>[]) {
   return {
     select: () => ({
@@ -50,6 +55,18 @@ function fakeDb(rows: Record<string, unknown>[]) {
 
 function branded404Html(node: ReactElement) {
   return renderToStaticMarkup(node);
+}
+
+async function pageHttpStatus(
+  slug: string,
+): Promise<{ status: number; html?: string }> {
+  try {
+    const node = await Page({ params: Promise.resolve({ slug }) });
+    return { status: 200, html: branded404Html(node as ReactElement) };
+  } catch (error) {
+    if (!isHTTPAccessFallbackError(error)) throw error;
+    return { status: getAccessFallbackHTTPStatus(error) };
+  }
 }
 
 describe("unknown guest slug 404", () => {
@@ -76,24 +93,58 @@ describe("unknown guest slug 404", () => {
     expect(slug).not.toContain("__next_error__");
   });
 
-  it("missing slug with no database calls notFound (HTTP 404)", async () => {
-    const { notFound } = await import("next/navigation");
+  it("proxy rewrites a missing slug to the unmatched 404 path, not /_not-found", async () => {
     vi.mocked(getDb).mockReturnValue(null);
-
-    await expect(Page({ params: Promise.resolve({ slug: "foo" }) })).rejects.toThrow(
-      /NEXT_HTTP_ERROR_FALLBACK/,
-    );
-    expect(notFound).toHaveBeenCalled();
+    const res = await proxy(new NextRequest("http://localhost/foo"));
+    const rewritten = new URL(res.headers.get("x-middleware-rewrite") ?? "");
+    expect(rewritten.pathname).toBe(MISSING_GUEST_REWRITE);
+    expect(rewritten.pathname.split("/").filter(Boolean).length).toBeGreaterThan(1);
   });
 
-  it("missing slug with an empty database lookup calls notFound", async () => {
-    const { notFound } = await import("next/navigation");
-    vi.mocked(notFound).mockClear();
+  it("missing slug page render is HTTP 404 via notFound(), not 200 branded HTML", async () => {
+    vi.mocked(getDb).mockReturnValue(null);
+
+    const { status, html } = await pageHttpStatus("foo");
+    expect(status).toBe(404);
+    expect(html).toBeUndefined();
+  });
+
+  it("missing slug with an empty database lookup responds 404", async () => {
     vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
 
-    await expect(
-      Page({ params: Promise.resolve({ slug: "no-such-trip" }) }),
-    ).rejects.toThrow(/NEXT_HTTP_ERROR_FALLBACK/);
-    expect(notFound).toHaveBeenCalled();
+    const { status, html } = await pageHttpStatus("no-such-trip");
+    expect(status).toBe(404);
+    expect(html).toBeUndefined();
+  });
+
+  it("/demo stays 200 with trip content and is not rewritten", async () => {
+    vi.mocked(getDb).mockReturnValue(null);
+
+    const { status, html } = await pageHttpStatus("demo");
+    expect(status).toBe(200);
+    expect(html).toContain("DEMO_TRIP");
+
+    const res = await proxy(new NextRequest("http://localhost/demo"));
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+  });
+
+  it("an existing trip stays 200 (login gate, not 404) and is not rewritten", async () => {
+    vi.mocked(getDb).mockReturnValue(
+      fakeDb([
+        {
+          id: 1,
+          password: "crew-secret",
+          content: { kind: "trip", trip: { siteName: "Jackson Hole '26" } },
+        },
+      ]) as never,
+    );
+
+    const { status, html } = await pageHttpStatus("jackson-hole-26");
+    expect(status).toBe(200);
+    expect(html).toContain("Who Goes There");
+    expect(html).not.toContain("No trip at this link");
+
+    const res = await proxy(new NextRequest("http://localhost/jackson-hole-26"));
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
   });
 });

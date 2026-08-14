@@ -1,6 +1,10 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { getDb } from "@/lib/db";
-import { guestSlugFromPathname, partyExists } from "@/lib/party-exists";
+import {
+  guestSlugFromPathname,
+  MISSING_GUEST_REWRITE,
+  partyExists,
+} from "@/lib/party-exists";
 
 vi.mock("@/lib/db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/db")>();
@@ -25,9 +29,10 @@ describe("guestSlugFromPathname", () => {
     expect(guestSlugFromPathname("/demo")).toBe("demo");
   });
 
-  it("ignores home, the not-found rewrite target, and nested paths", () => {
+  it("ignores home, not-found rewrite targets, and nested paths", () => {
     expect(guestSlugFromPathname("/")).toBeNull();
     expect(guestSlugFromPathname("/_not-found")).toBeNull();
+    expect(guestSlugFromPathname(MISSING_GUEST_REWRITE)).toBeNull();
     expect(guestSlugFromPathname("/foo/bar")).toBeNull();
   });
 });

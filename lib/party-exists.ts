@@ -1,8 +1,17 @@
 import { resolvePartyBySlug } from "@/lib/resolve-party";
 
+/**
+ * Unmatched two-segment path. Rewriting here lets App Router SSR
+ * `app/not-found.tsx` with HTTP 404. `/_not-found` itself is a compiled
+ * matched route (often HTTP 200 when rewritten to).
+ */
+export const MISSING_GUEST_REWRITE = "/_not-found/guest";
+
 /** Single-segment guest slug, or null if this path isn't a trip URL. */
 export function guestSlugFromPathname(pathname: string): string | null {
-  if (pathname === "/" || pathname === "/_not-found") return null;
+  if (pathname === "/" || pathname === "/_not-found" || pathname === MISSING_GUEST_REWRITE) {
+    return null;
+  }
   const parts = pathname.slice(1).split("/");
   if (parts.length !== 1) return null;
   return parts[0] || null;
