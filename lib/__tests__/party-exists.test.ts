@@ -22,6 +22,7 @@ function fakeDb(rows: Record<string, unknown>[]) {
 describe("guestSlugFromPathname", () => {
   it("returns the slug for a single-segment trip URL", () => {
     expect(guestSlugFromPathname("/foo")).toBe("foo");
+    expect(guestSlugFromPathname("/demo")).toBe("demo");
   });
 
   it("ignores home, the not-found rewrite target, and nested paths", () => {
