@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { submitGuestInfo } from "@/lib/rsvp-actions";
+import { rsvpFieldDefaults, type RsvpPrefill } from "@/lib/merge-guest";
 import type { Activity } from "@/lib/party-types";
 
 const VOTE_OPTIONS = [
@@ -25,35 +26,66 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   );
 }
 
+function HadField({
+  name,
+  value,
+}: {
+  name: string;
+  value: string | null | undefined;
+}) {
+  if (!value) return null;
+  return <input type="hidden" name={`had:${name}`} value="1" />;
+}
+
 export function RsvpForm({
   pollActivities,
   airport,
+  existing,
 }: {
   pollActivities: Activity[];
   airport?: string;
+  existing?: RsvpPrefill | null;
 }) {
   const [state, formAction, isPending] = useActionState(submitGuestInfo, null);
   const router = useRouter();
+  const defaults = rsvpFieldDefaults(existing);
 
   useEffect(() => {
     if (state?.ok) {
-      toast.success("Saved. You're on the board.");
+      toast.success("Saved. You're on the board.", { duration: 5000 });
       router.refresh();
     }
   }, [state, router]);
 
   return (
     <form action={formAction} className="mx-auto max-w-2xl space-y-10">
+      {existing ? (
+        <input type="hidden" name="prefillNameKey" value={existing.nameKey} />
+      ) : null}
+
       {/* WHO */}
       <section className="space-y-4">
         <Eyebrow>Who</Eyebrow>
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
-          <Input id="name" name="name" required placeholder="Full name" />
+          <Input
+            id="name"
+            name="name"
+            required
+            placeholder="Full name"
+            defaultValue={defaults.name}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" name="phone" type="tel" placeholder="(555) 555-5555" />
+          <HadField name="phone" value={existing?.phone} />
+          <Input
+            id="phone"
+            name="phone"
+            type="tel"
+            placeholder="(555) 555-5555"
+            defaultValue={defaults.phone}
+          />
         </div>
       </section>
 
@@ -66,26 +98,42 @@ export function RsvpForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="arrivalFlight">Arrival flight</Label>
-            <Input id="arrivalFlight" name="arrivalFlight" placeholder="UA 1523" />
+            <HadField name="arrivalFlight" value={existing?.arrivalFlight} />
+            <Input
+              id="arrivalFlight"
+              name="arrivalFlight"
+              placeholder="UA 1523"
+              defaultValue={defaults.arrivalFlight}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="arrivalTime">Arrival time</Label>
+            <HadField name="arrivalTime" value={existing?.arrivalTime} />
             <Input
               id="arrivalTime"
               name="arrivalTime"
               placeholder="Fri, 10:45 AM"
+              defaultValue={defaults.arrivalTime}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="departureFlight">Departure flight</Label>
-            <Input id="departureFlight" name="departureFlight" placeholder="UA 887" />
+            <HadField name="departureFlight" value={existing?.departureFlight} />
+            <Input
+              id="departureFlight"
+              name="departureFlight"
+              placeholder="UA 887"
+              defaultValue={defaults.departureFlight}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="departureTime">Departure time</Label>
+            <HadField name="departureTime" value={existing?.departureTime} />
             <Input
               id="departureTime"
               name="departureTime"
               placeholder="Mon, 3:15 PM"
+              defaultValue={defaults.departureTime}
             />
           </div>
         </div>
@@ -97,10 +145,12 @@ export function RsvpForm({
         <Eyebrow>Food</Eyebrow>
         <div className="space-y-2">
           <Label htmlFor="dietary">Dietary restrictions</Label>
+          <HadField name="dietary" value={existing?.dietary} />
           <Textarea
             id="dietary"
             name="dietary"
             placeholder="Allergies, no-gos, keto martyrdom…"
+            defaultValue={defaults.dietary}
           />
         </div>
       </section>
@@ -131,6 +181,7 @@ export function RsvpForm({
                       type="radio"
                       name={`pref:${activity.slug}`}
                       value={opt.value}
+                      defaultChecked={defaults.activityPrefs[activity.slug] === opt.value}
                       className="peer sr-only"
                     />
                     <span className="inline-flex items-center rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50">
@@ -150,10 +201,12 @@ export function RsvpForm({
         <Eyebrow>Notes</Eyebrow>
         <div className="space-y-2">
           <Label htmlFor="notes">Anything else</Label>
+          <HadField name="notes" value={existing?.notes} />
           <Textarea
             id="notes"
             name="notes"
             placeholder="Early departure, carpool offers, playlist demands."
+            defaultValue={defaults.notes}
           />
         </div>
       </section>
@@ -164,8 +217,14 @@ export function RsvpForm({
         </Alert>
       ) : null}
 
+      {state?.ok ? (
+        <Alert>
+          <AlertDescription>Saved. You&rsquo;re on the board.</AlertDescription>
+        </Alert>
+      ) : null}
+
       <Button type="submit" size="lg" className="w-full" disabled={isPending}>
-        {isPending ? "Saving…" : "Save"}
+        {isPending ? "Saving…" : state?.ok ? "Saved" : "Save"}
       </Button>
     </form>
   );

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { RsvpForm } from "@/components/rsvp-form";
-import { getGuests } from "@/lib/rsvp-actions";
+import { getGuests, getRsvpPrefill } from "@/lib/rsvp-actions";
 import type { Activity } from "@/lib/party-types";
 
 export async function RsvpSection({
@@ -12,6 +12,10 @@ export async function RsvpSection({
   airport?: string;
 }) {
   const guests = await getGuests();
+  const prefill = await getRsvpPrefill(guests);
+  const formKey = prefill
+    ? `${prefill.nameKey}:${String(prefill.updatedAt ?? "")}`
+    : "new";
 
   return (
     <section id="rsvp" className="scroll-mt-20 border-t border-border py-12 sm:py-16">
@@ -23,12 +27,17 @@ export async function RsvpSection({
       </h2>
       <p className="mt-2 max-w-xl text-muted-foreground">
         {airport
-          ? "Flights, food, and votes — takes two minutes. Re-submit with the same name any time to update."
-          : "Name, food, and anything else — takes two minutes. Re-submit with the same name any time to update."}
+          ? "Flights, food, and votes — takes two minutes. Re-submit with the same name any time to update. Leave a field blank to keep what you already saved."
+          : "Name, food, and anything else — takes two minutes. Re-submit with the same name any time to update. Leave a field blank to keep what you already saved."}
       </p>
 
       <div className="mt-8">
-        <RsvpForm pollActivities={pollActivities} airport={airport} />
+        <RsvpForm
+          key={formKey}
+          pollActivities={pollActivities}
+          airport={airport}
+          existing={prefill}
+        />
       </div>
 
       <div className="mt-12 border-t border-border pt-8">

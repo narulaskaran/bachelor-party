@@ -91,16 +91,29 @@ export function createMemoryDb() {
     insert(table: object) {
       return {
         values(vals: Row) {
+          const runInsert = () => {
+            const row: Row = {
+              id: nextId(table),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              ...vals,
+            };
+            rowsFor(table).push(row);
+            return row;
+          };
           return {
+            then<T>(onFulfilled?: (row: Row) => T, onRejected?: (err: unknown) => T) {
+              return Promise.resolve(runInsert()).then(onFulfilled, onRejected);
+            },
             async returning() {
-              const row: Row = {
-                id: nextId(table),
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                ...vals,
+              return [runInsert()];
+            },
+            onConflictDoUpdate() {
+              return {
+                then<T>(onFulfilled?: (row: Row) => T, onRejected?: (err: unknown) => T) {
+                  return Promise.resolve(runInsert()).then(onFulfilled, onRejected);
+                },
               };
-              rowsFor(table).push(row);
-              return [row];
             },
           };
         },
@@ -111,12 +124,16 @@ export function createMemoryDb() {
         set(vals: Row) {
           return {
             where(cond: unknown) {
+              const run = () => {
+                const matched = applyWhere(rowsFor(table), cond);
+                for (const row of matched) Object.assign(row, vals);
+                return matched;
+              };
               return {
-                async returning() {
-                  const matched = applyWhere(rowsFor(table), cond);
-                  for (const row of matched) Object.assign(row, vals);
-                  return matched;
+                then<T>(onFulfilled?: (rows: Row[]) => T, onRejected?: (err: unknown) => T) {
+                  return Promise.resolve(run()).then(onFulfilled, onRejected);
                 },
+                returning: async () => run(),
               };
             },
           };
