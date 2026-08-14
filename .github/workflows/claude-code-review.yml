@@ -26,17 +26,27 @@ jobs:
       id-token: write
 
     steps:
+      # Dependabot PRs are lockfile/version bumps. The action refuses bots unless
+      # they are listed in allowed_bots, which fails the required check. Skip the
+      # review instead of spending a Claude run on npm metadata diffs.
+      - name: Skip Claude review for Dependabot
+        if: github.event.pull_request.user.login == 'dependabot[bot]'
+        run: echo "Skipping Claude Code Review on Dependabot PRs."
+
       - name: Checkout repository
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Run Claude Code Review
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Cursor Cloud Agent opens these PRs as the `cursor` GitHub App.
+          # dependabot is skipped above rather than reviewed.
           allowed_bots: 'claude[bot],cursor'
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
