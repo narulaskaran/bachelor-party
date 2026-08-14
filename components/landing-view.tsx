@@ -69,9 +69,14 @@ export function LandingView() {
           ))}
         </div>
 
-        <p className="mt-8 text-sm text-muted-foreground">
-          Got an invite link from your organizer? Use it to see your trip.
-        </p>
+        <div className="mt-8 flex flex-col items-start gap-4">
+          <Button asChild>
+            <Link href="/demo">Try a sample trip</Link>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Got an invite link from your organizer? Use it to see your trip.
+          </p>
+        </div>
       </section>
 
       <footer className="border-t border-border py-8">

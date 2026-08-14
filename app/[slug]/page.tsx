@@ -1,13 +1,10 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PartyView } from "@/components/party-view";
 import { AUTH_COOKIE } from "@/lib/auth";
-import { getDb, schema } from "@/lib/db";
-import { DEMO_PARTY } from "@/lib/demo-party";
 import { cookieAuthenticatesParty } from "@/lib/party-auth";
-import type { PartyContent } from "@/lib/party-types";
+import { resolvePartyBySlug } from "@/lib/resolve-party";
 import { login } from "./actions";
 import { PartyLoginForm } from "./party-login-form";
 
@@ -15,42 +12,18 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ slug: string }> };
 
-type ResolvedParty = {
-  id: number | "demo";
-  password: string;
-  content: PartyContent;
-};
-
 export default async function Page({ params }: Params) {
   const { slug } = await params;
-  const db = getDb();
+  const resolved = await resolvePartyBySlug(slug);
 
-  let party: ResolvedParty | null = null;
+  if (resolved.status === "missing") notFound();
 
-  if (db) {
-    const [row] = await db
-      .select({
-        id: schema.parties.id,
-        password: schema.parties.password,
-        content: schema.parties.content,
-      })
-      .from(schema.parties)
-      .where(eq(schema.parties.slug, slug))
-      .limit(1);
-    if (row) party = row;
-  } else if (slug === "demo") {
-    const expected = process.env.PARTY_PASSWORD;
-    if (!expected) {
-      // No password configured anywhere — demo is open, same as root today.
-      return <PartyView content={DEMO_PARTY} />;
-    }
-    party = { id: "demo", password: expected, content: DEMO_PARTY };
+  if (resolved.status === "open") {
+    return <PartyView content={resolved.content} />;
   }
 
-  if (!party) notFound();
-
   const raw = (await cookies()).get(AUTH_COOKIE)?.value;
-  const authed = await cookieAuthenticatesParty(raw, party.id, party.password);
+  const authed = await cookieAuthenticatesParty(raw, resolved.id, resolved.password);
 
   if (!authed) {
     const loginWithSlug = login.bind(null, slug);
@@ -76,5 +49,5 @@ export default async function Page({ params }: Params) {
     );
   }
 
-  return <PartyView content={party.content} />;
+  return <PartyView content={resolved.content} />;
 }
