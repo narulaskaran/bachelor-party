@@ -16,9 +16,11 @@
     "db:migrate": "node scripts/db-migrate-if-url.mjs",
     "seed": "node scripts/seed-party.mjs",
     "bigsend": "tsx cli/bigsend.ts",
+    "mcp": "tsx mcp/bigsend.ts",
     "test": "vitest run"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.1",
