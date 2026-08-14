@@ -42,10 +42,10 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} h-full scroll-smooth antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} h-full min-w-0 scroll-smooth antialiased`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full min-w-0 flex-col">
         <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
           <SiteNav
             siteName={current?.content.trip.siteName}
@@ -53,7 +53,7 @@ export default async function RootLayout({
             slug={current?.slug}
             sections={current ? visibleSections(current.content) : undefined}
           />
-          <main className="flex-1">{children}</main>
+          <main className="min-w-0 flex-1">{children}</main>
           <Toaster />
         </ThemeProvider>
         <Analytics />

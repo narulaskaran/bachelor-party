@@ -22,7 +22,7 @@ export function PartyView({ content }: { content: PartyContent }) {
   ].filter(Boolean);
 
   return (
-    <div className="mx-auto max-w-5xl px-4">
+    <div className="mx-auto w-full min-w-0 max-w-5xl px-4">
       <Hero trip={content.trip} meta={heroMeta(content.trip)} />
       {sections.glance ? (
         <Glance trip={content.trip} lodging={content.lodging} />
@@ -46,7 +46,7 @@ export function PartyView({ content }: { content: PartyContent }) {
 
       {footerBits.length > 0 ? (
         <footer className="border-t border-border py-8 text-center">
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+          <p className="break-words font-mono text-xs uppercase tracking-widest text-muted-foreground">
             {footerBits.join(" · ")}
           </p>
         </footer>

@@ -8,7 +8,7 @@ export function Hero({ trip, meta }: { trip: Trip; meta: string[] }) {
       <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
         Group Trip
       </p>
-      <h1 className="mt-4 font-display text-5xl font-bold uppercase tracking-wide sm:text-7xl">
+      <h1 className="mt-4 break-words font-display text-5xl font-bold uppercase tracking-wide sm:text-7xl">
         {trip.siteName}
       </h1>
       {trip.tagline ? (

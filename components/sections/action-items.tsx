@@ -20,7 +20,7 @@ export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
             >
               {index + 1}
             </span>
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               <p className="font-medium">{item.title}</p>
               {item.note && (
                 <p className="mt-1 text-sm text-muted-foreground">{item.note}</p>
