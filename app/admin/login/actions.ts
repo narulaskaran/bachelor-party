@@ -3,6 +3,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ADMIN_COOKIE, adminCookieValue } from "@/lib/admin-cookie-auth";
+import {
+  ADMIN_LOGIN_ERROR,
+  getAdminUiPassword,
+  logAdminUiUnconfigured,
+} from "@/lib/admin-ui";
 
 const NINETY_DAYS = 60 * 60 * 24 * 90;
 
@@ -13,13 +18,14 @@ export async function adminLogin(
   const attempt = String(formData.get("password") ?? "").trim();
   if (!attempt) return { error: "Enter the password." };
 
-  const expected = process.env.ADMIN_UI_PASSWORD;
+  const expected = getAdminUiPassword();
   if (!expected) {
-    return { error: "Admin UI isn't configured. Set ADMIN_UI_PASSWORD." };
+    logAdminUiUnconfigured();
+    return { error: ADMIN_LOGIN_ERROR };
   }
 
   if (attempt !== expected) {
-    return { error: "Wrong password." };
+    return { error: ADMIN_LOGIN_ERROR };
   }
 
   const cookieStore = await cookies();
