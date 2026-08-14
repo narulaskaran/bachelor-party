@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { slugFromName, uniqueSlug } from "@/lib/slug";
+import { isReservedSlug, RESERVED_SLUGS, slugFromName, uniqueSlug } from "@/lib/slug";
 
 describe("slugFromName", () => {
   it("lowercases and kebab-cases a display name", () => {
@@ -27,5 +27,35 @@ describe("uniqueSlug", () => {
 
   it("falls back to 'trip' when the base is empty", async () => {
     expect(await uniqueSlug("", async () => false)).toBe("trip");
+  });
+
+  it("skips reserved app-route names even when the DB is empty", async () => {
+    expect(await uniqueSlug("admin", async () => false)).toBe("admin-2");
+    expect(await uniqueSlug("demo", async () => false)).toBe("demo-2");
+  });
+
+  it("skips reserved names and existing trips together", async () => {
+    const taken = new Set(["admin-2", "admin-3"]);
+    expect(await uniqueSlug("admin", (c) => taken.has(c))).toBe("admin-4");
+  });
+});
+
+describe("isReservedSlug", () => {
+  it("covers live App Router first segments and the built-in demo trip", () => {
+    for (const slug of [
+      "admin",
+      "api",
+      "rsvp",
+      "schedule",
+      "activities",
+      "basecamp",
+      "login",
+      "demo",
+    ]) {
+      expect(isReservedSlug(slug)).toBe(true);
+      expect(RESERVED_SLUGS).toContain(slug);
+    }
+    expect(isReservedSlug("jackson-hole-26")).toBe(false);
+    expect(isReservedSlug("admin-2")).toBe(false);
   });
 });

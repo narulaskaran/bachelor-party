@@ -191,6 +191,43 @@ describe("agent API (create / patch / guests)", () => {
     expect(mem.parties).toHaveLength(0);
   });
 
+  it("POST reserved slug → 400 and does not create", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    for (const slug of ["admin", "rsvp", "demo"]) {
+      const res = await POST(
+        makeRequest(null, {
+          method: "POST",
+          body: { slug, content: { trip: { siteName: "Should not create" } } },
+        }),
+      );
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.issues[0].path).toBe("slug");
+      expect(body.issues[0].message).toMatch(/reserved/i);
+      expect(body.issues[0].hint).toMatch(/app routes/i);
+    }
+    expect(mem.parties).toHaveLength(0);
+  });
+
+  it("POST autogen skips reserved names and existing trips", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "admin-2", content: { trip: { siteName: "Existing" } } });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: { content: { trip: { siteName: "Admin" } } },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.slug).toBe("admin-3");
+    expect(body.url).toBe("http://localhost/admin-3");
+  });
+
   it("POST colliding slug → 409 with hint, does not upsert", async () => {
     const mem = createMemoryDb();
     mem.seedParty({

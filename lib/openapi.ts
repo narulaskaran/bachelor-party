@@ -4,11 +4,24 @@ import {
   partyContentSchema,
   updatePartySchema,
 } from "@/lib/party-schema";
+import { RESERVED_SLUGS } from "@/lib/slug";
 
 function jsonSchema(schema: z.ZodType) {
   const json = z.toJSONSchema(schema) as Record<string, unknown>;
   delete json.$schema;
   return json;
+}
+
+function createTripJsonSchema() {
+  const schema = jsonSchema(createPartySchema) as {
+    properties?: { slug?: Record<string, unknown> };
+  };
+  const slug = schema.properties?.slug;
+  if (slug) {
+    slug.description = `Lowercase kebab-case. Cannot be a reserved app route: ${RESERVED_SLUGS.join(", ")}.`;
+    slug.not = { enum: [...RESERVED_SLUGS] };
+  }
+  return schema;
 }
 
 const errorSchema = {
@@ -122,7 +135,9 @@ export function openApiSpec() {
       title: "The Big Send admin API",
       version: "0.3.0",
       description:
-        "Headless group-trip HQ. Canonical paths are `/api/admin/trips`. `/api/admin/parties/**` rewrites to the same handlers. Create needs no Authorization; the 201 organizer packet's adminToken is the only credential for that trip. JSON keys `trip` and `party` (and `trips`/`parties`) are both returned.",
+        "Headless group-trip HQ. Canonical paths are `/api/admin/trips`. `/api/admin/parties/**` rewrites to the same handlers. Create needs no Authorization; the 201 organizer packet's adminToken is the only credential for that trip. JSON keys `trip` and `party` (and `trips`/`parties`) are both returned. Trip slugs cannot be reserved app routes: " +
+        RESERVED_SLUGS.join(", ") +
+        ".",
     },
     servers: [{ url: "/", description: "This deployment" }],
     tags: [
@@ -168,7 +183,10 @@ export function openApiSpec() {
               description: "Organizer packet",
               ...json({ $ref: "#/components/schemas/OrganizerPacket" }),
             },
-            "400": { description: "Invalid payload", ...json({ $ref: "#/components/schemas/Error" }) },
+            "400": {
+              description: "Invalid payload (including reserved slugs)",
+              ...json({ $ref: "#/components/schemas/Error" }),
+            },
             "409": { description: "Slug or password taken", ...json({ $ref: "#/components/schemas/Error" }) },
             "429": { description: "Rate limited (per IP)", ...json({ $ref: "#/components/schemas/Error" }) },
           },
@@ -242,7 +260,7 @@ export function openApiSpec() {
         },
       },
       schemas: {
-        CreateTrip: jsonSchema(createPartySchema),
+        CreateTrip: createTripJsonSchema(),
         UpdateTrip: jsonSchema(updatePartySchema),
         PartyContent: jsonSchema(partyContentSchema),
         Error: errorSchema,

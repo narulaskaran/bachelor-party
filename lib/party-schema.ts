@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isReservedSlug, RESERVED_SLUG_MESSAGE, RESERVED_SLUGS } from "@/lib/slug";
 
 // Mirrors lib/party-types.ts, used to validate content posted to the
 // admin API (agents send arbitrary JSON — this is the actual gate).
@@ -81,7 +82,11 @@ const slugSchema = z
   .string()
   .min(1)
   .max(80)
-  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "slug must be lowercase-kebab-case");
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "slug must be lowercase-kebab-case")
+  .refine((value) => !isReservedSlug(value), { message: RESERVED_SLUG_MESSAGE })
+  .describe(
+    `Lowercase kebab-case. Cannot be a reserved app route: ${RESERVED_SLUGS.join(", ")}.`,
+  );
 
 export const createPartySchema = z.object({
   slug: slugSchema.optional(),
