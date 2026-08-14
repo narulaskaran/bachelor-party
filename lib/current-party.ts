@@ -14,6 +14,7 @@ export type CurrentParty = {
 
 // Resolves the logged-in party from the auth cookie.
 // - With a database: cookie is "<id>.<token>", validated against the row.
+//   Leftover `slug=demo` rows are ignored — guest `/demo` is the fixture.
 // - Without one (local dev / fresh deploy): PARTY_PASSWORD env gates a
 //   built-in demo party; with no password configured at all, demo is open.
 export async function getCurrentParty(): Promise<CurrentParty | null> {
@@ -42,6 +43,9 @@ export async function getCurrentParty(): Promise<CurrentParty | null> {
       .where(eq(schema.parties.id, id))
       .limit(1);
     if (!party) return null;
+    // Guest `/demo` is always the Alpine Weekend fixture. Ignore leftover
+    // `slug=demo` rows so an old cookie cannot brand `/demo` or `/`.
+    if (party.slug === "demo") return null;
     if (!(await cookieAuthenticatesParty(raw, party.id, party.password))) return null;
     return { partyId: party.id, slug: party.slug, content: party.content };
   } catch (err) {

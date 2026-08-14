@@ -18,17 +18,35 @@ export type ResolvedSlugParty =
 /**
  * Resolve a guest-facing `/:slug` trip.
  *
- * A database row always wins, so real trips (including a seeded `demo`)
- * keep their own content and password. If there is no row, slug `demo`
- * falls back to `DEMO_PARTY` so `/demo` works on a deployment that has
- * `DATABASE_URL` but no demo record — and without an organizer packet.
+ * Slug `demo` always serves `DEMO_PARTY`, even if a leftover `parties` row
+ * with `slug=demo` exists (reserved since #79; new creates cannot make that
+ * row). With a database configured, the fixture stays open — no organizer
+ * packet and no `PARTY_PASSWORD`. No-DB local mode still honors
+ * `PARTY_PASSWORD` as a gate on that fixture.
  *
- * No-DB local mode still honors `PARTY_PASSWORD` as a gate on that fixture.
+ * Any other slug looks up the database row (gated by that trip's password)
+ * or 404s.
  */
 export async function resolvePartyBySlug(
   slug: string,
   db: Db | null = getDb(),
 ): Promise<ResolvedSlugParty> {
+  if (slug === "demo") {
+    const expected = process.env.PARTY_PASSWORD;
+    // PARTY_PASSWORD is the no-DB local gate. With a database configured
+    // (the production-with-DB case), serve the sample trip openly — leftover
+    // `demo` rows must not hide or password-gate the public fixture.
+    if (!db && expected) {
+      return {
+        status: "gated",
+        id: "demo",
+        password: expected,
+        content: DEMO_PARTY,
+      };
+    }
+    return { status: "open", content: DEMO_PARTY };
+  }
+
   if (db) {
     try {
       const [row] = await db
@@ -50,23 +68,9 @@ export async function resolvePartyBySlug(
       }
     } catch (err) {
       console.error("resolvePartyBySlug failed", err);
-      if (slug !== "demo") throw err;
+      throw err;
     }
   }
 
-  if (slug !== "demo") return { status: "missing" };
-
-  const expected = process.env.PARTY_PASSWORD;
-  // PARTY_PASSWORD is the no-DB local gate. With a database configured
-  // (the production-with-DB case), serve the sample trip openly.
-  if (!db && expected) {
-    return {
-      status: "gated",
-      id: "demo",
-      password: expected,
-      content: DEMO_PARTY,
-    };
-  }
-
-  return { status: "open", content: DEMO_PARTY };
+  return { status: "missing" };
 }
