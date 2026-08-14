@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { count, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
-import { issuesFromZod } from "@/lib/api-errors";
+import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
 import { getDb, schema } from "@/lib/db";
 import { organizerPacket } from "@/lib/organizer-packet";
 import { createPartySchema } from "@/lib/party-schema";
@@ -39,8 +39,8 @@ export async function GET(request: Request) {
   const trips = rows.map((row) => ({
     id: row.id,
     slug: row.slug,
-    siteName: row.content.trip.siteName,
-    dateLabel: row.content.trip.dateLabel,
+    siteName: row.content?.trip?.siteName,
+    dateLabel: row.content?.trip?.dateLabel,
     guestCount: row.guestCount,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -61,8 +61,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 
-  const json = await request.json().catch(() => null);
-  const parsed = createPartySchema.safeParse(json);
+  const body = await readJsonBody(request);
+  if (!body.ok) return body.response;
+  const parsed = createPartySchema.safeParse(body.value);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid trip payload", issues: issuesFromZod(parsed.error) },

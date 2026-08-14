@@ -102,5 +102,6 @@ describe("GET /api/admin/parties/:slug", () => {
     vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
     const res = await GET(makeRequest("global-token"), ctx("nonexistent"));
     expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "Trip not found" });
   });
 });

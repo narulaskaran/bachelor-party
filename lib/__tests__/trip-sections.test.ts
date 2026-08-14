@@ -54,6 +54,12 @@ describe("glanceFacts", () => {
     ]);
   });
 
+  it("does not render 0BR · 0 beds when lodging counts are zero", () => {
+    const facts = glanceFacts({ siteName: "X" }, { name: "Cabin", bedrooms: 0, beds: 0 });
+    expect(facts.some((f) => String(f.value).includes("0BR"))).toBe(false);
+    expect(facts.some((f) => String(f.value).includes("0 beds"))).toBe(false);
+  });
+
   it("uses Total instead of Damage for lodging cost", () => {
     const facts = glanceFacts(
       { siteName: "X", location: "Jackson, WY" },

@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
 
 export type Issue = {
@@ -23,6 +24,31 @@ export function issuesFromZod(error: ZodError): Issue[] {
       hint: hintFor(path, issue.message),
     };
   });
+}
+
+export async function readJsonBody(
+  request: Request,
+): Promise<{ ok: true; value: unknown } | { ok: false; response: NextResponse }> {
+  try {
+    return { ok: true, value: await request.json() };
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "Invalid JSON",
+          issues: [
+            {
+              path: "(root)",
+              message: "body is not valid JSON",
+              hint: "Send a JSON object.",
+            },
+          ],
+        },
+        { status: 400 },
+      ),
+    };
+  }
 }
 
 function hintFor(path: string, message: string): string | undefined {

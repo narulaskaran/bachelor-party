@@ -107,7 +107,7 @@ describe("bigsend CLI", () => {
       content: {
         schedule: [
           {
-            key: "saturday",
+            key: "2026-09-05",
             date: "2026-09-05",
             weekday: "Saturday",
             label: "Saturday",
@@ -118,6 +118,45 @@ describe("bigsend CLI", () => {
       },
     });
     expect(auths.every((a) => a === "Bearer slug-tok")).toBe(true);
+  });
+
+  it("schedule add keys days by ISO date so two Saturdays stay separate", async () => {
+    const calls: Call[] = [];
+    const { io } = ioHarness({
+      fetchImpl: async (url, init) => {
+        const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+        calls.push({ method: init?.method ?? "GET", url, body });
+        if (init?.method === "GET") {
+          return jsonResponse(200, {
+            trip: {
+              slug: "cabin",
+              content: {
+                trip: { siteName: "Cabin" },
+                schedule: [
+                  {
+                    key: "2026-09-05",
+                    date: "2026-09-05",
+                    weekday: "Saturday",
+                    label: "Saturday",
+                    timed: true,
+                    entries: [{ title: "Dinner" }],
+                  },
+                ],
+              },
+            },
+          });
+        }
+        return jsonResponse(200, { trip: { slug: "cabin", content: { schedule: body.content.schedule } } });
+      },
+    });
+
+    const code = await runBigsend(
+      ["schedule", "add", "cabin", "--day", "2026-09-12", "--title", "Second Saturday"],
+      io,
+    );
+    expect(code).toBe(0);
+    const schedule = calls[1].body as { content: { schedule: { key: string; date: string }[] } };
+    expect(schedule.content.schedule.map((d) => d.key)).toEqual(["2026-09-05", "2026-09-12"]);
   });
 
   it("get / guests / lodging / delete map to the trips API", async () => {

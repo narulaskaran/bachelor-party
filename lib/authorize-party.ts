@@ -37,7 +37,7 @@ export async function authorizePartyBySlug(
   if (!party) {
     return {
       ok: false,
-      error: NextResponse.json({ error: "Party not found" }, { status: 404 }),
+      error: NextResponse.json({ error: "Trip not found" }, { status: 404 }),
     };
   }
 
