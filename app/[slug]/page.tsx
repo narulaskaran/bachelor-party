@@ -20,7 +20,7 @@ export default async function Page({ params }: Params) {
   if (resolved.status === "missing") notFound();
 
   if (resolved.status === "open") {
-    return <PartyView content={resolved.content} />;
+    return <PartyView content={resolved.content} sample />;
   }
 
   const raw = (await cookies()).get(AUTH_COOKIE)?.value;
