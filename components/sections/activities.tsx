@@ -1,14 +1,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Activity, PartyContent } from "@/lib/party-types";
+import { nonemptyActivities } from "@/lib/trip-sections";
 
 export function ActivitiesSection({
   activities,
 }: {
   activities: NonNullable<PartyContent["activities"]>;
 }) {
-  const core = activities.core ?? [];
-  const ifTimeAllows = activities.ifTimeAllows ?? [];
-  const backups = activities.backups ?? [];
+  const core = nonemptyActivities(activities.core);
+  const ifTimeAllows = nonemptyActivities(activities.ifTimeAllows);
+  const backups = nonemptyActivities(activities.backups);
+
+  if (core.length === 0 && ifTimeAllows.length === 0 && backups.length === 0) {
+    return null;
+  }
 
   return (
     <section id="activities" className="scroll-mt-20 border-t border-border py-12 sm:py-16">
