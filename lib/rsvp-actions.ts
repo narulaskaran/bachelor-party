@@ -38,13 +38,13 @@ export type SubmitResult = {
   error?: string;
 };
 
-/** Private helper — must not be exported from this "use server" file. */
-function sampleTripRsvpResult(): SubmitResult {
+/** Lives in a "use server" file, so this must be async. */
+async function sampleTripRsvpResult(): Promise<SubmitResult> {
   return { ok: false, error: SAMPLE_RSVP_MESSAGE };
 }
 
 export async function submitSampleGuestInfo(): Promise<SubmitResult> {
-  return sampleTripRsvpResult();
+  return await sampleTripRsvpResult();
 }
 
 export async function submitGuestInfo(
@@ -58,7 +58,7 @@ export async function submitGuestInfo(
 
   const db = getDb();
   if (!db || current.partyId === "demo") {
-    return sampleTripRsvpResult();
+    return await sampleTripRsvpResult();
   }
 
   const parsed = guestSchema.safeParse({
