@@ -1,23 +1,18 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ADMIN_COOKIE, cookieAuthenticatesAdmin } from "@/lib/admin-cookie-auth";
+import { getAdminUiPassword, logAdminUiUnconfigured } from "@/lib/admin-ui";
+import { AdminUnavailable } from "../admin-unavailable";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const expected = process.env.ADMIN_UI_PASSWORD;
+  const expected = getAdminUiPassword();
   if (!expected) {
-    // No admin password configured — deny all access
-    return (
-      <div className="mx-auto max-w-xl py-20 text-center">
-        <h1 className="text-lg font-bold">Admin UI not configured</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Set ADMIN_UI_PASSWORD in environment to enable the admin UI.
-        </p>
-      </div>
-    );
+    logAdminUiUnconfigured();
+    return <AdminUnavailable />;
   }
 
   // Check auth before rendering anything. Mirrors how app/[slug]/page.tsx
