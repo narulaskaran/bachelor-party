@@ -9,7 +9,7 @@ export async function RsvpSection({
   airport,
 }: {
   pollActivities: Activity[];
-  airport: string;
+  airport?: string;
 }) {
   const guests = await getGuests();
 
@@ -22,8 +22,9 @@ export async function RsvpSection({
         Your Info
       </h2>
       <p className="mt-2 max-w-xl text-muted-foreground">
-        Flights, food, and votes — takes two minutes. Re-submit with the same name any
-        time to update.
+        {airport
+          ? "Flights, food, and votes — takes two minutes. Re-submit with the same name any time to update."
+          : "Name, food, and anything else — takes two minutes. Re-submit with the same name any time to update."}
       </p>
 
       <div className="mt-8">
@@ -50,13 +51,17 @@ export async function RsvpSection({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1.5">
-                  <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                    Arrival · {guest.arrivalFlight || "—"} · {guest.arrivalTime || "—"}
-                  </p>
-                  <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                    Departure · {guest.departureFlight || "—"} ·{" "}
-                    {guest.departureTime || "—"}
-                  </p>
+                  {airport ? (
+                    <>
+                      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                        Arrival · {guest.arrivalFlight || "—"} · {guest.arrivalTime || "—"}
+                      </p>
+                      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                        Departure · {guest.departureFlight || "—"} ·{" "}
+                        {guest.departureTime || "—"}
+                      </p>
+                    </>
+                  ) : null}
                   {guest.dietary ? (
                     <Badge variant="outline" className="mt-2 h-auto px-2 py-1 text-xs">
                       {guest.dietary}

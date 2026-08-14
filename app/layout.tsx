@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { SiteNav } from "@/components/site-nav";
 import { Toaster } from "@/components/ui/sonner";
 import { getCurrentParty } from "@/lib/current-party";
+import { visibleSections } from "@/lib/trip-sections";
 import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
@@ -49,6 +50,7 @@ export default async function RootLayout({
           <SiteNav
             siteName={current?.content.trip.siteName}
             dateLabel={current?.content.trip.dateLabel}
+            sections={current ? visibleSections(current.content) : undefined}
           />
           <main className="flex-1">{children}</main>
           <Toaster />

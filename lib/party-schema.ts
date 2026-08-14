@@ -2,30 +2,33 @@ import { z } from "zod";
 
 // Mirrors lib/party-types.ts, used to validate content posted to the
 // admin API (agents send arbitrary JSON — this is the actual gate).
+// Extra keys (including legacy `groomName`) are stripped. All trip
+// fields except siteName are optional so a site can exist before lodging
+// and flights are booked.
+
 const tripSchema = z.object({
-  groomName: z.string().min(1),
   siteName: z.string().min(1),
-  tagline: z.string().min(1),
-  startDate: z.string().min(1),
-  endDate: z.string().min(1),
-  dateLabel: z.string().min(1),
-  location: z.string().min(1),
-  coordinates: z.string().min(1),
-  elevation: z.string().min(1),
-  airport: z.string().min(1),
+  tagline: z.string().min(1).optional(),
+  startDate: z.string().min(1).optional(),
+  endDate: z.string().min(1).optional(),
+  dateLabel: z.string().min(1).optional(),
+  location: z.string().min(1).optional(),
+  coordinates: z.string().min(1).optional(),
+  elevation: z.string().min(1).optional(),
+  airport: z.string().min(1).optional(),
 });
 
 const lodgingSchema = z.object({
   name: z.string().min(1),
-  url: z.string().min(1),
-  address: z.string().min(1),
-  mapsUrl: z.string().min(1),
-  bedrooms: z.number(),
-  beds: z.number(),
-  bathrooms: z.number(),
-  totalCost: z.string().min(1),
-  amenities: z.array(z.string()),
-  driveFromAirport: z.string().min(1),
+  url: z.string().min(1).optional(),
+  address: z.string().min(1).optional(),
+  mapsUrl: z.string().min(1).optional(),
+  bedrooms: z.number().optional(),
+  beds: z.number().optional(),
+  bathrooms: z.number().optional(),
+  totalCost: z.string().min(1).optional(),
+  amenities: z.array(z.string()).optional(),
+  driveFromAirport: z.string().min(1).optional(),
 });
 
 const scheduleEntrySchema = z.object({
@@ -60,15 +63,18 @@ const actionItemSchema = z.object({
 });
 
 export const partyContentSchema = z.object({
+  kind: z.literal("trip").optional(),
   trip: tripSchema,
-  lodging: lodgingSchema,
-  schedule: z.array(scheduleDaySchema),
-  activities: z.object({
-    core: z.array(activitySchema),
-    ifTimeAllows: z.array(activitySchema),
-    backups: z.array(activitySchema),
-  }),
-  actionItems: z.array(actionItemSchema),
+  lodging: lodgingSchema.optional(),
+  schedule: z.array(scheduleDaySchema).optional(),
+  activities: z
+    .object({
+      core: z.array(activitySchema).optional(),
+      ifTimeAllows: z.array(activitySchema).optional(),
+      backups: z.array(activitySchema).optional(),
+    })
+    .optional(),
+  actionItems: z.array(actionItemSchema).optional(),
 });
 
 const slugSchema = z

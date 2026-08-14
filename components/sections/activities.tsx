@@ -4,8 +4,12 @@ import type { Activity, PartyContent } from "@/lib/party-types";
 export function ActivitiesSection({
   activities,
 }: {
-  activities: PartyContent["activities"];
+  activities: NonNullable<PartyContent["activities"]>;
 }) {
+  const core = activities.core ?? [];
+  const ifTimeAllows = activities.ifTimeAllows ?? [];
+  const backups = activities.backups ?? [];
+
   return (
     <section id="activities" className="scroll-mt-20 border-t border-border py-12 sm:py-16">
       <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
@@ -15,43 +19,49 @@ export function ActivitiesSection({
         Activities
       </h2>
 
-      <div className="mt-8">
-        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          Locked In
-        </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {activities.core.map((activity) => (
-            <CoreActivityCard key={activity.slug} activity={activity} />
-          ))}
+      {core.length > 0 ? (
+        <div className="mt-8">
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Locked In
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {core.map((activity) => (
+              <CoreActivityCard key={activity.slug} activity={activity} />
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      <div className="mt-10 border-t border-border pt-8">
-        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          If Time Allows
-        </p>
-        <ul className="mt-4 flex flex-col gap-3">
-          {activities.ifTimeAllows.map((activity) => (
-            <SimpleActivityRow key={activity.slug} activity={activity} />
-          ))}
-        </ul>
-      </div>
+      {ifTimeAllows.length > 0 ? (
+        <div className="mt-10 border-t border-border pt-8">
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            If Time Allows
+          </p>
+          <ul className="mt-4 flex flex-col gap-3">
+            {ifTimeAllows.map((activity) => (
+              <SimpleActivityRow key={activity.slug} activity={activity} />
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
-      <div className="mt-10 border-t border-border pt-8">
-        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          Backups
-        </p>
-        <ul className="mt-4 flex flex-col gap-3">
-          {activities.backups.map((activity) => (
-            <SimpleActivityRow key={activity.slug} activity={activity} />
-          ))}
-        </ul>
-        <p className="mt-4 text-sm text-muted-foreground">
-          <a href="#rsvp" className="text-primary underline-offset-4 hover:underline">
-            Vote on these below.
-          </a>
-        </p>
-      </div>
+      {backups.length > 0 ? (
+        <div className="mt-10 border-t border-border pt-8">
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Backups
+          </p>
+          <ul className="mt-4 flex flex-col gap-3">
+            {backups.map((activity) => (
+              <SimpleActivityRow key={activity.slug} activity={activity} />
+            ))}
+          </ul>
+          <p className="mt-4 text-sm text-muted-foreground">
+            <a href="#rsvp" className="text-primary underline-offset-4 hover:underline">
+              Vote on these below.
+            </a>
+          </p>
+        </div>
+      ) : null}
     </section>
   );
 }

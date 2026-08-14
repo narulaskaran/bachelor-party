@@ -36,7 +36,6 @@ export async function GET(request: Request) {
       id: row.id,
       slug: row.slug,
       siteName: row.content.trip.siteName,
-      groomName: row.content.trip.groomName,
       dateLabel: row.content.trip.dateLabel,
       guestCount: row.guestCount,
       createdAt: row.createdAt,

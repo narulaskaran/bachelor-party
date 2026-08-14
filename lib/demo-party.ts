@@ -1,12 +1,12 @@
 import type { PartyContent } from "@/lib/party-types";
 
-// Fictional placeholder party. Renders the full site locally or on a fresh
-// deploy before any real party is seeded. Safe to publish.
+// Fictional placeholder trip. Renders the full site locally or on a fresh
+// deploy before any real trip is seeded. Safe to publish.
 export const DEMO_PARTY: PartyContent = {
+  kind: "trip",
   trip: {
-    groomName: "Sam",
-    siteName: "Sam's Big Send",
-    tagline: "Sending Sam off in style — a long weekend in the mountains before the wedding",
+    siteName: "Alpine Weekend",
+    tagline: "A long weekend in the mountains — cabin, trail, and a group dinner",
     startDate: "2030-08-30",
     endDate: "2030-09-02",
     dateLabel: "Aug 30 – Sep 2, 2030",
