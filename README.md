@@ -1,7 +1,6 @@
 # The Big Send
 
-A reusable, password-gated logistics site for bachelor parties (or any group
-trip). One deployment hosts any number of parties: each party lives in the
+A reusable, password-gated logistics site for group trips. One deployment hosts any number of parties: each party lives in the
 database with its own shared password, and whoever enters that password sees
 that party's site — schedule, lodging, activities, and an RSVP form for
 flights, dietary restrictions, and activity votes.

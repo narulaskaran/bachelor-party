@@ -48,7 +48,6 @@ export default async function Page() {
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="text-left px-3 py-2 font-medium">Site</th>
-            <th className="text-left px-3 py-2 font-medium">Groom</th>
             <th className="text-left px-3 py-2 font-medium">Date</th>
             <th className="text-center px-3 py-2 font-medium">Guests</th>
             <th className="text-left px-3 py-2 font-medium">Updated</th>
@@ -61,10 +60,7 @@ export default async function Page() {
                 {row.content?.trip?.siteName ?? "\u2014"}
               </td>
               <td className="px-3 py-2 text-muted-foreground">
-                {row.content?.trip?.groomName ?? "\u2014"}
-              </td>
-              <td className="px-3 py-2 text-muted-foreground">
-                {row.content?.trip?.dateLabel}
+                {row.content?.trip?.dateLabel ?? "\u2014"}
               </td>
               <td className="px-3 py-2 text-center">{Number(row.guestCount)}</td>
               <td className="px-3 py-2 text-muted-foreground">
@@ -76,7 +72,7 @@ export default async function Page() {
       </table>
 
       <p className="mt-4 text-xs text-muted-foreground">
-        {rows.length} party{rows.length !== 1 ? "ies" : ""}. Row-click → edit (Phase 2).
+        {rows.length} trip{rows.length !== 1 ? "s" : ""}. Row-click → edit (Phase 2).
       </p>
     </div>
   );

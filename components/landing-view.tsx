@@ -24,7 +24,7 @@ const facts = [
   {
     label: "Built For",
     value: "Any Crew",
-    note: "Bachelor parties, ski trips, reunions",
+    note: "Ski weekends, reunions, send-offs",
   },
 ];
 
@@ -50,9 +50,9 @@ export function LandingView() {
           The Big Send
         </h1>
         <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          A password-gated logistics site for bachelor parties and group
-          trips — schedule, lodging, activities, and RSVPs, all behind one
-          link only your crew has.
+          A password-gated logistics site for group trips — schedule,
+          lodging, activities, and RSVPs, all behind one link only your
+          crew has.
         </p>
 
         <div className="mt-8 grid grid-cols-1 divide-y divide-border border-t border-b border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">

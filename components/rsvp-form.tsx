@@ -30,7 +30,7 @@ export function RsvpForm({
   airport,
 }: {
   pollActivities: Activity[];
-  airport: string;
+  airport?: string;
 }) {
   const [state, formAction, isPending] = useActionState(submitGuestInfo, null);
   const router = useRouter();
@@ -57,7 +57,7 @@ export function RsvpForm({
         </div>
       </section>
 
-      {/* FLIGHTS */}
+      {airport ? (
       <section className="space-y-4 border-t border-border pt-8">
         <Eyebrow>Flights</Eyebrow>
         <p className="text-sm text-muted-foreground">
@@ -90,6 +90,7 @@ export function RsvpForm({
           </div>
         </div>
       </section>
+      ) : null}
 
       {/* FOOD */}
       <section className="space-y-4 border-t border-border pt-8">
@@ -104,7 +105,7 @@ export function RsvpForm({
         </div>
       </section>
 
-      {/* VOTES */}
+      {pollActivities.length > 0 ? (
       <section className="space-y-2 border-t border-border pt-8">
         <Eyebrow>Votes</Eyebrow>
         <p className="text-sm text-muted-foreground">
@@ -142,6 +143,7 @@ export function RsvpForm({
           ))}
         </div>
       </section>
+      ) : null}
 
       {/* NOTES */}
       <section className="space-y-4 border-t border-border pt-8">
