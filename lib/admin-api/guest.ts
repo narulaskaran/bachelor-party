@@ -4,10 +4,11 @@ import { authorizePartyBySlug } from "@/lib/authorize-party";
 import { schema } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 type Params = { params: Promise<{ slug: string; id: string }> };
 
-// DELETE /api/admin/parties/:slug/guests/:id — remove one guest RSVP.
+// DELETE /api/admin/trips/:slug/guests/:id — remove one guest RSVP.
 export async function DELETE(request: Request, { params }: Params) {
   const { slug, id } = await params;
   const auth = await authorizePartyBySlug(request, slug);

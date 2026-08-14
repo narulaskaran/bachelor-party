@@ -1,10 +1,10 @@
 /** Route-level tests for sparse create, merge-patch, organizer packet, guest auth. */
 
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { GET as listGET, POST } from "@/app/api/admin/parties/route";
-import { GET, PATCH } from "@/app/api/admin/parties/[slug]/route";
-import { GET as guestsGET } from "@/app/api/admin/parties/[slug]/guests/route";
-import { DELETE as guestDELETE } from "@/app/api/admin/parties/[slug]/guests/[id]/route";
+import { GET as listGET, POST } from "@/app/api/admin/trips/route";
+import { GET, PATCH } from "@/app/api/admin/trips/[slug]/route";
+import { GET as guestsGET } from "@/app/api/admin/trips/[slug]/guests/route";
+import { DELETE as guestDELETE } from "@/app/api/admin/trips/[slug]/guests/[id]/route";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { getDb } from "@/lib/db";
 import { createMemoryDb } from "../memory-db";

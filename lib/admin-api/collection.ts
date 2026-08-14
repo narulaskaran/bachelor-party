@@ -9,7 +9,10 @@ import { createPartySchema } from "@/lib/party-schema";
 import { slugFromName, uniqueSlug } from "@/lib/slug";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
+// GET /api/admin/trips — lightweight index (no passwords, no full content).
+// /api/admin/parties is the same handlers via next.config rewrite.
 export async function GET(request: Request) {
   const denied = requireAdmin(request);
   if (denied) return denied;
@@ -33,20 +36,21 @@ export async function GET(request: Request) {
     .groupBy(schema.parties.id)
     .orderBy(schema.parties.createdAt);
 
-  return NextResponse.json({
-    parties: rows.map((row) => ({
-      id: row.id,
-      slug: row.slug,
-      siteName: row.content.trip.siteName,
-      dateLabel: row.content.trip.dateLabel,
-      guestCount: row.guestCount,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-    })),
-  });
+  const trips = rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    siteName: row.content.trip.siteName,
+    dateLabel: row.content.trip.dateLabel,
+    guestCount: row.guestCount,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }));
+
+  // `parties` kept so existing scripts keep working; `trips` is canonical.
+  return NextResponse.json({ trips, parties: trips });
 }
 
-// POST /api/admin/parties — create. siteName is enough; slug and password
+// POST /api/admin/trips — create. siteName is enough; slug and password
 // autogenerate. Returns an organizer packet (url, slug, password, adminToken).
 export async function POST(request: Request) {
   const denied = requireAdmin(request);
@@ -61,7 +65,7 @@ export async function POST(request: Request) {
   const parsed = createPartySchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid party payload", issues: issuesFromZod(parsed.error) },
+      { error: "Invalid trip payload", issues: issuesFromZod(parsed.error) },
       { status: 400 },
     );
   }
@@ -131,6 +135,7 @@ export async function POST(request: Request) {
       .returning();
     return NextResponse.json(
       {
+        trip: { id: party.id, slug: party.slug, adminToken: party.adminToken },
         party: { id: party.id, slug: party.slug, adminToken: party.adminToken },
         ...organizerPacket(request, {
           slug: party.slug,
@@ -141,7 +146,7 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (err) {
-    console.error("create party failed", err);
-    return NextResponse.json({ error: "Failed to create party" }, { status: 500 });
+    console.error("create trip failed", err);
+    return NextResponse.json({ error: "Failed to create trip" }, { status: 500 });
   }
 }

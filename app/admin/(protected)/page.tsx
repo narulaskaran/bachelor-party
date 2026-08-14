@@ -1,5 +1,5 @@
-// /admin — read-only party list table (Phase 1).
-// Follows the same Drizzle query shape as app/api/admin/parties/route.ts.
+// /admin — read-only trip list (Site / dates / guests).
+// Query shape matches lib/admin-api/collection.ts.
 
 import Link from "next/link";
 import { count, eq } from "drizzle-orm";
@@ -17,7 +17,7 @@ export default async function Page() {
     );
   }
 
-  // Query shape mirrors app/api/admin/parties/route.ts.
+  // Query shape mirrors lib/admin-api/collection.ts.
   const rows = await db
     .select({
       id: schema.parties.id,
@@ -72,7 +72,7 @@ export default async function Page() {
       </table>
 
       <p className="mt-4 text-xs text-muted-foreground">
-        {rows.length} trip{rows.length !== 1 ? "s" : ""}. Row-click → edit (Phase 2).
+        {rows.length} trip{rows.length !== 1 ? "s" : ""}. Content is edited via the admin API.
       </p>
     </div>
   );
@@ -87,7 +87,7 @@ function EmptyState() {
           ← Back to site
         </Link>
       </div>
-      <p className="py-8 text-center text-muted-foreground">No parties yet.</p>
+      <p className="py-8 text-center text-muted-foreground">No trips yet.</p>
     </div>
   );
 }

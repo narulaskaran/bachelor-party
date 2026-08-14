@@ -8,15 +8,20 @@ import { partyContentSchema, updatePartySchema } from "@/lib/party-schema";
 import type { PartyContent } from "@/lib/party-types";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 type Params = { params: Promise<{ slug: string }> };
 
-// GET /api/admin/parties/:slug — full record, including password and content.
+function withRecord<T extends Record<string, unknown>>(party: T) {
+  return { trip: party, party };
+}
+
+// GET /api/admin/trips/:slug — full record, including password and content.
 export async function GET(request: Request, ctx: Params) {
   const { slug }: { slug: string } = await ctx.params;
   const auth = await authorizePartyBySlug(request, slug);
   if (!auth.ok) return auth.error;
-  return NextResponse.json({ party: auth.party });
+  return NextResponse.json(withRecord(auth.party));
 }
 
 export async function PATCH(request: Request, { params }: Params) {
@@ -75,12 +80,12 @@ export async function PATCH(request: Request, { params }: Params) {
       .where(eq(schema.parties.slug, slug))
       .returning();
     if (!updated) {
-      return NextResponse.json({ error: "Party not found" }, { status: 404 });
+      return NextResponse.json({ error: "Trip not found" }, { status: 404 });
     }
-    return NextResponse.json({ party: updated });
+    return NextResponse.json(withRecord(updated));
   } catch (err) {
-    console.error("update party failed", err);
-    return NextResponse.json({ error: "Failed to update party" }, { status: 500 });
+    console.error("update trip failed", err);
+    return NextResponse.json({ error: "Failed to update trip" }, { status: 500 });
   }
 }
 
@@ -95,7 +100,7 @@ export async function DELETE(request: Request, ctx: Params) {
     await db.delete(schema.parties).where(eq(schema.parties.id, party.id));
     return NextResponse.json({ deleted: slug });
   } catch (err) {
-    console.error("delete party failed", err);
-    return NextResponse.json({ error: "Failed to delete party" }, { status: 500 });
+    console.error("delete trip failed", err);
+    return NextResponse.json({ error: "Failed to delete trip" }, { status: 500 });
   }
 }

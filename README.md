@@ -1,21 +1,23 @@
 # The Big Send
 
-A reusable, password-gated logistics site for group trips. One deployment hosts any number of parties: each party lives in the
-database with its own shared password, and whoever enters that password sees
-that party's site — schedule, lodging, activities, and an RSVP form for
-flights, dietary restrictions, and activity votes.
+A reusable, password-gated logistics site for group trips. One deployment hosts
+any number of trips: each lives in the database with its own shared password,
+and whoever enters that password sees that trip's site — schedule, lodging,
+activities, and an RSVP form.
 
-No real trip details live in this repo. Party content is managed through the
-admin API described below.
+No real trip details live in this repo. Organizers talk to the **admin API**
+(curl, CLI, or an agent). Guests get the HTML page.
 
-## Managing parties via the admin API
+## Managing trips via the admin API
 
-Parties are created and updated through `/api/admin/**` — a bearer-token-gated
-REST API meant for scripts and AI agents, not browsers. Create with the global
-`ADMIN_API_TOKEN`. After create, the response includes an **organizer packet**
-(`url`, `slug`, `password`, `adminToken`). The per-party `adminToken` authorizes
-every `/:slug` route for that trip (GET/PATCH/DELETE and guests). It cannot
-list all parties or create another one.
+Canonical paths are `/api/admin/trips/**`. `/api/admin/parties/**` rewrites to
+those handlers (alias for existing scripts). Machine-readable spec:
+`GET /api/openapi.json` (unauthenticated). The database table is still
+`parties`.
+
+Create with the global `ADMIN_API_TOKEN`. The **201 organizer packet** is
+`url`, `slug`, `password`, `adminToken`. That `adminToken` authorizes every
+`/:slug` route for that trip. It cannot list all trips or create another one.
 
 The only required field on create is `content.trip.siteName`. Slug and guest
 password autogenerate when omitted. `POST` is create-only: a colliding slug
@@ -25,33 +27,37 @@ returns **409** (GET + PATCH instead of upsert).
 to `content` (`null` deletes a key; arrays replace). A full document still
 works. Validation errors return `{ error, issues: [{ path, message, hint }] }`.
 
+List/create/get responses include both `trips`/`trip` (canonical) and
+`parties`/`party` (alias).
+
 ```bash
 # Sparse create — name is enough
-curl https://your-deploy.vercel.app/api/admin/parties \
+curl https://your-deploy.vercel.app/api/admin/trips \
   -H "Authorization: Bearer $ADMIN_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"content":{"trip":{"siteName":"Jackson Hole '\''26"}}}'
 
 # Merge-patch a Saturday dinner (use the packet's adminToken)
-curl https://your-deploy.vercel.app/api/admin/parties/jackson-hole-26 \
+curl https://your-deploy.vercel.app/api/admin/trips/jackson-hole-26 \
   -X PATCH \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"content":{"schedule":[{"key":"saturday","date":"2026-09-05","weekday":"Saturday","label":"Dinner","timed":true,"entries":[{"title":"Dinner","time":"7:00 PM"}]}]}}'
 ```
 
-Party content shape is defined in `lib/party-types.ts` and validated by
-`lib/party-schema.ts`; a fictional example lives in `lib/demo-party.ts`.
+Content shape: `lib/party-types.ts`, validated by `lib/party-schema.ts`. Demo:
+`lib/demo-party.ts`.
 
 | Route | Method | Does |
 | --- | --- | --- |
-| `/api/admin/parties` | GET | List parties (no passwords/content). Global token only. |
-| `/api/admin/parties` | POST | Create — `siteName` is enough. 409 if the slug exists. |
-| `/api/admin/parties/:slug` | GET | Full record, including password + content |
-| `/api/admin/parties/:slug` | PATCH | Merge-patch `content` and/or replace `password` |
-| `/api/admin/parties/:slug` | DELETE | Delete the party and its guest RSVPs |
-| `/api/admin/parties/:slug/guests` | GET | List that party's RSVPs |
-| `/api/admin/parties/:slug/guests/:id` | DELETE | Remove one guest RSVP |
+| `/api/admin/trips` | GET | List trips (no passwords/content). Global token only. |
+| `/api/admin/trips` | POST | Create — `siteName` is enough. 409 if the slug exists. |
+| `/api/admin/trips/:slug` | GET | Full record, including password + content |
+| `/api/admin/trips/:slug` | PATCH | Merge-patch `content` and/or replace `password` |
+| `/api/admin/trips/:slug` | DELETE | Delete the trip and its guest RSVPs |
+| `/api/admin/trips/:slug/guests` | GET | List that trip's RSVPs |
+| `/api/admin/trips/:slug/guests/:id` | DELETE | Remove one guest RSVP |
+| `/api/openapi.json` | GET | OpenAPI 3.1 (from the Zod schemas) |
 
-Slug routes accept `Authorization: Bearer` of either `ADMIN_API_TOKEN` or that
-party's `adminToken`. They are excluded from the site's login gate.
+`/api/admin/parties/**` is a rewrite onto the same trips handlers. Slug routes accept
+`Authorization: Bearer` of either `ADMIN_API_TOKEN` or that trip's `adminToken`.
