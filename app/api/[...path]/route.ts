@@ -14,7 +14,7 @@ export const runtime = "nodejs";
  * so those still win. `afterFiles` rewrites (`/api/admin/parties`, `/api/openapi.json`)
  * also run before this dynamic route.
  */
-function notFound(_request?: Request) {
+function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 });
 }
 
