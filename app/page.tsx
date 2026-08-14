@@ -1,14 +1,7 @@
-import { getCurrentParty } from "@/lib/current-party";
-import { PartyView } from "@/components/party-view";
 import { LandingView } from "@/components/landing-view";
 
-export const dynamic = "force-dynamic";
-
-export default async function Page() {
-  const current = await getCurrentParty();
-  if (!current) {
-    return <LandingView />;
-  }
-
-  return <PartyView content={current.content} />;
+// Public marketing page. A valid bp_access cookie must not render the
+// private trip here — that content lives only at /{slug}.
+export default function Page() {
+  return <LandingView />;
 }
