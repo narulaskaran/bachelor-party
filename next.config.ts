@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
+import { adminHtmlHeaderRules } from "./lib/admin-security-headers";
 
 const nextConfig: NextConfig = {
+  // CDN/routing copy of the same admin HTML headers (see lib/admin-security-headers.ts).
+  async headers() {
+    return adminHtmlHeaderRules();
+  },
   async redirects() {
     // Old multi-page URLs → single-page anchors.
     return [
