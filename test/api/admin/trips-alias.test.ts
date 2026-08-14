@@ -8,14 +8,13 @@ import { PATCH as itemPATCH } from "@/lib/admin-api/item";
 import nextConfig from "@/next.config";
 import { getDb } from "@/lib/db";
 import { openApiSpec } from "@/lib/openapi";
+import { resetRateLimitStore } from "@/lib/rate-limit";
 import { createMemoryDb } from "../memory-db";
 
 vi.mock("@/lib/db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/db")>();
   return { ...actual, getDb: vi.fn() };
 });
-
-const GLOBAL = "global-token";
 
 function makeRequest(
   token: string | null,
@@ -38,6 +37,7 @@ function ctx(slug: string) {
 describe("trips / parties dual-mount", () => {
   afterEach(() => {
     delete process.env.ADMIN_API_TOKEN;
+    resetRateLimitStore();
     vi.mocked(getDb).mockReset();
   });
 
@@ -56,12 +56,11 @@ describe("trips / parties dual-mount", () => {
   });
 
   it("walkthrough works on /trips and still works on /parties", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     const mem = createMemoryDb();
     vi.mocked(getDb).mockReturnValue(mem.db as never);
 
     const created = await tripsPOST(
-      makeRequest(GLOBAL, {
+      makeRequest(null, {
         method: "POST",
         body: { content: { trip: { siteName: "Jackson Hole '26" } } },
       }),
@@ -106,7 +105,8 @@ describe("trips / parties dual-mount", () => {
     expect(guests.status).toBe(200);
     expect(await guests.json()).toEqual({ guests: [] });
 
-    const listed = await tripsGET(makeRequest(GLOBAL));
+    mem.seedParty({ slug: "other", adminToken: "other-tok", content: { trip: { siteName: "Other" } } });
+    const listed = await tripsGET(makeRequest(token));
     expect(listed.status).toBe(200);
     const index = await listed.json();
     expect(index.trips).toHaveLength(1);
@@ -122,6 +122,7 @@ describe("OpenAPI", () => {
     const spec = await res.json();
     expect(spec.openapi).toBe("3.1.0");
     expect(spec.paths["/api/admin/trips"].post).toBeTruthy();
+    expect(spec.paths["/api/admin/trips"].post.security).toEqual([]);
     expect(spec.paths["/api/admin/trips/{slug}"].patch).toBeTruthy();
     expect(spec.paths["/api/admin/trips/{slug}"].delete).toBeTruthy();
     expect(spec.paths["/api/admin/trips/{slug}/guests"].get).toBeTruthy();
@@ -129,6 +130,7 @@ describe("OpenAPI", () => {
     expect(spec.components.schemas.CreateTrip.properties.content).toBeTruthy();
     expect(spec.components.schemas.UpdateTrip.properties.content).toBeTruthy();
     expect(spec.components.schemas.PartyContent.properties.trip.required).toContain("siteName");
+    expect(JSON.stringify(spec)).not.toContain("ADMIN_API_TOKEN");
   });
 
   it("embeds the live Zod create schema (siteName required, kind trip-only)", () => {

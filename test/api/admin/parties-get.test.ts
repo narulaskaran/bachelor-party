@@ -66,27 +66,24 @@ describe("GET /api/admin/parties/:slug", () => {
   });
 
   it("wrong token → 401", async () => {
-    process.env.ADMIN_API_TOKEN = "global-token";
     vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
     const res = await GET(makeRequest("wrong"), ctx("test-party"));
     expect(res.status).toBe(401);
   });
 
-  it("correct global ADMIN_API_TOKEN → 200 with the full record, including password", async () => {
+  it("ADMIN_API_TOKEN does not grant access to a trip record", async () => {
     process.env.ADMIN_API_TOKEN = "global-token";
     vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
     const res = await GET(makeRequest("global-token"), ctx("test-party"));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.party.password).toBe("party-secret-pw");
-    expect(body.party.slug).toBe("test-party");
+    expect(res.status).toBe(401);
   });
 
-  it("correct party-scoped admin_token → 200", async () => {
+  it("correct party-scoped admin_token → 200 with the full record, including password", async () => {
     vi.mocked(getDb).mockReturnValue(fakeDb([partyRow]) as never);
     const res = await GET(makeRequest("party-scoped-token"), ctx("test-party"));
     expect(res.status).toBe(200);
     const body = await res.json();
+    expect(body.party.password).toBe("party-secret-pw");
     expect(body.party.slug).toBe("test-party");
   });
 
@@ -97,11 +94,9 @@ describe("GET /api/admin/parties/:slug", () => {
     expect(res.status).toBe(401);
   });
 
-  it("valid token but slug doesn't exist → 404", async () => {
-    process.env.ADMIN_API_TOKEN = "global-token";
+  it("unknown slug → 401 (no global token to distinguish 404)", async () => {
     vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
-    const res = await GET(makeRequest("global-token"), ctx("nonexistent"));
-    expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: "Trip not found" });
+    const res = await GET(makeRequest("party-scoped-token"), ctx("nonexistent"));
+    expect(res.status).toBe(401);
   });
 });

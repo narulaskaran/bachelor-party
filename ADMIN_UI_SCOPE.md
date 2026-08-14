@@ -5,7 +5,7 @@ without hand-writing JSON. Not built yet — this is the plan to greenlight.
 
 ## Auth
 
-Separate from party passwords and from `ADMIN_API_TOKEN`. Simplest fit for
+Separate from party passwords and from per-trip `adminToken`s. Simplest fit for
 this project's threat model (you, occasionally, from a browser):
 
 - New env var `ADMIN_UI_PASSWORD`. Its own login page at `/admin/login`,

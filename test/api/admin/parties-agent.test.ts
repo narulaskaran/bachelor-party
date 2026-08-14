@@ -7,6 +7,7 @@ import { GET as guestsGET } from "@/app/api/admin/trips/[slug]/guests/route";
 import { DELETE as guestDELETE } from "@/app/api/admin/trips/[slug]/guests/[id]/route";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { getDb } from "@/lib/db";
+import { CREATE_RATE_LIMIT, consumeRateLimit, createRateLimitKey, resetRateLimitStore } from "@/lib/rate-limit";
 import { createMemoryDb } from "../memory-db";
 
 vi.mock("@/lib/db", async (importOriginal) => {
@@ -14,15 +15,14 @@ vi.mock("@/lib/db", async (importOriginal) => {
   return { ...actual, getDb: vi.fn() };
 });
 
-const GLOBAL = "global-token";
-
 function makeRequest(
   token: string | null,
-  init: { method?: string; body?: unknown; url?: string } = {},
+  init: { method?: string; body?: unknown; url?: string; ip?: string } = {},
 ): Request {
   const headers = new Headers();
   if (token) headers.set("authorization", `Bearer ${token}`);
   if (init.body !== undefined) headers.set("content-type", "application/json");
+  if (init.ip) headers.set("x-forwarded-for", init.ip);
   return new Request(init.url ?? "http://localhost/api/admin/parties", {
     method: init.method ?? "GET",
     headers,
@@ -41,16 +41,16 @@ function guestCtx(slug: string, id: string) {
 describe("agent API (create / patch / guests)", () => {
   afterEach(() => {
     delete process.env.ADMIN_API_TOKEN;
+    resetRateLimitStore();
     vi.mocked(getDb).mockReset();
   });
 
-  it("POST siteName-only → 201 organizer packet with autogen slug and password", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
+  it("unauthenticated POST siteName-only → 201 organizer packet", async () => {
     const mem = createMemoryDb();
     vi.mocked(getDb).mockReturnValue(mem.db as never);
 
     const res = await POST(
-      makeRequest(GLOBAL, {
+      makeRequest(null, {
         method: "POST",
         body: { content: { trip: { siteName: "Jackson Hole '26" } } },
       }),
@@ -69,8 +69,129 @@ describe("agent API (create / patch / guests)", () => {
     });
   });
 
+  it("packet adminToken can mutate that trip", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const created = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: { content: { trip: { siteName: "Cabin Weekend" } } },
+      }),
+    );
+    const packet = await created.json();
+
+    const patched = await PATCH(
+      makeRequest(packet.adminToken, {
+        method: "PATCH",
+        body: { content: { trip: { tagline: "Let's go" } } },
+      }),
+      ctx(packet.slug),
+    );
+    expect(patched.status).toBe(200);
+    const body = await patched.json();
+    expect(body.trip.content.trip.tagline).toBe("Let's go");
+  });
+
+  it("packet adminToken cannot mutate another trip", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "alpha", adminToken: "alpha-tok" });
+    mem.seedParty({ slug: "beta", adminToken: "beta-tok" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const patched = await PATCH(
+      makeRequest("alpha-tok", {
+        method: "PATCH",
+        body: { content: { trip: { siteName: "Hijack" } } },
+      }),
+      ctx("beta"),
+    );
+    expect(patched.status).toBe(401);
+  });
+
+  it("GET list with a packet token returns only that trip", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "alpha", adminToken: "alpha-tok", content: { trip: { siteName: "Alpha" } } });
+    mem.seedParty({ slug: "beta", adminToken: "beta-tok", content: { trip: { siteName: "Beta" } } });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const listed = await listGET(makeRequest("alpha-tok"));
+    expect(listed.status).toBe(200);
+    const index = await listed.json();
+    expect(index.trips).toHaveLength(1);
+    expect(index.trips[0].slug).toBe("alpha");
+    expect(index.parties).toEqual(index.trips);
+  });
+
+  it("GET list without a token does not leak other people's trips", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "alpha", adminToken: "alpha-tok" });
+    mem.seedParty({ slug: "beta", adminToken: "beta-tok" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const listed = await listGET(makeRequest(null));
+    expect(listed.status).toBe(401);
+    expect(await listed.json()).toEqual({ error: "Missing bearer token" });
+  });
+
+  it("ADMIN_API_TOKEN unset does not 503 on create", async () => {
+    delete process.env.ADMIN_API_TOKEN;
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: { content: { trip: { siteName: "No Global" } } },
+      }),
+    );
+    expect(res.status).toBe(201);
+  });
+
+  it("presenting ADMIN_API_TOKEN does not grant superadmin", async () => {
+    process.env.ADMIN_API_TOKEN = "legacy-global";
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "alpha", adminToken: "alpha-tok", content: { trip: { siteName: "Alpha" } } });
+    mem.seedParty({ slug: "beta", adminToken: "beta-tok", content: { trip: { siteName: "Beta" } } });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const listed = await listGET(makeRequest("legacy-global"));
+    expect(listed.status).toBe(401);
+
+    const got = await GET(makeRequest("legacy-global"), ctx("alpha"));
+    expect(got.status).toBe(401);
+
+    const patched = await PATCH(
+      makeRequest("legacy-global", {
+        method: "PATCH",
+        body: { content: { trip: { siteName: "Hijack" } } },
+      }),
+      ctx("alpha"),
+    );
+    expect(patched.status).toBe(401);
+  });
+
+  it("rate-limits unauthenticated create per IP", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    const ip = "198.51.100.10";
+    const key = createRateLimitKey(ip);
+    for (let i = 0; i < CREATE_RATE_LIMIT.limit; i++) {
+      consumeRateLimit(key, CREATE_RATE_LIMIT);
+    }
+
+    const res = await POST(
+      makeRequest(null, {
+        method: "POST",
+        ip,
+        body: { content: { trip: { siteName: "Spam" } } },
+      }),
+    );
+    expect(res.status).toBe(429);
+    expect(mem.parties).toHaveLength(0);
+  });
+
   it("POST colliding slug → 409 with hint, does not upsert", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     const mem = createMemoryDb();
     mem.seedParty({
       slug: "jackson-hole-26",
@@ -79,7 +200,7 @@ describe("agent API (create / patch / guests)", () => {
     vi.mocked(getDb).mockReturnValue(mem.db as never);
 
     const res = await POST(
-      makeRequest(GLOBAL, {
+      makeRequest(null, {
         method: "POST",
         body: {
           slug: "jackson-hole-26",
@@ -98,11 +219,10 @@ describe("agent API (create / patch / guests)", () => {
   });
 
   it("POST kind: event → 400", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     vi.mocked(getDb).mockReturnValue(createMemoryDb().db as never);
 
     const res = await POST(
-      makeRequest(GLOBAL, {
+      makeRequest(null, {
         method: "POST",
         body: { content: { kind: "event", trip: { siteName: "Gala" } } },
       }),
@@ -112,24 +232,7 @@ describe("agent API (create / patch / guests)", () => {
     expect(body.issues.some((i: { path: string }) => i.path.includes("kind"))).toBe(true);
   });
 
-  it("party-scoped token cannot list all trips or create", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
-    vi.mocked(getDb).mockReturnValue(createMemoryDb().db as never);
-
-    const list = await listGET(makeRequest("party-scoped-token"));
-    expect(list.status).toBe(401);
-
-    const created = await POST(
-      makeRequest("party-scoped-token", {
-        method: "POST",
-        body: { content: { trip: { siteName: "Nope" } } },
-      }),
-    );
-    expect(created.status).toBe(401);
-  });
-
   it("PATCH merge-patches one schedule day without wiping lodging", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     const mem = createMemoryDb();
     mem.seedParty({
       slug: "jackson-hole-26",
@@ -171,13 +274,12 @@ describe("agent API (create / patch / guests)", () => {
   });
 
   it("full-document PATCH still 200", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     const mem = createMemoryDb();
     mem.seedParty({ slug: "demo", adminToken: "party-tok" });
     vi.mocked(getDb).mockReturnValue(mem.db as never);
 
     const res = await PATCH(
-      makeRequest(GLOBAL, {
+      makeRequest("party-tok", {
         method: "PATCH",
         url: "http://localhost/api/admin/parties/demo",
         body: { content: DEMO_PARTY },
@@ -191,7 +293,6 @@ describe("agent API (create / patch / guests)", () => {
   });
 
   it("party token cannot GET or PATCH a different slug", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     const mem = createMemoryDb();
     mem.seedParty({ slug: "alpha", adminToken: "alpha-tok" });
     mem.seedParty({ slug: "beta", adminToken: "beta-tok" });
@@ -211,12 +312,11 @@ describe("agent API (create / patch / guests)", () => {
   });
 
   it("walkthrough: create sparse → merge-patch dinner → GET → guests []", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     const mem = createMemoryDb();
     vi.mocked(getDb).mockReturnValue(mem.db as never);
 
     const created = await POST(
-      makeRequest(GLOBAL, {
+      makeRequest(null, {
         method: "POST",
         body: { content: { trip: { siteName: "Jackson Hole '26" } } },
       }),
@@ -262,7 +362,6 @@ describe("agent API (create / patch / guests)", () => {
   });
 
   it("GET guests and DELETE guest work with the party token", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     const mem = createMemoryDb();
     const party = mem.seedParty({ slug: "cabin", adminToken: "cabin-tok" });
     mem.seedGuest({ partyId: party.id, name: "Alex", nameKey: "alex" });
@@ -283,7 +382,6 @@ describe("agent API (create / patch / guests)", () => {
   });
 
   it("party token cannot list another slug's guests", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     const mem = createMemoryDb();
     mem.seedParty({ slug: "alpha", adminToken: "alpha-tok" });
     mem.seedParty({ slug: "beta", adminToken: "beta-tok" });
@@ -294,7 +392,6 @@ describe("agent API (create / patch / guests)", () => {
   });
 
   it("party token can delete its own trip", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     const mem = createMemoryDb();
     mem.seedParty({ slug: "cabin", adminToken: "cabin-tok" });
     vi.mocked(getDb).mockReturnValue(mem.db as never);
@@ -306,10 +403,8 @@ describe("agent API (create / patch / guests)", () => {
   });
 
   it("POST invalid JSON → 400 with a structured issue", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     vi.mocked(getDb).mockReturnValue(createMemoryDb().db as never);
     const headers = new Headers();
-    headers.set("authorization", `Bearer ${GLOBAL}`);
     headers.set("content-type", "application/json");
     const res = await POST(
       new Request("http://localhost/api/admin/trips", {
@@ -325,7 +420,6 @@ describe("agent API (create / patch / guests)", () => {
   });
 
   it("PATCH lodging: null deletes lodging", async () => {
-    process.env.ADMIN_API_TOKEN = GLOBAL;
     const mem = createMemoryDb();
     mem.seedParty({
       slug: "cabin",

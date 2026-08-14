@@ -10,9 +10,9 @@ export type PartyAuth =
   | { ok: true; db: Db; party: Party }
   | { ok: false; error: NextResponse };
 
-// Load the party by slug, then accept either that party's admin_token or
-// the global ADMIN_API_TOKEN. Auth is resolved before 404 so a missing
-// slug is indistinguishable from a wrong token to an unauthenticated caller.
+// Load the party by slug, then accept only that party's adminToken.
+// A missing slug is indistinguishable from a wrong token (always 401)
+// so callers cannot enumerate trips.
 export async function authorizePartyBySlug(
   request: Request,
   slug: string,
@@ -37,7 +37,7 @@ export async function authorizePartyBySlug(
   if (!party) {
     return {
       ok: false,
-      error: NextResponse.json({ error: "Trip not found" }, { status: 404 }),
+      error: NextResponse.json({ error: "Invalid token" }, { status: 401 }),
     };
   }
 
