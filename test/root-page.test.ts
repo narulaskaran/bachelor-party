@@ -31,7 +31,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/font/google", () => {
   const font = () => ({ variable: "--font-mock" });
-  return { Geist: font, Geist_Mono: font, Barlow_Condensed: font };
+  return { Geist: font, Geist_Mono: font };
 });
 
 vi.mock("next-themes", () => ({
@@ -128,7 +128,8 @@ describe("GET /", () => {
     const html = renderToStaticMarkup(await Page());
 
     expect(html).toContain("The Big Send");
-    expect(html).toContain("Got an invite link from your organizer");
+    expect(html).toContain("Enter your trip");
+    expect(html).toContain("Try a sample");
     expect(html).toContain("Create a trip");
     expect(html).toContain('href="#create"');
     expect(html).not.toContain("ADMIN_UI_PASSWORD");

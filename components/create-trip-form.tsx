@@ -11,6 +11,7 @@ import {
   type CreateTripResult,
   type OrganizerPacket,
 } from "@/lib/create-trip";
+import { sectionTitleClass } from "@/lib/type";
 
 export function CreateTripForm({
   create = createTripFromUi,
@@ -59,16 +60,10 @@ export function CreateTripForm({
 
   return (
     <>
-      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-        Host
-      </p>
-      <h2
-        id="create-trip-heading"
-        className="mt-2 font-display text-2xl font-bold uppercase tracking-wide sm:text-3xl"
-      >
+      <h2 id="create-trip-heading" className={sectionTitleClass}>
         Create a trip
       </h2>
-      <p id="create-trip-hint" className="mt-2 max-w-xl text-muted-foreground">
+      <p id="create-trip-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
         Name it — that&apos;s enough. Dates are optional. You&apos;ll get an
         invite link, a guest password, and an admin token once. No account
         required.

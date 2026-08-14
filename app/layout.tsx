@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Barlow_Condensed } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { SiteNav } from "@/components/site-nav";
@@ -14,12 +14,6 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-const barlowCondensed = Barlow_Condensed({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
 });
 
 // Generic pre-auth metadata: no names, dates, or places.
@@ -40,7 +34,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} h-full min-w-0 scroll-smooth antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full min-w-0 scroll-smooth antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full min-w-0 flex-col">

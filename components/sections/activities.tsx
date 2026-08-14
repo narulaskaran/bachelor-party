@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Activity, PartyContent } from "@/lib/party-types";
 import { nonemptyActivities } from "@/lib/trip-sections";
+import { kickerClass, sectionTitleClass } from "@/lib/type";
 
 export function ActivitiesSection({
   activities,
@@ -16,19 +17,12 @@ export function ActivitiesSection({
   }
 
   return (
-    <section id="activities" className="scroll-mt-20 border-t border-border py-12 sm:py-16">
-      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-        The Menu
-      </p>
-      <h2 className="mt-2 font-display text-2xl font-bold uppercase tracking-wide sm:text-3xl">
-        Activities
-      </h2>
+    <section id="activities" className="scroll-mt-20 py-12 sm:py-16">
+      <h2 className={sectionTitleClass}>Activities</h2>
 
       {core.length > 0 ? (
         <div className="mt-8">
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            Locked In
-          </p>
+          <p className={kickerClass}>Locked in</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {core.map((activity) => (
               <CoreActivityCard key={activity.slug} activity={activity} />
@@ -39,9 +33,7 @@ export function ActivitiesSection({
 
       {ifTimeAllows.length > 0 ? (
         <div className="mt-10 border-t border-border pt-8">
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            If Time Allows
-          </p>
+          <p className={kickerClass}>If time allows</p>
           <ul className="mt-4 flex flex-col gap-3">
             {ifTimeAllows.map((activity) => (
               <SimpleActivityRow key={activity.slug} activity={activity} />
@@ -52,9 +44,7 @@ export function ActivitiesSection({
 
       {backups.length > 0 ? (
         <div className="mt-10 border-t border-border pt-8">
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            Backups
-          </p>
+          <p className={kickerClass}>Backups</p>
           <ul className="mt-4 flex flex-col gap-3">
             {backups.map((activity) => (
               <SimpleActivityRow key={activity.slug} activity={activity} />
@@ -77,9 +67,7 @@ function CoreActivityCard({ activity }: { activity: Activity }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-display text-lg uppercase tracking-wide">
-          {activity.name}
-        </CardTitle>
+        <CardTitle className="text-lg font-semibold tracking-tight">{activity.name}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {activity.description && (
@@ -88,9 +76,7 @@ function CoreActivityCard({ activity }: { activity: Activity }) {
         {activity.options && activity.options.length > 0 && (
           <div>
             {hasMultipleOptions && (
-              <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                Venue shortlist — final call pending
-              </p>
+              <p className={kickerClass}>Venue shortlist — final call pending</p>
             )}
             <ul className="mt-1.5 flex flex-col gap-1">
               {activity.options.map((option) => (

@@ -32,12 +32,7 @@ export default async function Page({ params }: Params) {
       <div className="mx-auto flex min-h-[70vh] max-w-5xl items-center justify-center px-4 py-16">
         <Card className="w-full max-w-sm">
           <CardHeader className="items-center text-center">
-            <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-              Private Trip
-            </p>
-            <h1 className="mt-2 font-display text-3xl font-bold uppercase tracking-wide">
-              Who Goes There
-            </h1>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight">Who goes there</h1>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             <PartyLoginForm loginAction={loginWithSlug} />

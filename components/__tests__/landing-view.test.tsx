@@ -43,12 +43,34 @@ describe("homepage trip entry", () => {
     expect(document.getElementById("create")).toBeTruthy();
     expect(screen.getByLabelText(/trip name/i)).toBeTruthy();
     expect(screen.getByLabelText(/start date/i)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /try a sample trip/i }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: /^try a sample$/i }).getAttribute("href")).toBe(
       "/demo",
+    );
+    expect(screen.getByRole("link", { name: /^enter your trip$/i }).getAttribute("href")).toBe(
+      "#rsvp",
     );
     expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
     expect(container.innerHTML).not.toContain("ADMIN_UI_PASSWORD");
     expect(container.innerHTML).not.toContain('href="/admin"');
+  });
+
+  it("is a quiet centered tool page, not a poster with competing CTAs", () => {
+    const { container } = render(<LandingView />);
+    const html = container.innerHTML;
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
+    expect(html).toContain("tracking-tight");
+    expect(html).toContain("max-w-3xl");
+    expect(html).not.toContain("text-7xl");
+    expect(html).not.toContain("uppercase tracking-wide");
+    expect(html).not.toContain("Trip Logistics, Handled");
+    expect(html).not.toContain("One Password");
+    expect(html).not.toContain("Every Trip Detail");
+
+    const create = screen.getByRole("link", { name: /^create a trip$/i });
+    expect(create.closest("[data-slot=button]")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /^enter your trip$/i }).closest("[data-slot=button]")).toBeNull();
+    expect(screen.getByRole("link", { name: /^try a sample$/i }).closest("[data-slot=button]")).toBeNull();
   });
 
   it("renders a trip-entry form on every legacy hash the old pages 307 to", () => {

@@ -35,7 +35,7 @@ export function SiteNav({
       <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-3 px-4 py-3">
         <Link
           href={homeHref}
-          className="min-w-0 truncate font-display text-lg font-bold uppercase tracking-wide"
+          className="min-w-0 truncate text-sm font-semibold tracking-tight"
         >
           <span className="md:hidden">The Big Send</span>
           <span className="hidden md:inline">{siteName ?? "The Big Send"}</span>

@@ -24,7 +24,7 @@ export function Countdown({ startDate }: { startDate: string }) {
   return (
     <p
       suppressHydrationWarning
-      className="font-mono text-xs uppercase tracking-widest text-muted-foreground"
+      className="text-sm text-muted-foreground"
     >
       {label}
     </p>

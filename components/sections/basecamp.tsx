@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { Trip, Lodging } from "@/lib/party-types";
+import { kickerClass, sectionTitleClass } from "@/lib/type";
+import { cn } from "@/lib/utils";
 
 export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodging }) {
   const facts = [
@@ -20,13 +22,8 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
   const subtitle = [trip.location, trip.elevation, lodging.driveFromAirport].filter(Boolean);
 
   return (
-    <section id="basecamp" className="scroll-mt-20 border-t border-border py-12 sm:py-16">
-      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-        The Basecamp
-      </p>
-      <h2 className="mt-2 break-words font-display text-2xl font-bold uppercase tracking-wide sm:text-3xl">
-        {lodging.name}
-      </h2>
+    <section id="basecamp" className="scroll-mt-20 py-12 sm:py-16">
+      <h2 className={cn(sectionTitleClass, "break-words")}>{lodging.name}</h2>
       {subtitle.length > 0 ? (
         <p className="mt-2 max-w-xl text-muted-foreground">{subtitle.join(" · ")}</p>
       ) : null}
@@ -36,9 +33,7 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
           {facts.map((fact) => (
             <div key={fact.label} className="min-w-0 bg-background px-4 py-6 sm:px-8">
               <p className="break-words font-mono text-3xl font-bold sm:text-4xl">{fact.value}</p>
-              <p className="mt-1 break-words font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                {fact.label}
-              </p>
+              <p className={cn("mt-1 break-words", kickerClass)}>{fact.label}</p>
             </div>
           ))}
         </div>
@@ -46,9 +41,7 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
 
       {(lodging.amenities?.length ?? 0) > 0 ? (
         <div className="mt-10">
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            On Site
-          </p>
+          <p className={kickerClass}>On site</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {lodging.amenities!.map((item) => (
               <Badge key={item} variant="outline" className="h-auto px-3 py-1.5 text-sm">
@@ -61,16 +54,12 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
 
       {lodging.address || lodging.mapsUrl || lodging.url ? (
         <div className="mt-10">
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            Getting There
-          </p>
+          <p className={kickerClass}>Getting there</p>
           <Card className="mt-4 max-w-xl">
             {lodging.address ? (
               <CardHeader>
-                <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                  Address
-                </p>
-                <CardTitle className="font-display text-lg font-bold tracking-wide">
+                <p className={kickerClass}>Address</p>
+                <CardTitle className="text-lg font-semibold tracking-tight">
                   {lodging.address}
                 </CardTitle>
               </CardHeader>

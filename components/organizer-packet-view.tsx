@@ -6,6 +6,7 @@ import { Check, Copy } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type { OrganizerPacket } from "@/lib/create-trip";
+import { kickerClass, sectionTitleClass } from "@/lib/type";
 
 function CopyField({
   label,
@@ -32,9 +33,7 @@ function CopyField({
 
   return (
     <div className="space-y-1.5">
-      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-        {label}
-      </p>
+      <p className={kickerClass}>{label}</p>
       <div className="flex items-start gap-2">
         <p
           className={`min-w-0 flex-1 break-all rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm ${
@@ -68,16 +67,10 @@ export function OrganizerPacketView({
   return (
     <div className="space-y-6">
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-          Organizer packet
-        </p>
-        <h2
-          id="create-trip-heading"
-          className="mt-2 font-display text-2xl font-bold uppercase tracking-wide sm:text-3xl"
-        >
+        <h2 id="create-trip-heading" className={sectionTitleClass}>
           Trip created
         </h2>
-        <p className="mt-2 max-w-xl text-muted-foreground">
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
           Save these now — especially the admin token. It is the only way to
           edit this trip later, and it will not be shown again.
         </p>

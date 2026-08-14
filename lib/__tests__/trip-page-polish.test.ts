@@ -40,6 +40,20 @@ describe("trip page polish", () => {
     expect((html.match(/aria-hidden="true"/g) ?? []).length).toBe(0);
   });
 
+  it("uses a quiet sentence-case title instead of poster display type", () => {
+    const html = renderToStaticMarkup(
+      createElement(Hero, {
+        trip: { siteName: "Cabin weekend" },
+        meta: heroMeta({ siteName: "Cabin weekend" }),
+      }),
+    );
+    expect(html).toContain("Cabin weekend");
+    expect(html).toContain("tracking-tight");
+    expect(html).not.toContain("text-7xl");
+    expect(html).not.toContain("uppercase tracking-wide");
+    expect(html).not.toContain("Group Trip");
+  });
+
   it("exposes RSVP vote groups as a labeled radiogroup with clickable pills", () => {
     const html = renderToStaticMarkup(
       createElement(VoteActivityGroup, {
