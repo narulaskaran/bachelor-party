@@ -2,6 +2,9 @@
   "name": "bachelor-party",
   "version": "0.1.0",
   "private": true,
+  "bin": {
+    "bigsend": "cli/bigsend.ts"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/db-migrate-if-url.mjs && next build",
@@ -12,6 +15,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/db-migrate-if-url.mjs",
     "seed": "node scripts/seed-party.mjs",
+    "bigsend": "tsx cli/bigsend.ts",
     "test": "vitest run"
   },
   "dependencies": {
@@ -41,6 +45,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5",
     "vitest": "^4.1.10"
   }

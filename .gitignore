@@ -48,3 +48,6 @@ party-data/
 .playwright-mcp/
 *.jpeg
 *.png
+
+# per-slug admin tokens written by `bigsend create`
+.bigsend.json
