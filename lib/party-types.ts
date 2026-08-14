@@ -1,5 +1,6 @@
 // Shapes for trip content stored in the database (parties.content jsonb).
-// The repo ships no real trip data — see README for seeding.
+// The repo ships no real trip data — hosts create trips from the site
+// (README); agents seed via the API/CLI in docs/api.md.
 // Legacy rows may still contain `groomName`; it is ignored on read.
 
 export type TripKind = "trip";
