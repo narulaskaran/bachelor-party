@@ -1,21 +1,27 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import type { VisibleSections } from "@/lib/trip-sections";
 
-// Single-page site: nav is anchor jumps within /.
-const links = [
-  { href: "/#schedule", label: "Schedule" },
-  { href: "/#activities", label: "Activities" },
-  { href: "/#basecamp", label: "Basecamp" },
-  { href: "/#rsvp", label: "Your Info" },
+const allLinks: { href: string; label: string; section: keyof VisibleSections }[] = [
+  { href: "/#schedule", label: "Schedule", section: "schedule" },
+  { href: "/#activities", label: "Activities", section: "activities" },
+  { href: "/#basecamp", label: "Basecamp", section: "lodging" },
+  { href: "/#rsvp", label: "Your Info", section: "rsvp" },
 ];
 
 export function SiteNav({
   siteName,
   dateLabel,
+  sections,
 }: {
   siteName?: string;
   dateLabel?: string;
+  sections?: VisibleSections;
 }) {
+  const links = sections
+    ? allLinks.filter((link) => sections[link.section])
+    : allLinks;
+
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">

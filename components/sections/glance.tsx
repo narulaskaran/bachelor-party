@@ -1,16 +1,9 @@
-import type { Trip, Lodging } from "@/lib/party-types";
+import type { Lodging, Trip } from "@/lib/party-types";
+import { glanceFacts } from "@/lib/trip-sections";
 
-export function Glance({ trip, lodging }: { trip: Trip; lodging: Lodging }) {
-  const facts = [
-    { label: "When", value: trip.dateLabel },
-    { label: "Where", value: trip.location, note: `Fly into ${trip.airport}` },
-    {
-      label: "Sleeps",
-      value: `${lodging.bedrooms}BR · ${lodging.beds} beds`,
-      note: `${lodging.bathrooms} baths`,
-    },
-    { label: "Damage", value: lodging.totalCost, note: "split by headcount" },
-  ];
+export function Glance({ trip, lodging }: { trip: Trip; lodging?: Lodging }) {
+  const facts = glanceFacts(trip, lodging);
+  if (facts.length === 0) return null;
 
   return (
     <section className="border-t border-border py-12 sm:py-16">
