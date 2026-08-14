@@ -1,5 +1,7 @@
-// Seed or update a party from a local JSON file (kept out of git).
+// Prefer the HTTP CLI (no DATABASE_URL):
+//   npm run bigsend -- create --file party-data/my-party.json
 //
+// Direct-to-DB fallback:
 //   DATABASE_URL='postgres://…' npm run seed party-data/my-party.json
 //
 // JSON shape: { "slug": "...", "password": "...", "content": { …PartyContent } }

@@ -61,3 +61,23 @@ Content shape: `lib/party-types.ts`, validated by `lib/party-schema.ts`. Demo:
 
 `/api/admin/parties/**` is a rewrite onto the same trips handlers. Slug routes accept
 `Authorization: Bearer` of either `ADMIN_API_TOKEN` or that trip's `adminToken`.
+
+## `bigsend` CLI
+
+HTTP-only (no `DATABASE_URL`). JSON on stdout; errors on stderr. After
+`create`, the trip `adminToken` is stored in `~/.bigsend.json` (or
+`BIGSEND_CONFIG`) so follow-up commands do not need the global token.
+
+```bash
+export BIGSEND_API_URL=https://your-deploy.vercel.app
+export BIGSEND_TOKEN=$ADMIN_API_TOKEN
+
+npm run bigsend -- create --name "E2E Smoke"
+npm run bigsend -- schedule add e2e-smoke --day 2026-09-05 --title "Dinner"
+npm run bigsend -- get e2e-smoke
+npm run bigsend -- guests e2e-smoke
+npm run bigsend -- delete e2e-smoke --yes
+```
+
+`create --file party.json` accepts the old seed shape (`slug`, `password`,
+`content`). `delete` requires `--yes`. Full usage: `npm run bigsend -- --help`.
