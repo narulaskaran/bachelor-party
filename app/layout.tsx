@@ -50,6 +50,7 @@ export default async function RootLayout({
           <SiteNav
             siteName={current?.content.trip.siteName}
             dateLabel={current?.content.trip.dateLabel}
+            slug={current?.slug}
             sections={current ? visibleSections(current.content) : undefined}
           />
           <main className="flex-1">{children}</main>

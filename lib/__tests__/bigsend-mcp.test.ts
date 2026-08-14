@@ -80,6 +80,21 @@ describe("bigsend MCP tools", () => {
     expect(JSON.parse(result.text).slug).toBe("e2e-smoke");
   });
 
+  it("set accepts a patch object (not only a JSON string)", () => {
+    expect(argvForTool("set", { slug: "cabin", patch: { trip: { airport: "JAC" } } })).toEqual([
+      "set",
+      "cabin",
+      "--patch",
+      '{"trip":{"airport":"JAC"}}',
+    ]);
+  });
+
+  it("lodging_set coerces numeric bedrooms onto CLI flags", () => {
+    expect(
+      argvForTool("lodging_set", { slug: "cabin", name: "Lodge", bedrooms: 4 }),
+    ).toEqual(["lodging", "cabin", "--name", "Lodge", "--bedrooms", "4"]);
+  });
+
   it("delete argv includes --yes only when yes is true", () => {
     expect(argvForTool("delete", { slug: "cabin", yes: true })).toEqual([
       "delete",

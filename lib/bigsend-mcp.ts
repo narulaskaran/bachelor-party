@@ -2,7 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { runBigsend, type RunIO } from "@/lib/bigsend-cli";
 
-type ToolArgs = Record<string, string | boolean | undefined>;
+type ToolArgs = Record<string, unknown>;
 
 export const BIGSEND_TOOL_NAMES = [
   "create",
@@ -45,7 +45,10 @@ export const BIGSEND_TOOLS: ToolDef[] = [
     description: 'Merge-patch trip content. Example: { "slug": "e2e-smoke", "patch": "{\\"trip\\":{\\"airport\\":\\"JAC\\"}}" }',
     inputSchema: {
       slug: z.string(),
-      patch: z.string().optional().describe("JSON object (merge patch)"),
+      patch: z
+        .union([z.string(), z.record(z.string(), z.unknown())])
+        .optional()
+        .describe("Merge patch as an object or JSON string"),
       file: z.string().optional(),
     },
   },
@@ -59,9 +62,9 @@ export const BIGSEND_TOOLS: ToolDef[] = [
       url: z.string().optional(),
       mapsUrl: z.string().optional(),
       totalCost: z.string().optional(),
-      bedrooms: z.string().optional(),
-      beds: z.string().optional(),
-      bathrooms: z.string().optional(),
+      bedrooms: z.union([z.string(), z.number()]).optional(),
+      beds: z.union([z.string(), z.number()]).optional(),
+      bathrooms: z.union([z.string(), z.number()]).optional(),
     },
   },
   {
@@ -110,10 +113,17 @@ export const BIGSEND_TOOLS: ToolDef[] = [
   },
 ];
 
-function pushFlag(argv: string[], name: string, value?: string | boolean) {
-  if (value === undefined || value === false) return;
-  if (value === true) argv.push(`--${name}`);
-  else argv.push(`--${name}`, value);
+function pushFlag(argv: string[], name: string, value?: unknown) {
+  if (value === undefined || value === false || value === null) return;
+  if (value === true) {
+    argv.push(`--${name}`);
+    return;
+  }
+  if (typeof value === "object") {
+    argv.push(`--${name}`, JSON.stringify(value));
+    return;
+  }
+  argv.push(`--${name}`, String(value));
 }
 
 export function argvForTool(name: BigsendToolName, args: ToolArgs): string[] {

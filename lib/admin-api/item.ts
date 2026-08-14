@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { issuesFromZod } from "@/lib/api-errors";
+import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
 import { authorizePartyBySlug } from "@/lib/authorize-party";
 import { schema } from "@/lib/db";
 import { mergePatch } from "@/lib/merge-patch";
@@ -25,8 +25,9 @@ export async function GET(request: Request, ctx: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
-  const json = await request.json().catch(() => null);
-  const parsed = updatePartySchema.safeParse(json);
+  const body = await readJsonBody(request);
+  if (!body.ok) return body.response;
+  const parsed = updatePartySchema.safeParse(body.value);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid update payload", issues: issuesFromZod(parsed.error) },

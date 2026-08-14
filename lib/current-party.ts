@@ -8,6 +8,7 @@ import type { PartyContent } from "@/lib/party-types";
 
 export type CurrentParty = {
   partyId: number | "demo";
+  slug: string;
   content: PartyContent;
 };
 
@@ -21,9 +22,9 @@ export async function getCurrentParty(): Promise<CurrentParty | null> {
 
   if (!db) {
     const expected = process.env.PARTY_PASSWORD;
-    if (!expected) return { partyId: "demo", content: DEMO_PARTY };
+    if (!expected) return { partyId: "demo", slug: "demo", content: DEMO_PARTY };
     if (await cookieAuthenticatesParty(raw, "demo", expected)) {
-      return { partyId: "demo", content: DEMO_PARTY };
+      return { partyId: "demo", slug: "demo", content: DEMO_PARTY };
     }
     return null;
   }
@@ -42,7 +43,7 @@ export async function getCurrentParty(): Promise<CurrentParty | null> {
       .limit(1);
     if (!party) return null;
     if (!(await cookieAuthenticatesParty(raw, party.id, party.password))) return null;
-    return { partyId: party.id, content: party.content };
+    return { partyId: party.id, slug: party.slug, content: party.content };
   } catch (err) {
     console.error("getCurrentParty failed", err);
     return null;

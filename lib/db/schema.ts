@@ -9,8 +9,8 @@ import {
 } from "drizzle-orm/pg-core";
 import type { PartyContent } from "@/lib/party-types";
 
-// One row per bachelor party. The password doubles as the invite: whoever
-// has it lands in this party's site. Passwords are plaintext by design
+// One row per trip. The password doubles as the invite: whoever
+// has it lands in this trip's site. Passwords are plaintext by design
 // (shared casual secrets, not credentials) but must be unique since login
 // resolves the party by password alone.
 export const parties = pgTable("parties", {

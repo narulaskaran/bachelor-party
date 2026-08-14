@@ -2,7 +2,7 @@
 
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { GET as listGET, POST } from "@/app/api/admin/trips/route";
-import { GET, PATCH } from "@/app/api/admin/trips/[slug]/route";
+import { GET, PATCH, DELETE } from "@/app/api/admin/trips/[slug]/route";
 import { GET as guestsGET } from "@/app/api/admin/trips/[slug]/guests/route";
 import { DELETE as guestDELETE } from "@/app/api/admin/trips/[slug]/guests/[id]/route";
 import { DEMO_PARTY } from "@/lib/demo-party";
@@ -291,5 +291,58 @@ describe("agent API (create / patch / guests)", () => {
 
     const res = await guestsGET(makeRequest("alpha-tok"), ctx("beta"));
     expect(res.status).toBe(401);
+  });
+
+  it("party token can delete its own trip", async () => {
+    process.env.ADMIN_API_TOKEN = GLOBAL;
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "cabin", adminToken: "cabin-tok" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await DELETE(makeRequest("cabin-tok"), ctx("cabin"));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ deleted: "cabin" });
+    expect(mem.parties).toHaveLength(0);
+  });
+
+  it("POST invalid JSON → 400 with a structured issue", async () => {
+    process.env.ADMIN_API_TOKEN = GLOBAL;
+    vi.mocked(getDb).mockReturnValue(createMemoryDb().db as never);
+    const headers = new Headers();
+    headers.set("authorization", `Bearer ${GLOBAL}`);
+    headers.set("content-type", "application/json");
+    const res = await POST(
+      new Request("http://localhost/api/admin/trips", {
+        method: "POST",
+        headers,
+        body: "{not json",
+      }),
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("Invalid JSON");
+    expect(body.issues[0].path).toBe("(root)");
+  });
+
+  it("PATCH lodging: null deletes lodging", async () => {
+    process.env.ADMIN_API_TOKEN = GLOBAL;
+    const mem = createMemoryDb();
+    mem.seedParty({
+      slug: "cabin",
+      adminToken: "cabin-tok",
+      content: { kind: "trip", trip: { siteName: "Cabin" }, lodging: { name: "Lodge" } },
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await PATCH(
+      makeRequest("cabin-tok", {
+        method: "PATCH",
+        body: { content: { lodging: null } },
+      }),
+      ctx("cabin"),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.trip.content.lodging).toBeUndefined();
   });
 });

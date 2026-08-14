@@ -93,6 +93,7 @@ export async function submitGuestInfo(
   }
 
   revalidatePath("/");
+  revalidatePath(`/${current.slug}`);
   return { ok: true };
 }
 

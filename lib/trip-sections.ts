@@ -58,7 +58,9 @@ export function glanceFacts(trip: Trip, lodging?: Lodging): GlanceFact[] {
         label: "Sleeps",
         value: sleeps,
         note:
-          lodging.bathrooms != null ? `${lodging.bathrooms} baths` : undefined,
+          lodging.bathrooms != null && lodging.bathrooms > 0
+            ? `${lodging.bathrooms} baths`
+            : undefined,
       });
     }
     if (lodging.totalCost) {
@@ -74,8 +76,12 @@ export function glanceFacts(trip: Trip, lodging?: Lodging): GlanceFact[] {
 
 export function lodgingSleepsLabel(lodging: Lodging): string | null {
   const parts: string[] = [];
-  if (lodging.bedrooms != null) parts.push(`${lodging.bedrooms}BR`);
-  if (lodging.beds != null) parts.push(`${lodging.beds} beds`);
+  if (lodging.bedrooms != null && lodging.bedrooms > 0) {
+    parts.push(`${lodging.bedrooms}BR`);
+  }
+  if (lodging.beds != null && lodging.beds > 0) {
+    parts.push(`${lodging.beds} beds`);
+  }
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 

@@ -6,6 +6,7 @@ import {
   type BigsendClient,
   type CreateTripBody,
 } from "@/lib/bigsend-api";
+import { slugFromName } from "@/lib/slug";
 import {
   defaultConfigPath,
   emptyConfig,
@@ -310,7 +311,8 @@ async function cmdScheduleAdd(
     : [];
   const weekday =
     (typeof flags.weekday === "string" && flags.weekday) || weekdayFromIsoDate(day);
-  const key = (typeof flags.key === "string" && flags.key) || weekday.toLowerCase();
+  // Default key is the ISO date so two Saturdays on a longer trip don't merge.
+  const key = (typeof flags.key === "string" && flags.key) || day;
   const label = (typeof flags.label === "string" && flags.label) || weekday;
   const entry: Record<string, unknown> = { title };
   if (typeof flags.time === "string") entry.time = flags.time;
@@ -364,11 +366,7 @@ async function cmdActivitiesAdd(
   };
   const list = Array.isArray(activities[bucket]) ? [...(activities[bucket] as unknown[])] : [];
   const activitySlug =
-    (typeof flags.slug === "string" && flags.slug) ||
-    name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    (typeof flags.slug === "string" && flags.slug) || slugFromName(name) || "activity";
   const activity: Record<string, unknown> = { slug: activitySlug, name };
   if (typeof flags.description === "string") activity.description = flags.description;
   list.push(activity);

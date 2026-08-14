@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { issuesFromZod } from "@/lib/api-errors";
+import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
 import { partyContentSchema } from "@/lib/party-schema";
 
 describe("issuesFromZod", () => {
@@ -26,5 +26,24 @@ describe("issuesFromZod", () => {
     expect(parsed.success).toBe(false);
     if (parsed.success) return;
     expect(issuesFromZod(parsed.error)[0].path).toBe("(root)");
+  });
+});
+
+describe("readJsonBody", () => {
+  it("returns 400 with issues for malformed JSON", async () => {
+    const res = await readJsonBody(
+      new Request("http://localhost/api/admin/trips", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{not json",
+      }),
+    );
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+    expect(res.response.status).toBe(400);
+    expect(await res.response.json()).toMatchObject({
+      error: "Invalid JSON",
+      issues: [{ path: "(root)" }],
+    });
   });
 });

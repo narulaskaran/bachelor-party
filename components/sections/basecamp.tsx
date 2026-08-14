@@ -5,9 +5,15 @@ import type { Trip, Lodging } from "@/lib/party-types";
 
 export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodging }) {
   const facts = [
-    lodging.bedrooms != null ? { label: "Bedrooms", value: String(lodging.bedrooms) } : null,
-    lodging.beds != null ? { label: "Beds", value: String(lodging.beds) } : null,
-    lodging.bathrooms != null ? { label: "Baths", value: String(lodging.bathrooms) } : null,
+    lodging.bedrooms != null && lodging.bedrooms > 0
+      ? { label: "Bedrooms", value: String(lodging.bedrooms) }
+      : null,
+    lodging.beds != null && lodging.beds > 0
+      ? { label: "Beds", value: String(lodging.beds) }
+      : null,
+    lodging.bathrooms != null && lodging.bathrooms > 0
+      ? { label: "Baths", value: String(lodging.bathrooms) }
+      : null,
     lodging.totalCost ? { label: "Total cost", value: lodging.totalCost } : null,
   ].filter((fact): fact is { label: string; value: string } => fact != null);
 
