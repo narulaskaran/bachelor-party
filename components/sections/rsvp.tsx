@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { RsvpForm } from "@/components/rsvp-form";
 import { getGuests, getRsvpPrefill } from "@/lib/rsvp-actions";
 import type { Activity } from "@/lib/party-types";
+import { rosterTravelLines } from "@/lib/roster-travel";
 
 export async function RsvpSection({
   pollActivities,
@@ -60,17 +61,16 @@ export async function RsvpSection({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1.5">
-                  {airport ? (
-                    <>
-                      <p className="break-words font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                        Arrival · {guest.arrivalFlight || "—"} · {guest.arrivalTime || "—"}
-                      </p>
-                      <p className="break-words font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                        Departure · {guest.departureFlight || "—"} ·{" "}
-                        {guest.departureTime || "—"}
-                      </p>
-                    </>
-                  ) : null}
+                  {airport
+                    ? rosterTravelLines(guest).map((line) => (
+                        <p
+                          key={line}
+                          className="break-words font-mono text-xs uppercase tracking-widest text-muted-foreground"
+                        >
+                          {line}
+                        </p>
+                      ))
+                    : null}
                   {guest.dietary ? (
                     <Badge variant="outline" className="mt-2 h-auto px-2 py-1 text-xs">
                       {guest.dietary}

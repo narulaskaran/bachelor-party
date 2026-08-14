@@ -14,9 +14,9 @@ export function Glance({ trip, lodging }: { trip: Trip; lodging?: Lodging }) {
         The Short Version
       </h2>
 
-      <div className="mt-6 grid grid-cols-1 divide-y divide-border border border-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+      <div className="mt-6 flex flex-col divide-y divide-border border border-border md:flex-row md:divide-x md:divide-y-0">
         {facts.map((fact) => (
-          <div key={fact.label} className="min-w-0 px-5 py-4">
+          <div key={fact.label} className="min-w-0 flex-1 px-5 py-4">
             <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
               {fact.label}
             </p>

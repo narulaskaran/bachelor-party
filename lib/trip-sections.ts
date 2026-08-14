@@ -1,4 +1,9 @@
-import { type Lodging, type PartyContent, type Trip } from "@/lib/party-types";
+import {
+  type Activity,
+  type Lodging,
+  type PartyContent,
+  type Trip,
+} from "@/lib/party-types";
 
 export type GlanceFact = {
   label: string;
@@ -23,20 +28,24 @@ export function showFlightFields(content: PartyContent): boolean {
   return Boolean(content.trip.airport);
 }
 
+export function nonemptyActivities(list?: Activity[]): Activity[] {
+  return (list ?? []).filter((activity) => Boolean(activity.name?.trim()));
+}
+
 export function hasActivities(content: PartyContent): boolean {
   const a = content.activities;
   if (!a) return false;
   return (
-    (a.core?.length ?? 0) > 0 ||
-    (a.ifTimeAllows?.length ?? 0) > 0 ||
-    (a.backups?.length ?? 0) > 0
+    nonemptyActivities(a.core).length > 0 ||
+    nonemptyActivities(a.ifTimeAllows).length > 0 ||
+    nonemptyActivities(a.backups).length > 0
   );
 }
 
 export function heroMeta(trip: Trip): string[] {
-  return [trip.coordinates, trip.elevation, trip.dateLabel].filter(
-    (part): part is string => Boolean(part),
-  );
+  return [trip.coordinates, trip.elevation, trip.dateLabel]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part));
 }
 
 export function glanceFacts(trip: Trip, lodging?: Lodging): GlanceFact[] {

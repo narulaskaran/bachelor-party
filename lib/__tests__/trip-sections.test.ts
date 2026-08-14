@@ -3,6 +3,7 @@ import { DEMO_PARTY } from "@/lib/demo-party";
 import type { PartyContent } from "@/lib/party-types";
 import {
   glanceFacts,
+  hasActivities,
   hasLodging,
   heroMeta,
   showFlightFields,
@@ -39,11 +40,31 @@ describe("visibleSections", () => {
   it("does not treat empty lodging as present", () => {
     expect(hasLodging({ trip: { siteName: "X" }, lodging: undefined })).toBe(false);
   });
+
+  it("does not treat blank-named activities as present", () => {
+    expect(
+      hasActivities({
+        trip: { siteName: "X" },
+        activities: { core: [{ slug: "x", name: "   " }], backups: [] },
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("heroMeta", () => {
   it("omits missing coordinates and elevation", () => {
     expect(heroMeta({ siteName: "X", dateLabel: "Sep 4–7" })).toEqual(["Sep 4–7"]);
+  });
+
+  it("omits whitespace-only coordinates and elevation", () => {
+    expect(
+      heroMeta({
+        siteName: "X",
+        coordinates: "  ",
+        elevation: "\n",
+        dateLabel: "Sep 4–7",
+      }),
+    ).toEqual(["Sep 4–7"]);
   });
 });
 
