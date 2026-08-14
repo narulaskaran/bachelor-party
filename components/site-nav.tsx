@@ -41,7 +41,7 @@ export function SiteNav({
           )}
         </Link>
         <div className="flex items-center gap-1">
-          {siteName && (
+          {siteName ? (
             <nav className="flex items-center gap-1 overflow-x-auto">
               {links.map((link) => (
                 <Link
@@ -53,6 +53,13 @@ export function SiteNav({
                 </Link>
               ))}
             </nav>
+          ) : (
+            <Link
+              href="/create"
+              className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Create a trip
+            </Link>
           )}
           <ThemeToggle />
         </div>

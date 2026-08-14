@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { slugFromName, uniqueSlug } from "@/lib/slug";
+import { isReservedSlug, slugFromName, uniqueSlug } from "@/lib/slug";
 
 describe("slugFromName", () => {
   it("lowercases and kebab-cases a display name", () => {
@@ -27,5 +27,14 @@ describe("uniqueSlug", () => {
 
   it("falls back to 'trip' when the base is empty", async () => {
     expect(await uniqueSlug("", async () => false)).toBe("trip");
+  });
+});
+
+describe("reserved slugs", () => {
+  it("treats host and admin paths as reserved", () => {
+    expect(isReservedSlug("create")).toBe(true);
+    expect(isReservedSlug("admin")).toBe(true);
+    expect(isReservedSlug("login")).toBe(true);
+    expect(isReservedSlug("jackson-hole-26")).toBe(false);
   });
 });

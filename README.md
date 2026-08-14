@@ -5,8 +5,10 @@ any number of trips: each lives in the database with its own shared password,
 and whoever enters that password sees that trip's site — schedule, lodging,
 activities, and an RSVP form.
 
-No real trip details live in this repo. Organizers talk to the **admin API**
-(curl, CLI, or an agent). Guests get the HTML page.
+No real trip details live in this repo. Hosts create a trip from the
+homepage (invite URL, guest password, and admin token). Organizers can
+also talk to the **admin API** (curl, CLI, or an agent). Guests get the
+HTML page.
 
 ## Managing trips via the admin API
 

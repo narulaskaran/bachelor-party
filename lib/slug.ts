@@ -1,5 +1,17 @@
 const SLUG_MAX = 80;
 
+/** Paths that already mean something in the app — never assign these as trip slugs. */
+export const RESERVED_SLUGS = new Set([
+  "admin",
+  "api",
+  "create",
+  "login",
+]);
+
+export function isReservedSlug(slug: string): boolean {
+  return RESERVED_SLUGS.has(slug);
+}
+
 /** Lowercase kebab-case from a display name. Empty if nothing usable remains. */
 export function slugFromName(name: string): string {
   return name

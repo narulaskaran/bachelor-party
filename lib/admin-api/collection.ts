@@ -7,7 +7,7 @@ import { getDb, schema } from "@/lib/db";
 import { organizerPacket } from "@/lib/organizer-packet";
 import { createPartySchema } from "@/lib/party-schema";
 import { rateLimitCreate } from "@/lib/rate-limit";
-import { slugFromName, uniqueSlug } from "@/lib/slug";
+import { isReservedSlug, slugFromName, uniqueSlug } from "@/lib/slug";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -93,6 +93,7 @@ export async function POST(request: Request) {
   };
 
   const taken = async (candidate: string) => {
+    if (isReservedSlug(candidate)) return true;
     const [row] = await db
       .select({ id: schema.parties.id })
       .from(schema.parties)

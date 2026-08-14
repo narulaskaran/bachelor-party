@@ -69,9 +69,15 @@ export function LandingView() {
           ))}
         </div>
 
-        <p className="mt-8 text-sm text-muted-foreground">
-          Got an invite link from your organizer? Use it to see your trip.
-        </p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Button size="lg" asChild>
+            <Link href="/create">Create a trip</Link>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Hosting? Name it and get an invite link. Guests with a link, use that
+            instead.
+          </p>
+        </div>
       </section>
 
       <footer className="border-t border-border py-8">
