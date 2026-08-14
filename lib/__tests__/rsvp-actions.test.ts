@@ -198,3 +198,21 @@ describe("submitGuestInfo merge upsert", () => {
     });
   });
 });
+
+describe("sample trip RSVP", () => {
+  afterEach(() => {
+    vi.mocked(getDb).mockReset();
+    vi.mocked(getCurrentParty).mockReset();
+  });
+
+  it("does not save and never consults a logged-in trip cookie", async () => {
+    const { submitSampleGuestInfo } = await import("@/lib/rsvp-actions");
+    const result = await submitSampleGuestInfo();
+    expect(result).toEqual({
+      ok: false,
+      error: "Demo mode — this sample trip doesn't save RSVPs.",
+    });
+    expect(getCurrentParty).not.toHaveBeenCalled();
+    expect(getDb).not.toHaveBeenCalled();
+  });
+});

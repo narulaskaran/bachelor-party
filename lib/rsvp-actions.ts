@@ -31,10 +31,21 @@ const guestSchema = z.object({
   notes: z.string().trim().max(1000).optional(),
 });
 
+const SAMPLE_RSVP_MESSAGE = "Demo mode — this sample trip doesn't save RSVPs.";
+
 export type SubmitResult = {
   ok: boolean;
   error?: string;
 };
+
+/** Private helper — must not be exported from this "use server" file. */
+function sampleTripRsvpResult(): SubmitResult {
+  return { ok: false, error: SAMPLE_RSVP_MESSAGE };
+}
+
+export async function submitSampleGuestInfo(): Promise<SubmitResult> {
+  return sampleTripRsvpResult();
+}
 
 export async function submitGuestInfo(
   _prev: SubmitResult | null,
@@ -47,10 +58,7 @@ export async function submitGuestInfo(
 
   const db = getDb();
   if (!db || current.partyId === "demo") {
-    return {
-      ok: false,
-      error: "Demo mode — the database isn't connected, so nothing saves.",
-    };
+    return sampleTripRsvpResult();
   }
 
   const parsed = guestSchema.safeParse({

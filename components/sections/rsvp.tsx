@@ -7,12 +7,14 @@ import type { Activity } from "@/lib/party-types";
 export async function RsvpSection({
   pollActivities,
   airport,
+  sample = false,
 }: {
   pollActivities: Activity[];
   airport?: string;
+  sample?: boolean;
 }) {
-  const guests = await getGuests();
-  const prefill = await getRsvpPrefill(guests);
+  const guests = sample ? [] : await getGuests();
+  const prefill = sample ? null : await getRsvpPrefill(guests);
   const formKey = prefill
     ? `${prefill.nameKey}:${String(prefill.updatedAt ?? "")}`
     : "new";
@@ -34,6 +36,7 @@ export async function RsvpSection({
       <div className="mt-8">
         <RsvpForm
           key={formKey}
+          sample={sample}
           pollActivities={pollActivities}
           airport={airport}
           existing={prefill}

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { submitGuestInfo } from "@/lib/rsvp-actions";
+import { submitGuestInfo, submitSampleGuestInfo } from "@/lib/rsvp-actions";
 import { rsvpFieldDefaults, type RsvpPrefill } from "@/lib/merge-guest";
 import type { Activity } from "@/lib/party-types";
 
@@ -41,12 +41,17 @@ export function RsvpForm({
   pollActivities,
   airport,
   existing,
+  sample = false,
 }: {
   pollActivities: Activity[];
   airport?: string;
   existing?: RsvpPrefill | null;
+  sample?: boolean;
 }) {
-  const [state, formAction, isPending] = useActionState(submitGuestInfo, null);
+  const [state, formAction, isPending] = useActionState(
+    sample ? submitSampleGuestInfo : submitGuestInfo,
+    null,
+  );
   const router = useRouter();
   const defaults = rsvpFieldDefaults(existing);
 
