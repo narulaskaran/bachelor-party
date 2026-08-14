@@ -3,6 +3,9 @@ import { and, eq } from "drizzle-orm";
 import { authorizePartyBySlug } from "@/lib/authorize-party";
 import { schema } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 type Params = { params: Promise<{ slug: string; id: string }> };
 
 // DELETE /api/admin/trips/:slug/guests/:id — remove one guest RSVP.

@@ -1,10 +1,11 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { GET as partiesGET, POST as partiesPOST } from "@/app/api/admin/parties/route";
-import { PATCH as partiesPATCH } from "@/app/api/admin/parties/[slug]/route";
 import { GET as tripsGET, POST as tripsPOST } from "@/app/api/admin/trips/route";
 import { GET as tripGET, PATCH as tripsPATCH } from "@/app/api/admin/trips/[slug]/route";
 import { GET as tripsGuestsGET } from "@/app/api/admin/trips/[slug]/guests/route";
-import { GET as openapiGET } from "@/app/api/openapi.json/route";
+import { GET as openapiGET } from "@/app/api/openapi/route";
+import { GET as collectionGET, POST as collectionPOST } from "@/lib/admin-api/collection";
+import { PATCH as itemPATCH } from "@/lib/admin-api/item";
+import nextConfig from "@/next.config";
 import { getDb } from "@/lib/db";
 import { openApiSpec } from "@/lib/openapi";
 import { createMemoryDb } from "../memory-db";
@@ -40,10 +41,18 @@ describe("trips / parties dual-mount", () => {
     vi.mocked(getDb).mockReset();
   });
 
-  it("re-exports the same handler functions", () => {
-    expect(tripsPOST).toBe(partiesPOST);
-    expect(tripsGET).toBe(partiesGET);
-    expect(tripsPATCH).toBe(partiesPATCH);
+  it("rewrites /parties onto /trips so both prefixes work without extra Vercel functions", async () => {
+    const rewrites = await nextConfig.rewrites?.();
+    expect(rewrites).toEqual(
+      expect.arrayContaining([
+        { source: "/api/admin/parties", destination: "/api/admin/trips" },
+        { source: "/api/admin/parties/:path*", destination: "/api/admin/trips/:path*" },
+        { source: "/api/openapi.json", destination: "/api/openapi" },
+      ]),
+    );
+    expect(typeof collectionGET).toBe("function");
+    expect(typeof collectionPOST).toBe("function");
+    expect(typeof itemPATCH).toBe("function");
   });
 
   it("walkthrough works on /trips and still works on /parties", async () => {
@@ -97,7 +106,7 @@ describe("trips / parties dual-mount", () => {
     expect(guests.status).toBe(200);
     expect(await guests.json()).toEqual({ guests: [] });
 
-    const listed = await partiesGET(makeRequest(GLOBAL));
+    const listed = await tripsGET(makeRequest(GLOBAL));
     expect(listed.status).toBe(200);
     const index = await listed.json();
     expect(index.trips).toHaveLength(1);

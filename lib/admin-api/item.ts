@@ -7,6 +7,9 @@ import { mergePatch } from "@/lib/merge-patch";
 import { partyContentSchema, updatePartySchema } from "@/lib/party-schema";
 import type { PartyContent } from "@/lib/party-types";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 type Params = { params: Promise<{ slug: string }> };
 
 function withRecord<T extends Record<string, unknown>>(party: T) {

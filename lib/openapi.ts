@@ -122,7 +122,7 @@ export function openApiSpec() {
       title: "The Big Send admin API",
       version: "0.2.0",
       description:
-        "Headless group-trip HQ. Canonical paths are `/api/admin/trips`. `/api/admin/parties/**` is the same handlers (alias). Create with the global ADMIN_API_TOKEN; slug routes also accept the trip's adminToken. JSON keys `trip` and `party` (and `trips`/`parties`) are both returned.",
+        "Headless group-trip HQ. Canonical paths are `/api/admin/trips`. `/api/admin/parties/**` rewrites to the same handlers. Create with the global ADMIN_API_TOKEN; slug routes also accept the trip's adminToken. JSON keys `trip` and `party` (and `trips`/`parties`) are both returned.",
     },
     servers: [{ url: "/", description: "This deployment" }],
     tags: [

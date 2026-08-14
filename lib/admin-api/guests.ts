@@ -3,6 +3,9 @@ import { eq } from "drizzle-orm";
 import { authorizePartyBySlug } from "@/lib/authorize-party";
 import { schema } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 type Params = { params: Promise<{ slug: string }> };
 
 // GET /api/admin/trips/:slug/guests — RSVPs submitted for this trip.

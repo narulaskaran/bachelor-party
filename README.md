@@ -10,8 +10,8 @@ No real trip details live in this repo. Organizers talk to the **admin API**
 
 ## Managing trips via the admin API
 
-Canonical paths are `/api/admin/trips/**`. `/api/admin/parties/**` is the same
-handlers (alias for existing scripts). Machine-readable spec:
+Canonical paths are `/api/admin/trips/**`. `/api/admin/parties/**` rewrites to
+those handlers (alias for existing scripts). Machine-readable spec:
 `GET /api/openapi.json` (unauthenticated). The database table is still
 `parties`.
 
@@ -59,5 +59,5 @@ Content shape: `lib/party-types.ts`, validated by `lib/party-schema.ts`. Demo:
 | `/api/admin/trips/:slug/guests/:id` | DELETE | Remove one guest RSVP |
 | `/api/openapi.json` | GET | OpenAPI 3.1 (from the Zod schemas) |
 
-`/api/admin/parties/**` is the same table as above. Slug routes accept
+`/api/admin/parties/**` is a rewrite onto the same trips handlers. Slug routes accept
 `Authorization: Bearer` of either `ADMIN_API_TOKEN` or that trip's `adminToken`.

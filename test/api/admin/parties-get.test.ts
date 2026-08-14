@@ -1,7 +1,7 @@
-/** Route-level tests for GET /api/admin/parties/:slug — app/api/admin/parties/[slug]/route.ts */
+/** Route-level tests for GET /api/admin/trips/:slug (also rewritten from /parties). */
 
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { GET } from "@/app/api/admin/parties/[slug]/route";
+import { GET } from "@/app/api/admin/trips/[slug]/route";
 import { getDb } from "@/lib/db";
 
 vi.mock("@/lib/db", async (importOriginal) => {

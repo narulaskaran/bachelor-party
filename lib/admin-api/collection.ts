@@ -8,8 +8,11 @@ import { organizerPacket } from "@/lib/organizer-packet";
 import { createPartySchema } from "@/lib/party-schema";
 import { slugFromName, uniqueSlug } from "@/lib/slug";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 // GET /api/admin/trips — lightweight index (no passwords, no full content).
-// Also mounted at /api/admin/parties.
+// /api/admin/parties is the same handlers via next.config rewrite.
 export async function GET(request: Request) {
   const denied = requireAdmin(request);
   if (denied) return denied;
