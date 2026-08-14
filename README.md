@@ -81,3 +81,31 @@ npm run bigsend -- delete e2e-smoke --yes
 
 `create --file party.json` accepts the old seed shape (`slug`, `password`,
 `content`). `delete` requires `--yes`. Full usage: `npm run bigsend -- --help`.
+
+## MCP (Claude Desktop / Cursor)
+
+Same verbs as the CLI, same HTTP client, same `BIGSEND_*` env. Stdio server:
+
+```bash
+npm run mcp
+```
+
+Example Cursor / Claude MCP config (from the repo root):
+
+```json
+{
+  "mcpServers": {
+    "bigsend": {
+      "command": "npx",
+      "args": ["tsx", "mcp/bigsend.ts"],
+      "env": {
+        "BIGSEND_API_URL": "https://your-deploy.vercel.app",
+        "BIGSEND_TOKEN": "your-admin-api-token"
+      }
+    }
+  }
+}
+```
+
+Tools: `create`, `get`, `set`, `lodging_set`, `schedule_add`, `activities_add`,
+`guests`, `password`, `delete` (`yes: true` required).
