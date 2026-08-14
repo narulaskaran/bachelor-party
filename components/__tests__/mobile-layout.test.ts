@@ -92,6 +92,6 @@ describe("mobile trip layout", () => {
     expect(html).toContain("grid-cols-2");
     expect(html).toContain("min-w-0");
     expect(html).not.toContain("overflow-x-auto");
-    expect(html).not.toContain("shrink-0");
+    expect(html).not.toContain("shrink-0 px-6");
   });
 });

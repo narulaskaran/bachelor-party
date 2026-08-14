@@ -17,7 +17,6 @@ export function MobileNav({ links }: { links: MobileNavLink[] }) {
       >
         <Menu className="size-4 group-open:hidden" aria-hidden />
         <X className="hidden size-4 group-open:block" aria-hidden />
-        <span className="sr-only">Menu</span>
       </summary>
       <nav
         aria-label="Trip sections"
