@@ -1,7 +1,8 @@
 import type { PartyContent } from "@/lib/party-types";
 
-// Fictional placeholder trip. Served at `/demo` locally and in production
-// (even when DATABASE_URL is set) unless a real `demo` row exists. Safe to publish.
+// Fictional placeholder trip. Always served at `/demo` locally and in
+// production (even when DATABASE_URL is set, and even if a leftover
+// `slug=demo` row exists). Safe to publish.
 export const DEMO_PARTY: PartyContent = {
   kind: "trip",
   trip: {

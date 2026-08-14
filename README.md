@@ -49,9 +49,10 @@ curl https://your-deploy.vercel.app/api/admin/trips/jackson-hole-26 \
 ```
 
 Content shape: `lib/party-types.ts`, validated by `lib/party-schema.ts`. Demo:
-`lib/demo-party.ts`. `GET /demo` serves that Alpine Weekend sample even when a
-database is configured, so the guest site can be evaluated without creating a
-trip. A real `demo` row in the database still wins.
+`lib/demo-party.ts`. `GET /demo` always serves that Alpine Weekend sample —
+even when a database is configured, and even if a leftover `slug=demo` row
+exists — so the guest site can be evaluated without creating a trip. New
+creates cannot use the reserved `demo` slug.
 
 | Route | Method | Does |
 | --- | --- | --- |

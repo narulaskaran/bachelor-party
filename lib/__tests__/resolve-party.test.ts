@@ -63,7 +63,8 @@ describe("resolvePartyBySlug", () => {
     });
   });
 
-  it("uses a real demo row when one exists instead of the fixture", async () => {
+  it("prefers the Alpine Weekend fixture over a leftover slug=demo row", async () => {
+    delete process.env.PARTY_PASSWORD;
     const mem = createMemoryDb();
     const content = { kind: "trip" as const, trip: { siteName: "Seeded Demo" } };
     mem.seedParty({
@@ -75,12 +76,27 @@ describe("resolvePartyBySlug", () => {
 
     const resolved = await resolvePartyBySlug("demo", dbOf(mem));
 
-    expect(resolved).toEqual({
-      status: "gated",
+    expect(resolved).toEqual({ status: "open", content: DEMO_PARTY });
+    expect(resolved.status === "open" && resolved.content.trip.siteName).toBe(
+      "Alpine Weekend",
+    );
+  });
+
+  it("does not password-gate /demo when a leftover demo row exists and a DB is configured", async () => {
+    process.env.PARTY_PASSWORD = "local-only-gate";
+    const mem = createMemoryDb();
+    mem.seedParty({
       id: 3,
+      slug: "demo",
       password: "packet-password",
-      content,
+      content: { kind: "trip", trip: { siteName: "Seeded Demo" } },
     });
+
+    const resolved = await resolvePartyBySlug("demo", dbOf(mem));
+
+    expect(resolved.status).toBe("open");
+    if (resolved.status !== "open") return;
+    expect(resolved.content.trip.siteName).toBe("Alpine Weekend");
   });
 
   it("serves the open fixture with no database and no PARTY_PASSWORD", async () => {
