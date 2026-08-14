@@ -25,6 +25,11 @@ export async function GET(request: Request, ctx: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
+  const { slug }: { slug: string } = await params;
+  const auth = await authorizePartyBySlug(request, slug);
+  if (!auth.ok) return auth.error;
+  const { db, party } = auth;
+
   const body = await readJsonBody(request);
   if (!body.ok) return body.response;
   const parsed = updatePartySchema.safeParse(body.value);
@@ -37,11 +42,6 @@ export async function PATCH(request: Request, { params }: Params) {
   if (Object.keys(parsed.data).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
-
-  const { slug }: { slug: string } = await params;
-  const auth = await authorizePartyBySlug(request, slug);
-  if (!auth.ok) return auth.error;
-  const { db, party } = auth;
 
   let nextContent: PartyContent | undefined;
   if (parsed.data.content) {

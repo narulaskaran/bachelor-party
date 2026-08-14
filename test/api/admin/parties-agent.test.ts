@@ -456,6 +456,100 @@ describe("agent API (create / patch / guests)", () => {
     expect(body.issues[0].path).toBe("(root)");
   });
 
+  it("PATCH with no bearer → 401 and no Zod issues", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "foo", adminToken: "real-tok" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await PATCH(
+      makeRequest(null, { method: "PATCH", body: {} }),
+      ctx("foo"),
+    );
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.issues).toBeUndefined();
+    expect(body.error).toMatch(/bearer|token/i);
+  });
+
+  it("PATCH with forged bearer → 401 and no Zod issues", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "foo", adminToken: "real-tok" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await PATCH(
+      makeRequest("totally-forged", {
+        method: "PATCH",
+        body: { password: "x".repeat(201) },
+      }),
+      ctx("foo"),
+    );
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.issues).toBeUndefined();
+    expect(body.error).toMatch(/token/i);
+  });
+
+  it("PATCH with a valid token still returns Zod 400 for a bad payload", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "foo", adminToken: "real-tok" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await PATCH(
+      makeRequest("real-tok", {
+        method: "PATCH",
+        body: { password: "x".repeat(201) },
+      }),
+      ctx("foo"),
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: "password" })]),
+    );
+  });
+
+  it("PATCH invalid JSON with no bearer → 401, not 400 Invalid JSON", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "foo", adminToken: "real-tok" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const headers = new Headers();
+    headers.set("content-type", "application/json");
+    const res = await PATCH(
+      new Request("http://localhost/api/admin/trips/foo", {
+        method: "PATCH",
+        headers,
+        body: "{not json",
+      }),
+      ctx("foo"),
+    );
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.issues).toBeUndefined();
+  });
+
+  it("DELETE with no bearer → 401", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "foo", adminToken: "real-tok" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await DELETE(makeRequest(null), ctx("foo"));
+    expect(res.status).toBe(401);
+    expect((await res.json()).issues).toBeUndefined();
+  });
+
+  it("DELETE guest with no bearer → 401, even for an invalid id", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "foo", adminToken: "real-tok" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await guestDELETE(makeRequest(null), guestCtx("foo", "not-an-id"));
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.issues).toBeUndefined();
+    expect(body.error).not.toMatch(/guest id/i);
+  });
+
   it("PATCH lodging: null deletes lodging", async () => {
     const mem = createMemoryDb();
     mem.seedParty({
