@@ -141,7 +141,7 @@ describe("unknown guest slug 404", () => {
 
     const { status, html } = await pageHttpStatus("jackson-hole-26");
     expect(status).toBe(200);
-    expect(html).toContain("Who Goes There");
+    expect(html).toContain("Who goes there");
     expect(html).not.toContain("No trip at this link");
 
     const res = await proxy(new NextRequest("http://localhost/jackson-hole-26"));
