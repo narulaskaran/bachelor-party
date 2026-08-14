@@ -82,9 +82,10 @@ describe("CreateTripForm", () => {
     expect(screen.getByText(PACKET.password)).toBeTruthy();
     expect(screen.getByText(PACKET.adminToken)).toBeTruthy();
     expect(screen.getAllByText(/will not be shown again/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: /open the trip/i }).getAttribute("href")).toBe(
-      "/cabin-weekend",
-    );
+    const open = screen.getByRole("link", { name: /open the trip/i });
+    expect(open.tagName).toBe("A");
+    expect(open.getAttribute("href")).toBe("/cabin-weekend");
+    expect(open.getAttribute("target")).not.toBe("_blank");
     expect(screen.getByRole("button", { name: /copy invite url/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /copy guest password/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /copy admin token/i })).toBeTruthy();
@@ -116,6 +117,10 @@ describe("CreateTripForm", () => {
 });
 
 describe("OrganizerPacketView", () => {
+  beforeEach(() => {
+    cleanup();
+  });
+
   it("shows invite URL, guest password, admin token, and copy controls", () => {
     const { container } = render(<OrganizerPacketView packet={PACKET} />);
     expect(container.innerHTML).toContain(PACKET.url);
@@ -124,9 +129,11 @@ describe("OrganizerPacketView", () => {
     expect(screen.getByRole("button", { name: /copy invite url/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /copy guest password/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /copy admin token/i })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /open the trip/i }).getAttribute("href")).toBe(
-      "/cabin-weekend",
-    );
+    const open = screen.getByRole("link", { name: /open the trip/i });
+    expect(open.tagName).toBe("A");
+    expect(open.getAttribute("href")).toBe("/cabin-weekend");
+    expect(open.getAttribute("target")).not.toBe("_blank");
+    expect(screen.getAllByText(/will not be shown again/i).length).toBeGreaterThan(0);
     assertNoAdminRequirement(container.innerHTML);
   });
 });

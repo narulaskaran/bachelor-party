@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Check, Copy } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -104,8 +103,9 @@ export function OrganizerPacketView({
       </div>
 
       <div className="flex flex-wrap gap-2">
+        {/* Real <a>: Next.js Link's client transition was a no-op after create. */}
         <Button asChild>
-          <Link href={`/${packet.slug}`}>Open the trip</Link>
+          <a href={`/${packet.slug}`}>Open the trip</a>
         </Button>
         {onCreateAnother ? (
           <Button type="button" variant="outline" onClick={onCreateAnother}>
