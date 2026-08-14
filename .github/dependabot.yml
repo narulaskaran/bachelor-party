@@ -6,6 +6,15 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
 
+    # Majors that currently break `npm run lint` with eslint-config-next 16.3.
+    # Drop these once Next ships ESLint 10 support and typescript-eslint
+    # supports TypeScript >= 7.1 (no compiler API in TS 7.0).
+    ignore:
+      - dependency-name: eslint
+        versions: [">=10"]
+      - dependency-name: typescript
+        versions: [">=7"]
+
     groups:
       next-toolchain:
         patterns:
