@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LandingView } from "@/components/landing-view";
+import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 
 const push = vi.fn();
 
@@ -33,10 +34,12 @@ describe("homepage trip entry", () => {
     cleanup();
   });
 
-  it("renders a trip-entry form on the #rsvp section", () => {
+  it("renders a trip-entry form on every legacy hash the old pages 307 to", () => {
     render(<LandingView />);
 
-    expect(document.getElementById("rsvp")).toBeTruthy();
+    for (const hash of LEGACY_PAGE_HASHES) {
+      expect(document.getElementById(hash), `#${hash}`).toBeTruthy();
+    }
     expect(screen.getByLabelText(/trip code/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /open trip/i })).toBeTruthy();
     expect(screen.getByText(/yoursite.com\/your-trip/i)).toBeTruthy();
