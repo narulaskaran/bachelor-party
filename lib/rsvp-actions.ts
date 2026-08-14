@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { and, eq, sql } from "drizzle-orm";
@@ -12,6 +13,7 @@ import {
   explicitClearsFromFormData,
   matchPrefillGuest,
   mergeGuestRow,
+  readGuestToken,
   type GuestPatch,
   type RsvpPrefill,
 } from "@/lib/merge-guest";
@@ -19,6 +21,38 @@ import {
 const prefValues = ["hyped", "fine", "pass"] as const;
 
 const NINETY_DAYS = 60 * 60 * 24 * 90;
+
+function newGuestToken(): string {
+  return randomBytes(16).toString("hex");
+}
+
+function toGuestPatch(row: {
+  partyId: number;
+  name: string;
+  nameKey: string;
+  phone: string | null;
+  arrivalFlight: string | null;
+  arrivalTime: string | null;
+  departureFlight: string | null;
+  departureTime: string | null;
+  dietary: string | null;
+  notes: string | null;
+  activityPrefs: Record<string, string> | null;
+}): GuestPatch {
+  return {
+    partyId: row.partyId,
+    name: row.name,
+    nameKey: row.nameKey,
+    phone: row.phone,
+    arrivalFlight: row.arrivalFlight,
+    arrivalTime: row.arrivalTime,
+    departureFlight: row.departureFlight,
+    departureTime: row.departureTime,
+    dietary: row.dietary,
+    notes: row.notes,
+    activityPrefs: row.activityPrefs,
+  };
+}
 
 const guestSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80),
@@ -97,37 +131,33 @@ export async function submitGuestInfo(
     notes: data.notes ?? null,
     activityPrefs,
   };
+
+  const cookieStore = await cookies();
+  const cookieToken = readGuestToken(cookieStore.get(RSVP_COOKIE)?.value);
+  const guestToken = cookieToken ?? newGuestToken();
   const clears = explicitClearsFromFormData(formData);
 
   try {
-    const [existing] = await db
-      .select()
-      .from(schema.guests)
-      .where(
-        and(
-          eq(schema.guests.partyId, current.partyId),
-          eq(schema.guests.nameKey, incoming.nameKey),
-        ),
-      )
-      .limit(1);
+    // Identity is the cookie token, never the display name. Same name from
+    // another browser inserts a distinct row instead of clobbering.
+    const [existing] = cookieToken
+      ? await db
+          .select()
+          .from(schema.guests)
+          .where(
+            and(
+              eq(schema.guests.partyId, current.partyId),
+              eq(schema.guests.guestToken, cookieToken),
+            ),
+          )
+          .limit(1)
+      : [];
 
-    const existingPatch: GuestPatch | null = existing
-      ? {
-          partyId: existing.partyId,
-          name: existing.name,
-          nameKey: existing.nameKey,
-          phone: existing.phone,
-          arrivalFlight: existing.arrivalFlight,
-          arrivalTime: existing.arrivalTime,
-          departureFlight: existing.departureFlight,
-          departureTime: existing.departureTime,
-          dietary: existing.dietary,
-          notes: existing.notes,
-          activityPrefs: existing.activityPrefs,
-        }
-      : null;
-
-    const row = mergeGuestRow(existingPatch, incoming, clears);
+    const row = mergeGuestRow(
+      existing ? toGuestPatch(existing) : null,
+      incoming,
+      existing ? clears : new Set(),
+    );
 
     if (existing) {
       await db
@@ -135,21 +165,14 @@ export async function submitGuestInfo(
         .set({ ...row, updatedAt: sql`now()` })
         .where(eq(schema.guests.id, existing.id));
     } else {
-      await db
-        .insert(schema.guests)
-        .values(row)
-        .onConflictDoUpdate({
-          target: [schema.guests.partyId, schema.guests.nameKey],
-          set: { ...row, updatedAt: sql`now()` },
-        });
+      await db.insert(schema.guests).values({ ...row, guestToken });
     }
   } catch (err) {
     console.error("submitGuestInfo failed", err);
     return { ok: false, error: "Couldn't save — try again in a minute." };
   }
 
-  const cookieStore = await cookies();
-  cookieStore.set(RSVP_COOKIE, incoming.nameKey, {
+  cookieStore.set(RSVP_COOKIE, guestToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

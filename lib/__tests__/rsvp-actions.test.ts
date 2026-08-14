@@ -26,10 +26,34 @@ vi.mock("@/lib/current-party", () => ({
   getCurrentParty: vi.fn(),
 }));
 
+const TOKEN_ALEX = "a".repeat(32);
+const TOKEN_SAM = "b".repeat(32);
+
 function form(fields: Record<string, string>) {
   const formData = new FormData();
   for (const [key, value] of Object.entries(fields)) formData.set(key, value);
   return formData;
+}
+
+function mockParty(mem: ReturnType<typeof createMemoryDb>, partyId = 1) {
+  const party = mem.seedParty({
+    id: partyId,
+    slug: "qa-tester-e2e",
+    content: {
+      trip: { siteName: "QA", airport: "JAC" },
+      activities: { ifTimeAllows: [{ slug: "rafting", name: "Rafting" }] },
+    },
+  });
+  vi.mocked(getDb).mockReturnValue(mem.db as never);
+  vi.mocked(getCurrentParty).mockResolvedValue({
+    partyId: party.id as number,
+    slug: "qa-tester-e2e",
+    content: {
+      trip: { siteName: "QA", airport: "JAC" },
+      activities: { ifTimeAllows: [{ slug: "rafting", name: "Rafting" }] },
+    },
+  });
+  return party;
 }
 
 describe("submitGuestInfo merge upsert", () => {
@@ -43,13 +67,10 @@ describe("submitGuestInfo merge upsert", () => {
   it("does not wipe flights, phone, or notes when only dietary changes", async () => {
     const { submitGuestInfo } = await import("@/lib/rsvp-actions");
     const mem = createMemoryDb();
-    const party = mem.seedParty({
-      id: 1,
-      slug: "qa-tester-e2e",
-      content: { trip: { siteName: "QA", airport: "JAC" } },
-    });
+    const party = mockParty(mem);
     mem.seedGuest({
       partyId: party.id,
+      guestToken: TOKEN_ALEX,
       name: "Alex",
       nameKey: "alex",
       phone: "555-0100",
@@ -61,15 +82,7 @@ describe("submitGuestInfo merge upsert", () => {
       notes: "landing late",
       activityPrefs: { rafting: "hyped" },
     });
-    vi.mocked(getDb).mockReturnValue(mem.db as never);
-    vi.mocked(getCurrentParty).mockResolvedValue({
-      partyId: party.id as number,
-      slug: "qa-tester-e2e",
-      content: {
-        trip: { siteName: "QA", airport: "JAC" },
-        activities: { ifTimeAllows: [{ slug: "rafting", name: "Rafting" }] },
-      },
-    });
+    cookieStore.get.mockReturnValue({ value: TOKEN_ALEX });
 
     const result = await submitGuestInfo(
       null,
@@ -80,6 +93,7 @@ describe("submitGuestInfo merge upsert", () => {
     expect(mem.guests).toHaveLength(1);
     expect(mem.guests[0]).toMatchObject({
       name: "Alex",
+      guestToken: TOKEN_ALEX,
       phone: "555-0100",
       arrivalFlight: "UA 1523",
       arrivalTime: "Fri, 10:45 AM",
@@ -91,7 +105,7 @@ describe("submitGuestInfo merge upsert", () => {
     });
     expect(cookieStore.set).toHaveBeenCalledWith(
       RSVP_COOKIE,
-      "alex",
+      TOKEN_ALEX,
       expect.objectContaining({ httpOnly: true, path: "/" }),
     );
   });
@@ -99,27 +113,22 @@ describe("submitGuestInfo merge upsert", () => {
   it("clears phone when the prefilled form explicitly empties it", async () => {
     const { submitGuestInfo } = await import("@/lib/rsvp-actions");
     const mem = createMemoryDb();
-    const party = mem.seedParty({ id: 1, slug: "qa-tester-e2e" });
+    const party = mockParty(mem);
     mem.seedGuest({
       partyId: party.id,
+      guestToken: TOKEN_ALEX,
       name: "Alex",
       nameKey: "alex",
       phone: "555-0100",
       arrivalFlight: "UA 1523",
       notes: "landing late",
     });
-    vi.mocked(getDb).mockReturnValue(mem.db as never);
-    vi.mocked(getCurrentParty).mockResolvedValue({
-      partyId: party.id as number,
-      slug: "qa-tester-e2e",
-      content: { trip: { siteName: "QA" } },
-    });
+    cookieStore.get.mockReturnValue({ value: TOKEN_ALEX });
 
     const result = await submitGuestInfo(
       null,
       form({
         name: "Alex",
-        prefillNameKey: "alex",
         "had:phone": "1",
         phone: "",
         arrivalFlight: "UA 1523",
@@ -134,31 +143,27 @@ describe("submitGuestInfo merge upsert", () => {
     });
   });
 
-  it("prefills the session guest from the RSVP cookie", async () => {
+  it("prefills the session guest from the guest-token cookie", async () => {
     const { getGuests, getRsvpPrefill } = await import("@/lib/rsvp-actions");
     const mem = createMemoryDb();
-    const party = mem.seedParty({ id: 1, slug: "qa-tester-e2e" });
+    const party = mockParty(mem);
     mem.seedGuest({
       partyId: party.id,
+      guestToken: TOKEN_SAM,
       name: "Sam",
       nameKey: "sam",
       phone: "111",
     });
     mem.seedGuest({
       partyId: party.id,
+      guestToken: TOKEN_ALEX,
       name: "Alex",
       nameKey: "alex",
       phone: "555-0100",
       arrivalFlight: "UA 1523",
       notes: "landing late",
     });
-    vi.mocked(getDb).mockReturnValue(mem.db as never);
-    vi.mocked(getCurrentParty).mockResolvedValue({
-      partyId: party.id as number,
-      slug: "qa-tester-e2e",
-      content: { trip: { siteName: "QA" } },
-    });
-    cookieStore.get.mockReturnValue({ value: "alex" });
+    cookieStore.get.mockReturnValue({ value: TOKEN_ALEX });
 
     const guests = await getGuests();
     const prefill = await getRsvpPrefill(guests);
@@ -171,16 +176,34 @@ describe("submitGuestInfo merge upsert", () => {
     expect(prefill?.nameKey).toBe("alex");
   });
 
+  it("does not prefill another guest who shares the same display name", async () => {
+    const { getGuests, getRsvpPrefill } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    const party = mockParty(mem);
+    mem.seedGuest({
+      partyId: party.id,
+      guestToken: TOKEN_ALEX,
+      name: "QA Guest",
+      nameKey: "qa guest",
+      notes: "original",
+    });
+    mem.seedGuest({
+      partyId: party.id,
+      guestToken: TOKEN_SAM,
+      name: "QA Guest",
+      nameKey: "qa guest",
+      notes: "impostor",
+    });
+    cookieStore.get.mockReturnValue({ value: TOKEN_ALEX });
+
+    const prefill = await getRsvpPrefill(await getGuests());
+    expect(prefill?.notes).toBe("original");
+  });
+
   it("inserts a new guest when the name is new", async () => {
     const { submitGuestInfo } = await import("@/lib/rsvp-actions");
     const mem = createMemoryDb();
-    const party = mem.seedParty({ id: 1, slug: "qa-tester-e2e" });
-    vi.mocked(getDb).mockReturnValue(mem.db as never);
-    vi.mocked(getCurrentParty).mockResolvedValue({
-      partyId: party.id as number,
-      slug: "qa-tester-e2e",
-      content: { trip: { siteName: "QA" } },
-    });
+    mockParty(mem);
 
     const result = await submitGuestInfo(
       null,
@@ -196,6 +219,120 @@ describe("submitGuestInfo merge upsert", () => {
       notes: "driving",
       arrivalFlight: null,
     });
+    expect(mem.guests[0].guestToken).toMatch(/^[a-f0-9]{32}$/);
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      RSVP_COOKIE,
+      mem.guests[0].guestToken,
+      expect.objectContaining({ httpOnly: true, path: "/" }),
+    );
+  });
+
+  it("does not overwrite another guest who submitted the same display name", async () => {
+    const { submitGuestInfo } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    const party = mockParty(mem);
+    mem.seedGuest({
+      partyId: party.id,
+      guestToken: TOKEN_ALEX,
+      name: "QA Guest",
+      nameKey: "qa guest",
+      phone: "555-0100",
+      arrivalFlight: "UA 1523",
+      notes: "landing late",
+    });
+    cookieStore.get.mockReturnValue(undefined);
+
+    const result = await submitGuestInfo(
+      null,
+      form({
+        name: "QA Guest",
+        notes: "impostor",
+        arrivalFlight: "DL 1",
+      }),
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(mem.guests).toHaveLength(2);
+    expect(mem.guests[0]).toMatchObject({
+      guestToken: TOKEN_ALEX,
+      name: "QA Guest",
+      phone: "555-0100",
+      arrivalFlight: "UA 1523",
+      notes: "landing late",
+    });
+    expect(mem.guests[1]).toMatchObject({
+      name: "QA Guest",
+      nameKey: "qa guest",
+      notes: "impostor",
+      arrivalFlight: "DL 1",
+    });
+    expect(mem.guests[1].guestToken).not.toBe(TOKEN_ALEX);
+  });
+
+  it("lets the original guest update their own row after a name collision", async () => {
+    const { submitGuestInfo } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    const party = mockParty(mem);
+    mem.seedGuest({
+      partyId: party.id,
+      guestToken: TOKEN_ALEX,
+      name: "QA Guest",
+      nameKey: "qa guest",
+      phone: "555-0100",
+      arrivalFlight: "UA 1523",
+      notes: "landing late",
+    });
+    mem.seedGuest({
+      partyId: party.id,
+      guestToken: TOKEN_SAM,
+      name: "QA Guest",
+      nameKey: "qa guest",
+      notes: "impostor",
+    });
+    cookieStore.get.mockReturnValue({ value: TOKEN_ALEX });
+
+    const result = await submitGuestInfo(
+      null,
+      form({ name: "QA Guest", dietary: "vegetarian" }),
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(mem.guests).toHaveLength(2);
+    expect(mem.guests[0]).toMatchObject({
+      guestToken: TOKEN_ALEX,
+      phone: "555-0100",
+      arrivalFlight: "UA 1523",
+      notes: "landing late",
+      dietary: "vegetarian",
+    });
+    expect(mem.guests[1]).toMatchObject({
+      guestToken: TOKEN_SAM,
+      notes: "impostor",
+    });
+  });
+
+  it("ignores a leftover name-string cookie and inserts instead of clobbering", async () => {
+    const { submitGuestInfo } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    const party = mockParty(mem);
+    mem.seedGuest({
+      partyId: party.id,
+      guestToken: TOKEN_ALEX,
+      name: "Alex",
+      nameKey: "alex",
+      notes: "original",
+    });
+    cookieStore.get.mockReturnValue({ value: "alex" });
+
+    const result = await submitGuestInfo(
+      null,
+      form({ name: "Alex", notes: "new browser" }),
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(mem.guests).toHaveLength(2);
+    expect(mem.guests[0].notes).toBe("original");
+    expect(mem.guests[1].notes).toBe("new browser");
   });
 });
 

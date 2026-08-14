@@ -36,17 +36,25 @@ export function emptyToNull(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-/** Session cookie: last name this browser saved an RSVP under. */
+/** Session cookie: this browser's guest token (not the display name). */
 export const RSVP_COOKIE = "bp_rsvp";
 
-export function matchPrefillGuest<T extends { nameKey: string }>(
+const GUEST_TOKEN_RE = /^[a-f0-9]{32}$/;
+
+/** 32-char hex identity. Rejects leftover name-string cookies. */
+export function readGuestToken(value: string | undefined | null): string | null {
+  if (!value) return null;
+  const token = value.trim().toLowerCase();
+  return GUEST_TOKEN_RE.test(token) ? token : null;
+}
+
+export function matchPrefillGuest<T extends { guestToken: string }>(
   guests: T[],
   cookieValue: string | undefined | null,
 ): T | null {
-  if (!cookieValue) return null;
-  const key = cookieValue.trim().toLowerCase();
-  if (!key) return null;
-  return guests.find((guest) => guest.nameKey === key) ?? null;
+  const token = readGuestToken(cookieValue);
+  if (!token) return null;
+  return guests.find((guest) => guest.guestToken === token) ?? null;
 }
 
 export function rsvpFieldDefaults(existing: RsvpPrefill | null | undefined) {
@@ -65,13 +73,9 @@ export function rsvpFieldDefaults(existing: RsvpPrefill | null | undefined) {
 
 export function explicitClearsFromFormData(formData: FormData): Set<GuestTextField> {
   const clears = new Set<GuestTextField>();
-  const prefillNameKey = emptyToNull(formData.get("prefillNameKey"))?.toLowerCase();
-  const submittedName = emptyToNull(formData.get("name"))?.toLowerCase();
-  // Only honor clears when the submitted name is the row we prefilled.
-  // Changing the name is the #89 collision path — don't treat blanks as
-  // deletes of someone else's saved fields.
-  if (!prefillNameKey || prefillNameKey !== submittedName) return clears;
-
+  // had:* is only rendered on a prefilled form for this browser's row.
+  // Identity is the guest-token cookie, so a name edit still counts as
+  // clearing this guest's fields — not someone else's.
   for (const field of GUEST_TEXT_FIELDS) {
     const raw = emptyToNull(formData.get(field));
     if (!raw && formData.get(`had:${field}`)) clears.add(field);

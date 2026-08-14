@@ -20,5 +20,11 @@ export async function GET(request: Request, { params }: Params) {
     .where(eq(schema.guests.partyId, auth.party.id))
     .orderBy(schema.guests.name);
 
-  return NextResponse.json({ guests });
+  return NextResponse.json({
+    guests: guests.map((guest) => {
+      const { guestToken, ...publicGuest } = guest;
+      void guestToken;
+      return publicGuest;
+    }),
+  });
 }

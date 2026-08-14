@@ -59,10 +59,6 @@ export function RsvpForm({
 
   return (
     <form action={formAction} className="mx-auto max-w-2xl space-y-10">
-      {existing ? (
-        <input type="hidden" name="prefillNameKey" value={existing.nameKey} />
-      ) : null}
-
       {/* WHO */}
       <section className="space-y-4">
         <Eyebrow>Who</Eyebrow>

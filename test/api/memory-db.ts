@@ -185,11 +185,13 @@ export function createMemoryDb() {
       return row;
     },
     seedGuest(partial: Row) {
+      const id = guestSeq++;
       const row: Row = {
-        id: guestSeq++,
+        id,
         partyId: 1,
         name: "Alex",
         nameKey: "alex",
+        guestToken: id.toString(16).padStart(32, "0"),
         createdAt: new Date(),
         updatedAt: new Date(),
         ...partial,

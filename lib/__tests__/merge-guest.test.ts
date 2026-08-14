@@ -3,6 +3,7 @@ import {
   explicitClearsFromFormData,
   matchPrefillGuest,
   mergeGuestRow,
+  readGuestToken,
   rsvpFieldDefaults,
   type GuestPatch,
 } from "@/lib/merge-guest";
@@ -89,7 +90,6 @@ describe("explicitClearsFromFormData", () => {
   it("treats an emptied prefilled field as an explicit clear", () => {
     const formData = new FormData();
     formData.set("name", "Alex");
-    formData.set("prefillNameKey", "alex");
     formData.set("had:phone", "1");
     formData.set("phone", "  ");
     formData.set("had:notes", "1");
@@ -98,14 +98,13 @@ describe("explicitClearsFromFormData", () => {
     expect([...explicitClearsFromFormData(formData)]).toEqual(["phone"]);
   });
 
-  it("does not clear fields when the submitted name is not the prefilled row", () => {
+  it("still clears when the guest edits their own display name", () => {
     const formData = new FormData();
     formData.set("name", "Sam");
-    formData.set("prefillNameKey", "alex");
     formData.set("had:phone", "1");
     formData.set("phone", "");
 
-    expect(explicitClearsFromFormData(formData).size).toBe(0);
+    expect([...explicitClearsFromFormData(formData)]).toEqual(["phone"]);
   });
 });
 
@@ -143,13 +142,24 @@ describe("form prefills existing data", () => {
     expect(rsvpFieldDefaults(undefined).activityPrefs).toEqual({});
   });
 
-  it("selects the roster row matching the session cookie, not another guest", () => {
+  it("selects the roster row matching the guest-token cookie, not another name", () => {
     const guests = [
-      { nameKey: "sam", name: "Sam" },
-      { nameKey: "alex", name: "Alex" },
+      { guestToken: "b".repeat(32), nameKey: "sam", name: "Sam" },
+      { guestToken: "a".repeat(32), nameKey: "alex", name: "Alex" },
     ];
-    expect(matchPrefillGuest(guests, "Alex")).toEqual({ nameKey: "alex", name: "Alex" });
+    expect(matchPrefillGuest(guests, "A".repeat(32))).toEqual(guests[1]);
+    expect(matchPrefillGuest(guests, "alex")).toBeNull();
     expect(matchPrefillGuest(guests, "nobody")).toBeNull();
     expect(matchPrefillGuest(guests, undefined)).toBeNull();
+  });
+});
+
+describe("readGuestToken", () => {
+  it("accepts 32-char hex and rejects leftover name cookies", () => {
+    expect(readGuestToken("a".repeat(32))).toBe("a".repeat(32));
+    expect(readGuestToken("A".repeat(32))).toBe("a".repeat(32));
+    expect(readGuestToken("qa guest")).toBeNull();
+    expect(readGuestToken("alex")).toBeNull();
+    expect(readGuestToken("")).toBeNull();
   });
 });

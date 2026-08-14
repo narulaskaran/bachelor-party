@@ -23,7 +23,8 @@ export const parties = pgTable("parties", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// One row per guest per party, upserted by normalized name.
+// One row per guest identity per party. Identity is guestToken (cookie),
+// not display name — duplicate names are allowed.
 export const guests = pgTable(
   "guests",
   {
@@ -31,8 +32,9 @@ export const guests = pgTable(
     partyId: integer("party_id")
       .notNull()
       .references(() => parties.id),
+    guestToken: text("guest_token").notNull(),
     name: text("name").notNull(),
-    nameKey: text("name_key").notNull(), // lowercased for upsert
+    nameKey: text("name_key").notNull(), // lowercased display name; not unique
     phone: text("phone"),
     arrivalFlight: text("arrival_flight"),
     arrivalTime: text("arrival_time"),
@@ -45,7 +47,9 @@ export const guests = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (table) => [uniqueIndex("guests_party_name_idx").on(table.partyId, table.nameKey)]
+  (table) => [
+    uniqueIndex("guests_party_guest_token_idx").on(table.partyId, table.guestToken),
+  ]
 );
 
 export type Party = typeof parties.$inferSelect;

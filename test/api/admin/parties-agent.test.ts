@@ -409,6 +409,7 @@ describe("agent API (create / patch / guests)", () => {
     const body = await listed.json();
     expect(body.guests).toHaveLength(1);
     expect(body.guests[0].name).toBe("Alex");
+    expect(body.guests[0].guestToken).toBeUndefined();
 
     const deleted = await guestDELETE(
       makeRequest("cabin-tok"),
