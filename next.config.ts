@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { adminHtmlHeaderRules } from "./lib/admin-security-headers";
+import { LEGACY_PAGE_REDIRECTS } from "./lib/legacy-page-redirects";
 
 const nextConfig: NextConfig = {
   // CDN/routing copy of the same admin HTML headers (see lib/admin-security-headers.ts).
@@ -7,13 +8,10 @@ const nextConfig: NextConfig = {
     return adminHtmlHeaderRules();
   },
   async redirects() {
-    // Old multi-page URLs → single-page anchors.
-    return [
-      { source: "/schedule", destination: "/#schedule", permanent: false },
-      { source: "/activities", destination: "/#activities", permanent: false },
-      { source: "/basecamp", destination: "/#basecamp", permanent: false },
-      { source: "/rsvp", destination: "/#rsvp", permanent: false },
-    ];
+    // Old multi-page URLs → single-page anchors. On the logged-out homepage
+    // those hashes land on the trip-entry form; on a logged-in PartyView they
+    // still hit the real schedule / activities / basecamp / RSVP sections.
+    return [...LEGACY_PAGE_REDIRECTS];
   },
   async rewrites() {
     // /parties is an alias, not a second set of route files. Dual-mounting

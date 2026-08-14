@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { TripEntryForm } from "@/components/trip-entry-form";
+import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 
 // lucide-react doesn't ship brand icons — a minimal octocat mark instead.
 function GithubMark(props: React.SVGProps<SVGSVGElement>) {
@@ -74,9 +76,38 @@ export function LandingView() {
             <Link href="/demo">Try a sample trip</Link>
           </Button>
           <p className="text-sm text-muted-foreground">
-            Got an invite link from your organizer? Use it to see your trip.
+            Got an invite link from your organizer?{" "}
+            <a href="#rsvp" className="text-foreground underline-offset-4 hover:underline">
+              Enter your trip
+            </a>{" "}
+            below — or paste the link you were sent.
           </p>
         </div>
+      </section>
+
+      <section
+        className="border-t border-border py-10 sm:py-12"
+        aria-labelledby="trip-entry-heading"
+      >
+        {LEGACY_PAGE_HASHES.map((hash) => (
+          <div key={hash} id={hash} className="scroll-mt-20" aria-hidden="true" />
+        ))}
+        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+          Got an Invite
+        </p>
+        <h2
+          id="trip-entry-heading"
+          className="mt-2 font-display text-2xl font-bold uppercase tracking-wide sm:text-3xl"
+        >
+          Enter Your Trip
+        </h2>
+        <p id="trip-entry-hint" className="mt-2 max-w-xl text-muted-foreground">
+          Invite links look like{" "}
+          <span className="font-mono text-sm text-foreground">yoursite.com/your-trip</span>
+          . Paste that URL or just the trip code, then enter the password on the
+          next page.
+        </p>
+        <TripEntryForm />
       </section>
 
       <footer className="border-t border-border py-8">
