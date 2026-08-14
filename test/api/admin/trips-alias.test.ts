@@ -141,4 +141,16 @@ describe("OpenAPI", () => {
     expect(create.properties.content.properties.kind.const).toBe("trip");
     expect(create.properties.content.properties.trip.required).toContain("siteName");
   });
+
+  it("documents reserved slugs on create", () => {
+    const spec = openApiSpec();
+    const slug = (spec.components.schemas.CreateTrip as {
+      properties: { slug: { description?: string; not?: { enum: string[] } } };
+    }).properties.slug;
+    expect(slug.not?.enum).toEqual(
+      expect.arrayContaining(["admin", "api", "rsvp", "schedule", "activities", "basecamp", "login", "demo"]),
+    );
+    expect(slug.description).toMatch(/reserved/i);
+    expect(spec.info.description).toMatch(/reserved app routes/i);
+  });
 });

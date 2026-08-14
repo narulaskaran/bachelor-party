@@ -22,8 +22,10 @@ cannot see or mutate anyone else's.
 
 The only required field on create is `content.trip.siteName`. Slug and guest
 password autogenerate when omitted. `POST` is create-only: a colliding slug
-returns **409** (GET + PATCH instead of upsert). Unauthenticated create is
-rate-limited per IP.
+returns **409** (GET + PATCH instead of upsert). Reserved app-route slugs
+(`admin`, `api`, `rsvp`, `schedule`, `activities`, `basecamp`, `login`,
+`demo`) return **400**; autogen skips those names and existing trips.
+Unauthenticated create is rate-limited per IP.
 
 `PATCH` applies [JSON Merge Patch](https://datatracker.ietf.org/doc/html/rfc7396)
 to `content` (`null` deletes a key; arrays replace). A full document still
@@ -52,7 +54,7 @@ Content shape: `lib/party-types.ts`, validated by `lib/party-schema.ts`. Demo:
 | Route | Method | Does |
 | --- | --- | --- |
 | `/api/admin/trips` | GET | The trip for the presented `adminToken` (never a list-all) |
-| `/api/admin/trips` | POST | Create — `siteName` is enough. No auth. 409 if the slug exists. |
+| `/api/admin/trips` | POST | Create — `siteName` is enough. No auth. 400 if reserved; 409 if the slug exists. |
 | `/api/admin/trips/:slug` | GET | Full record, including password + content |
 | `/api/admin/trips/:slug` | PATCH | Merge-patch `content` and/or replace `password` |
 | `/api/admin/trips/:slug` | DELETE | Delete the trip and its guest RSVPs |

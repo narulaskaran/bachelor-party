@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
-import { partyContentSchema } from "@/lib/party-schema";
+import { createPartySchema, partyContentSchema } from "@/lib/party-schema";
 
 describe("issuesFromZod", () => {
   it("adds a siteName hint", () => {
@@ -19,6 +19,19 @@ describe("issuesFromZod", () => {
     if (parsed.success) return;
     const issues = issuesFromZod(parsed.error);
     expect(issues.some((i) => i.path === "kind" && i.hint?.includes("trip"))).toBe(true);
+  });
+
+  it("hints reserved slugs collide with app routes", () => {
+    const parsed = createPartySchema.safeParse({
+      slug: "admin",
+      content: { trip: { siteName: "Nope" } },
+    });
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    const issues = issuesFromZod(parsed.error);
+    const slug = issues.find((i) => i.path === "slug");
+    expect(slug?.message).toMatch(/reserved/i);
+    expect(slug?.hint).toMatch(/admin/i);
   });
 
   it("uses (root) when the path is empty", () => {

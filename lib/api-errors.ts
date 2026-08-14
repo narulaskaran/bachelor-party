@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
+import { RESERVED_SLUGS } from "@/lib/slug";
 
 export type Issue = {
   path: string;
@@ -11,6 +12,7 @@ const HINTS: Record<string, string> = {
   "content.trip.siteName": "The trip needs a name — that's the only required field.",
   "trip.siteName": "The trip needs a name — that's the only required field.",
   slug: "Use lowercase-kebab-case, e.g. jackson-26. Omit slug to autogenerate from the name.",
+  reservedSlug: `These slugs collide with app routes: ${RESERVED_SLUGS.join(", ")}. Omit slug to autogenerate.`,
   password: "At least 4 characters, or omit it and we'll generate one.",
   kind: "Only kind \"trip\" is supported right now. Omit the field.",
 };
@@ -52,6 +54,9 @@ export async function readJsonBody(
 }
 
 function hintFor(path: string, message: string): string | undefined {
+  if (path === "slug" && message.toLowerCase().includes("reserved")) {
+    return HINTS.reservedSlug;
+  }
   if (HINTS[path]) return HINTS[path];
   if (
     (path.startsWith("content.trip.") || path.startsWith("trip.")) &&

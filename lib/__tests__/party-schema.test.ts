@@ -37,11 +37,23 @@ describe("partyContentSchema", () => {
 
   it("accepts the demo party as a create payload", () => {
     const parsed = createPartySchema.safeParse({
-      slug: "demo",
+      slug: "crew-weekend",
       password: "crew-secret",
       content: DEMO_PARTY,
     });
     expect(parsed.success).toBe(true);
+  });
+
+  it("rejects reserved app-route slugs", () => {
+    for (const slug of ["admin", "api", "rsvp", "schedule", "activities", "basecamp", "login", "demo"]) {
+      const parsed = createPartySchema.safeParse({
+        slug,
+        content: { trip: { siteName: "Nope" } },
+      });
+      expect(parsed.success).toBe(false);
+      if (parsed.success) return;
+      expect(parsed.error.issues.some((i) => i.path.includes("slug"))).toBe(true);
+    }
   });
 
   it("allows omitting slug and password on create", () => {
