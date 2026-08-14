@@ -65,8 +65,8 @@ describe("adminHtmlSecurityHeadersFor", () => {
 });
 
 describe("proxy (admin HTML matcher)", () => {
-  it("sets clickjacking, nosniff, and CSP on /admin/login", () => {
-    const res = proxy(new NextRequest("http://localhost/admin/login"));
+  it("sets clickjacking, nosniff, and CSP on /admin/login", async () => {
+    const res = await proxy(new NextRequest("http://localhost/admin/login"));
     expect(res.headers.get("X-Frame-Options")).toBe("DENY");
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(res.headers.get("Content-Security-Policy")).toMatch(
@@ -74,15 +74,19 @@ describe("proxy (admin HTML matcher)", () => {
     );
   });
 
-  it("does not set those headers on public pages", () => {
-    const res = proxy(new NextRequest("http://localhost/"));
+  it("does not set those headers on public pages", async () => {
+    const res = await proxy(new NextRequest("http://localhost/"));
     expect(res.headers.get("X-Frame-Options")).toBeNull();
     expect(res.headers.get("X-Content-Type-Options")).toBeNull();
     expect(res.headers.get("Content-Security-Policy")).toBeNull();
   });
 
-  it("scopes the matcher to the admin HTML surface", () => {
-    expect(proxyConfig.matcher).toEqual(["/admin", "/admin/:path*"]);
+  it("matches admin HTML and guest slugs", () => {
+    expect(proxyConfig.matcher).toEqual([
+      "/admin",
+      "/admin/:path*",
+      "/((?!api|_next|_not-found|favicon.ico|icon.svg|admin).*)",
+    ]);
   });
 });
 
