@@ -24,7 +24,7 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
       <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
         The Basecamp
       </p>
-      <h2 className="mt-2 font-display text-2xl font-bold uppercase tracking-wide sm:text-3xl">
+      <h2 className="mt-2 break-words font-display text-2xl font-bold uppercase tracking-wide sm:text-3xl">
         {lodging.name}
       </h2>
       {subtitle.length > 0 ? (
@@ -32,11 +32,11 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
       ) : null}
 
       {facts.length > 0 ? (
-        <div className="mt-8 flex divide-x divide-border overflow-x-auto border border-border">
+        <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden border border-border bg-border sm:grid-cols-4">
           {facts.map((fact) => (
-            <div key={fact.label} className="shrink-0 px-6 py-6 sm:flex-1 sm:px-8">
-              <p className="font-mono text-3xl font-bold sm:text-4xl">{fact.value}</p>
-              <p className="mt-1 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            <div key={fact.label} className="min-w-0 bg-background px-4 py-6 sm:px-8">
+              <p className="break-words font-mono text-3xl font-bold sm:text-4xl">{fact.value}</p>
+              <p className="mt-1 break-words font-mono text-xs uppercase tracking-widest text-muted-foreground">
                 {fact.label}
               </p>
             </div>

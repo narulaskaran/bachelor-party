@@ -53,10 +53,10 @@ export async function RsvpSection({
                 <CardContent className="space-y-1.5">
                   {airport ? (
                     <>
-                      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                      <p className="break-words font-mono text-xs uppercase tracking-widest text-muted-foreground">
                         Arrival · {guest.arrivalFlight || "—"} · {guest.arrivalTime || "—"}
                       </p>
-                      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                      <p className="break-words font-mono text-xs uppercase tracking-widest text-muted-foreground">
                         Departure · {guest.departureFlight || "—"} ·{" "}
                         {guest.departureTime || "—"}
                       </p>

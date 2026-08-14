@@ -16,13 +16,13 @@ export function Glance({ trip, lodging }: { trip: Trip; lodging?: Lodging }) {
 
       <div className="mt-6 grid grid-cols-1 divide-y divide-border border border-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
         {facts.map((fact) => (
-          <div key={fact.label} className="px-5 py-4">
+          <div key={fact.label} className="min-w-0 px-5 py-4">
             <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
               {fact.label}
             </p>
-            <p className="mt-1 font-mono text-base font-bold sm:text-lg">{fact.value}</p>
+            <p className="mt-1 break-words font-mono text-base font-bold sm:text-lg">{fact.value}</p>
             {fact.note && (
-              <p className="mt-0.5 text-xs text-muted-foreground">{fact.note}</p>
+              <p className="mt-0.5 break-words text-xs text-muted-foreground">{fact.note}</p>
             )}
           </div>
         ))}
