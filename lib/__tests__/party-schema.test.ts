@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { DEMO_PARTY } from "@/lib/demo-party";
-import { createPartySchema, partyContentSchema } from "@/lib/party-schema";
+import {
+  createPartySchema,
+  partyContentSchema,
+  updatePartySchema,
+} from "@/lib/party-schema";
 
 describe("partyContentSchema", () => {
   it("accepts siteName-only content", () => {
@@ -36,6 +40,22 @@ describe("partyContentSchema", () => {
       slug: "demo",
       password: "crew-secret",
       content: DEMO_PARTY,
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("allows omitting slug and password on create", () => {
+    const parsed = createPartySchema.safeParse({
+      content: { trip: { siteName: "Jackson Hole '26" } },
+    });
+    expect(parsed.success).toBe(true);
+  });
+});
+
+describe("updatePartySchema", () => {
+  it("accepts a JSON Merge Patch fragment, not only a full PartyContent", () => {
+    const parsed = updatePartySchema.safeParse({
+      content: { schedule: [{ key: "saturday" }] },
     });
     expect(parsed.success).toBe(true);
   });

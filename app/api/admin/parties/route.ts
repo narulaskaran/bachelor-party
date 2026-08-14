@@ -2,12 +2,14 @@ import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { count, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/admin-auth";
+import { issuesFromZod } from "@/lib/api-errors";
 import { getDb, schema } from "@/lib/db";
+import { organizerPacket } from "@/lib/organizer-packet";
 import { createPartySchema } from "@/lib/party-schema";
+import { slugFromName, uniqueSlug } from "@/lib/slug";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/admin/parties — lightweight index (no passwords, no full content).
 export async function GET(request: Request) {
   const denied = requireAdmin(request);
   if (denied) return denied;
@@ -44,9 +46,8 @@ export async function GET(request: Request) {
   });
 }
 
-// POST /api/admin/parties — create a new party. 409 if the slug exists.
-// Auto-generates an `admin_token` for the new party (32-char hex). Returns it
-// in the response so callers can persist it as the per-party admin credential.
+// POST /api/admin/parties — create. siteName is enough; slug and password
+// autogenerate. Returns an organizer packet (url, slug, password, adminToken).
 export async function POST(request: Request) {
   const denied = requireAdmin(request);
   if (denied) return denied;
@@ -60,47 +61,84 @@ export async function POST(request: Request) {
   const parsed = createPartySchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid party payload", issues: parsed.error.issues },
-      { status: 400 }
+      { error: "Invalid party payload", issues: issuesFromZod(parsed.error) },
+      { status: 400 },
     );
   }
 
-  // Auto-generate a hex token for the new party's admin_token column.
+  const content = {
+    ...parsed.data.content,
+    kind: "trip" as const,
+  };
+
+  const taken = async (candidate: string) => {
+    const [row] = await db
+      .select({ id: schema.parties.id })
+      .from(schema.parties)
+      .where(eq(schema.parties.slug, candidate))
+      .limit(1);
+    return Boolean(row);
+  };
+
+  let slug = parsed.data.slug;
+  if (slug) {
+    if (await taken(slug)) {
+      return NextResponse.json(
+        {
+          error: `Trip with slug '${slug}' already exists`,
+          issues: [
+            {
+              path: "slug",
+              message: "already exists",
+              hint: "GET the trip and PATCH it, or pick a different slug.",
+            },
+          ],
+        },
+        { status: 409 },
+      );
+    }
+  } else {
+    slug = await uniqueSlug(slugFromName(content.trip.siteName), taken);
+  }
+
+  let password = parsed.data.password ?? randomBytes(6).toString("hex");
+  const passwordTaken = async (value: string) => {
+    const [row] = await db
+      .select({ id: schema.parties.id })
+      .from(schema.parties)
+      .where(eq(schema.parties.password, value))
+      .limit(1);
+    return Boolean(row);
+  };
+  if (await passwordTaken(password)) {
+    if (parsed.data.password) {
+      return NextResponse.json(
+        { error: "Password already in use by another trip" },
+        { status: 409 },
+      );
+    }
+    do {
+      password = randomBytes(6).toString("hex");
+    } while (await passwordTaken(password));
+  }
+
   const rawAdminToken = randomBytes(16).toString("hex");
-
-  const [existing] = await db
-    .select({ id: schema.parties.id })
-    .from(schema.parties)
-    .where(eq(schema.parties.slug, parsed.data.slug))
-    .limit(1);
-  if (existing) {
-    return NextResponse.json(
-      { error: `Party with slug '${parsed.data.slug}' already exists` },
-      { status: 409 }
-    );
-  }
-
-  // Check password uniqueness — password is the login key, must not collide.
-  const [passwordConflict] = await db
-    .select({ id: schema.parties.id })
-    .from(schema.parties)
-    .where(eq(schema.parties.password, parsed.data.password))
-    .limit(1);
-  if (passwordConflict) {
-    return NextResponse.json(
-      { error: "Password already in use by another party" },
-      { status: 409 }
-    );
-  }
 
   try {
     const [party] = await db
       .insert(schema.parties)
-      .values({ ...parsed.data, adminToken: rawAdminToken })
+      .values({ slug, password, content, adminToken: rawAdminToken })
       .returning();
     return NextResponse.json(
-      { party: { id: party.id, slug: party.slug, adminToken: party.adminToken } },
-      { status: 201 }
+      {
+        party: { id: party.id, slug: party.slug, adminToken: party.adminToken },
+        ...organizerPacket(request, {
+          slug: party.slug,
+          password: party.password,
+          adminToken: party.adminToken,
+        }),
+      },
+      { status: 201 },
     );
   } catch (err) {
     console.error("create party failed", err);
