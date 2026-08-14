@@ -27,7 +27,8 @@ type ToolDef = {
 export const BIGSEND_TOOLS: ToolDef[] = [
   {
     name: "create",
-    description: 'Create a trip. Example: { "name": "E2E Smoke" }',
+    description:
+      'Create a trip (no token required). Returns an organizer packet; store adminToken as BIGSEND_TOKEN for later calls. Example: { "name": "E2E Smoke" }',
     inputSchema: {
       name: z.string().optional().describe("Trip name (siteName)"),
       file: z.string().optional().describe("Path to a create JSON file"),

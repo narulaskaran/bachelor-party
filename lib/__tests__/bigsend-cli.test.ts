@@ -14,7 +14,6 @@ function ioHarness(opts: {
   const io: RunIO = {
     env: {
       BIGSEND_API_URL: "https://preview.example",
-      BIGSEND_TOKEN: "global-token",
       BIGSEND_CONFIG: "/tmp/bigsend-test.json",
       ...opts.env,
     },
@@ -40,12 +39,14 @@ function jsonResponse(status: number, body: unknown) {
 }
 
 describe("bigsend CLI", () => {
-  it("create --name POSTs siteName-only to /api/admin/trips and stores the token", async () => {
+  it("create --name POSTs siteName-only to /api/admin/trips without Authorization and stores the token", async () => {
     const calls: Call[] = [];
+    const auths: (string | null)[] = [];
     const { io, stdout, files } = ioHarness({
       fetchImpl: async (url, init) => {
         const body = init?.body ? JSON.parse(String(init.body)) : undefined;
         calls.push({ method: init?.method ?? "GET", url, body });
+        auths.push(new Headers(init?.headers).get("authorization"));
         return jsonResponse(201, {
           url: "https://preview.example/e2e-smoke",
           slug: "e2e-smoke",
@@ -61,6 +62,7 @@ describe("bigsend CLI", () => {
     expect(calls[0].method).toBe("POST");
     expect(calls[0].url).toBe("https://preview.example/api/admin/trips");
     expect(calls[0].body).toEqual({ content: { trip: { siteName: "E2E Smoke" } } });
+    expect(auths[0]).toBeNull();
     expect(JSON.parse(stdout.join(""))).toEqual({
       url: "https://preview.example/e2e-smoke",
       slug: "e2e-smoke",
@@ -70,11 +72,11 @@ describe("bigsend CLI", () => {
     expect(JSON.parse(files["/tmp/bigsend-test.json"]).tokens["e2e-smoke"]).toBe("party-tok");
   });
 
-  it("schedule add GETs then PATCHes with the stored slug token, not the global token", async () => {
+  it("schedule add GETs then PATCHes with the stored slug token, not a leftover env token", async () => {
     const auths: string[] = [];
     const calls: Call[] = [];
     const { io } = ioHarness({
-      env: { BIGSEND_TOKEN: "global-token" },
+      env: { BIGSEND_TOKEN: "leftover-env-token" },
       files: {
         "/tmp/bigsend-test.json": JSON.stringify({ tokens: { cabin: "slug-tok" } }),
       },
@@ -123,6 +125,7 @@ describe("bigsend CLI", () => {
   it("schedule add keys days by ISO date so two Saturdays stay separate", async () => {
     const calls: Call[] = [];
     const { io } = ioHarness({
+      env: { BIGSEND_TOKEN: "packet-tok" },
       fetchImpl: async (url, init) => {
         const body = init?.body ? JSON.parse(String(init.body)) : undefined;
         calls.push({ method: init?.method ?? "GET", url, body });
@@ -162,6 +165,7 @@ describe("bigsend CLI", () => {
   it("get / guests / lodging / delete map to the trips API", async () => {
     const calls: Call[] = [];
     const { io } = ioHarness({
+      env: { BIGSEND_TOKEN: "packet-tok" },
       fetchImpl: async (url, init) => {
         calls.push({
           method: init?.method ?? "GET",

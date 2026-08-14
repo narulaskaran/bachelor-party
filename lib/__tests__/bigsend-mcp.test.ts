@@ -12,7 +12,6 @@ function ioHarness(fetchImpl: typeof fetch): RunIO {
   return {
     env: {
       BIGSEND_API_URL: "https://preview.example",
-      BIGSEND_TOKEN: "global-token",
       BIGSEND_CONFIG: "/tmp/bigsend-mcp.json",
     },
     fetch: fetchImpl,

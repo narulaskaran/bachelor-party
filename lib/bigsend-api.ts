@@ -31,7 +31,7 @@ export type BigsendClient = {
 
 export function createBigsendClient(opts: {
   apiUrl: string;
-  token: string;
+  token?: string;
   fetch?: typeof fetch;
 }): BigsendClient {
   const base = opts.apiUrl.replace(/\/$/, "");
@@ -45,7 +45,7 @@ export function createBigsendClient(opts: {
     const res = await fetchFn(`${base}${path}`, {
       method,
       headers: {
-        authorization: `Bearer ${opts.token}`,
+        ...(opts.token ? { authorization: `Bearer ${opts.token}` } : {}),
         ...(body !== undefined ? { "content-type": "application/json" } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,

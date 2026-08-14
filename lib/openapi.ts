@@ -120,9 +120,9 @@ export function openApiSpec() {
     openapi: "3.1.0",
     info: {
       title: "The Big Send admin API",
-      version: "0.2.0",
+      version: "0.3.0",
       description:
-        "Headless group-trip HQ. Canonical paths are `/api/admin/trips`. `/api/admin/parties/**` rewrites to the same handlers. Create with the global ADMIN_API_TOKEN; slug routes also accept the trip's adminToken. JSON keys `trip` and `party` (and `trips`/`parties`) are both returned.",
+        "Headless group-trip HQ. Canonical paths are `/api/admin/trips`. `/api/admin/parties/**` rewrites to the same handlers. Create needs no Authorization; the 201 organizer packet's adminToken is the only credential for that trip. JSON keys `trip` and `party` (and `trips`/`parties`) are both returned.",
     },
     servers: [{ url: "/", description: "This deployment" }],
     tags: [
@@ -134,11 +134,11 @@ export function openApiSpec() {
         get: {
           operationId: "listTrips",
           tags: ["trips"],
-          summary: "List trips (no passwords or full content)",
+          summary: "The trip for the presented adminToken (never other people's trips)",
           security: bearer,
           responses: {
             "200": {
-              description: "Index",
+              description: "Index of at most that one trip",
               ...json({
                 type: "object",
                 properties: {
@@ -157,8 +157,8 @@ export function openApiSpec() {
         post: {
           operationId: "createTrip",
           tags: ["trips"],
-          summary: "Create a trip — siteName is enough",
-          security: bearer,
+          summary: "Create a trip — siteName is enough; no Authorization required",
+          security: [],
           requestBody: {
             required: true,
             ...json({ $ref: "#/components/schemas/CreateTrip" }),
@@ -170,6 +170,7 @@ export function openApiSpec() {
             },
             "400": { description: "Invalid payload", ...json({ $ref: "#/components/schemas/Error" }) },
             "409": { description: "Slug or password taken", ...json({ $ref: "#/components/schemas/Error" }) },
+            "429": { description: "Rate limited (per IP)", ...json({ $ref: "#/components/schemas/Error" }) },
           },
         },
       },
@@ -229,7 +230,7 @@ export function openApiSpec() {
         bearerAuth: {
           type: "http",
           scheme: "bearer",
-          description: "ADMIN_API_TOKEN, or the trip's adminToken on /{slug} routes",
+          description: "The trip's adminToken from the 201 organizer packet",
         },
       },
       parameters: {

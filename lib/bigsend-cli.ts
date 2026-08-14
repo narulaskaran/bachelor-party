@@ -17,7 +17,10 @@ import {
 
 export const USAGE = `bigsend — The Big Send admin CLI (HTTP only; no DATABASE_URL)
 
-Env: BIGSEND_API_URL  BIGSEND_TOKEN  BIGSEND_CONFIG (optional path)
+Env: BIGSEND_API_URL  BIGSEND_TOKEN (trip adminToken after create)  BIGSEND_CONFIG (optional path)
+
+Create needs no token. The 201 organizer packet's adminToken is stored in
+~/.bigsend.json (or BIGSEND_CONFIG) so follow-up commands work.
 
   bigsend create --name "E2E Smoke"
   bigsend get <slug>
@@ -72,14 +75,14 @@ function saveToken(io: RunIO, slug: string, token: string | null | undefined) {
   io.writeFile(path, `${JSON.stringify(config, null, 2)}\n`);
 }
 
-function clientFor(io: RunIO, slug?: string, globalOnly = false): BigsendClient | string {
+function clientFor(io: RunIO, slug?: string): BigsendClient | string {
   const apiUrl = io.env.BIGSEND_API_URL;
   if (!apiUrl) return "BIGSEND_API_URL is not set";
   const { config } = loadConfig(io);
-  const token = globalOnly ? io.env.BIGSEND_TOKEN : resolveToken(config, io.env, slug);
+  const token = resolveToken(config, io.env, slug);
   if (!token) {
     return slug
-      ? `No token for '${slug}'. Set BIGSEND_TOKEN or create the trip first.`
+      ? `No token for '${slug}'. Set BIGSEND_TOKEN to that trip's adminToken, or create the trip first.`
       : "BIGSEND_TOKEN is not set";
   }
   return createBigsendClient({ apiUrl, token, fetch: io.fetch });
@@ -202,8 +205,9 @@ async function cmdCreate(
   io: RunIO,
   flags: { name?: string; slug?: string; password?: string; file?: string },
 ): Promise<number> {
-  const api = clientFor(io, undefined, true);
-  if (typeof api === "string") return fail(io, api);
+  const apiUrl = io.env.BIGSEND_API_URL;
+  if (!apiUrl) return fail(io, "BIGSEND_API_URL is not set");
+  const api = createBigsendClient({ apiUrl, fetch: io.fetch });
 
   let body: CreateTripBody;
   if (flags.file) {

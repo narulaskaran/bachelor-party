@@ -15,13 +15,15 @@ those handlers (alias for existing scripts). Machine-readable spec:
 `GET /api/openapi.json` (unauthenticated). The database table is still
 `parties`.
 
-Create with the global `ADMIN_API_TOKEN`. The **201 organizer packet** is
-`url`, `slug`, `password`, `adminToken`. That `adminToken` authorizes every
-`/:slug` route for that trip. It cannot list all trips or create another one.
+`POST /api/admin/trips` needs **no Authorization**. The **201 organizer packet**
+is `url`, `slug`, `password`, `adminToken`. That `adminToken` is the only
+credential after create: it authorizes every `/:slug` route for that trip, and
+cannot see or mutate anyone else's.
 
 The only required field on create is `content.trip.siteName`. Slug and guest
 password autogenerate when omitted. `POST` is create-only: a colliding slug
-returns **409** (GET + PATCH instead of upsert).
+returns **409** (GET + PATCH instead of upsert). Unauthenticated create is
+rate-limited per IP.
 
 `PATCH` applies [JSON Merge Patch](https://datatracker.ietf.org/doc/html/rfc7396)
 to `content` (`null` deletes a key; arrays replace). A full document still
@@ -31,9 +33,8 @@ List/create/get responses include both `trips`/`trip` (canonical) and
 `parties`/`party` (alias).
 
 ```bash
-# Sparse create — name is enough
+# Sparse create — name is enough; no deploy secret
 curl https://your-deploy.vercel.app/api/admin/trips \
-  -H "Authorization: Bearer $ADMIN_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"content":{"trip":{"siteName":"Jackson Hole '\''26"}}}'
 
@@ -50,8 +51,8 @@ Content shape: `lib/party-types.ts`, validated by `lib/party-schema.ts`. Demo:
 
 | Route | Method | Does |
 | --- | --- | --- |
-| `/api/admin/trips` | GET | List trips (no passwords/content). Global token only. |
-| `/api/admin/trips` | POST | Create — `siteName` is enough. 409 if the slug exists. |
+| `/api/admin/trips` | GET | The trip for the presented `adminToken` (never a list-all) |
+| `/api/admin/trips` | POST | Create — `siteName` is enough. No auth. 409 if the slug exists. |
 | `/api/admin/trips/:slug` | GET | Full record, including password + content |
 | `/api/admin/trips/:slug` | PATCH | Merge-patch `content` and/or replace `password` |
 | `/api/admin/trips/:slug` | DELETE | Delete the trip and its guest RSVPs |
@@ -59,18 +60,18 @@ Content shape: `lib/party-types.ts`, validated by `lib/party-schema.ts`. Demo:
 | `/api/admin/trips/:slug/guests/:id` | DELETE | Remove one guest RSVP |
 | `/api/openapi.json` | GET | OpenAPI 3.1 (from the Zod schemas) |
 
-`/api/admin/parties/**` is a rewrite onto the same trips handlers. Slug routes accept
-`Authorization: Bearer` of either `ADMIN_API_TOKEN` or that trip's `adminToken`.
+`/api/admin/parties/**` is a rewrite onto the same trips handlers. Slug routes
+accept `Authorization: Bearer` of that trip's `adminToken` only.
 
 ## `bigsend` CLI
 
-HTTP-only (no `DATABASE_URL`). JSON on stdout; errors on stderr. After
-`create`, the trip `adminToken` is stored in `~/.bigsend.json` (or
-`BIGSEND_CONFIG`) so follow-up commands do not need the global token.
+HTTP-only (no `DATABASE_URL`). JSON on stdout; errors on stderr. `create` needs
+no token. The trip `adminToken` from the packet is stored in `~/.bigsend.json`
+(or `BIGSEND_CONFIG`). Set `BIGSEND_TOKEN` to that packet token for follow-up
+commands if the config file is not in play.
 
 ```bash
 export BIGSEND_API_URL=https://your-deploy.vercel.app
-export BIGSEND_TOKEN=$ADMIN_API_TOKEN
 
 npm run bigsend -- create --name "E2E Smoke"
 npm run bigsend -- schedule add e2e-smoke --day 2026-09-05 --title "Dinner"
@@ -99,13 +100,16 @@ Example Cursor / Claude MCP config (from the repo root):
       "command": "npx",
       "args": ["tsx", "mcp/bigsend.ts"],
       "env": {
-        "BIGSEND_API_URL": "https://your-deploy.vercel.app",
-        "BIGSEND_TOKEN": "your-admin-api-token"
+        "BIGSEND_API_URL": "https://your-deploy.vercel.app"
       }
     }
   }
 }
 ```
+
+After `create`, the packet `adminToken` is stored in `~/.bigsend.json`. To
+mutate an existing trip from another machine, set `BIGSEND_TOKEN` to that
+trip's packet token.
 
 Tools: `create`, `get`, `set`, `lodging_set`, `schedule_add`, `activities_add`,
 `guests`, `password`, `delete` (`yes: true` required).

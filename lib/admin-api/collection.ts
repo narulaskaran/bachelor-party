@@ -1,60 +1,76 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
-import { count, eq } from "drizzle-orm";
-import { requireAdmin } from "@/lib/admin-auth";
+import { eq } from "drizzle-orm";
+import { readBearerToken } from "@/lib/admin-auth";
 import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
 import { getDb, schema } from "@/lib/db";
 import { organizerPacket } from "@/lib/organizer-packet";
 import { createPartySchema } from "@/lib/party-schema";
+import { rateLimitCreate } from "@/lib/rate-limit";
 import { slugFromName, uniqueSlug } from "@/lib/slug";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-// GET /api/admin/trips — lightweight index (no passwords, no full content).
-// /api/admin/parties is the same handlers via next.config rewrite.
+function indexItem(
+  party: {
+    id: number;
+    slug: string;
+    content: { trip?: { siteName?: string; dateLabel?: string } } | null;
+    createdAt: Date;
+    updatedAt: Date;
+  },
+  guestCount: number,
+) {
+  return {
+    id: party.id,
+    slug: party.slug,
+    siteName: party.content?.trip?.siteName,
+    dateLabel: party.content?.trip?.dateLabel,
+    guestCount,
+    createdAt: party.createdAt,
+    updatedAt: party.updatedAt,
+  };
+}
+
+// GET /api/admin/trips — the trip whose adminToken was presented.
+// Never lists other people's trips. /api/admin/parties rewrites here.
 export async function GET(request: Request) {
-  const denied = requireAdmin(request);
-  if (denied) return denied;
+  const token = readBearerToken(request);
+  if (!token) {
+    return NextResponse.json({ error: "Missing bearer token" }, { status: 401 });
+  }
 
   const db = getDb();
   if (!db) {
     return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 
-  const rows = await db
-    .select({
-      id: schema.parties.id,
-      slug: schema.parties.slug,
-      content: schema.parties.content,
-      createdAt: schema.parties.createdAt,
-      updatedAt: schema.parties.updatedAt,
-      guestCount: count(schema.guests.id),
-    })
+  const [party] = await db
+    .select()
     .from(schema.parties)
-    .leftJoin(schema.guests, eq(schema.guests.partyId, schema.parties.id))
-    .groupBy(schema.parties.id)
-    .orderBy(schema.parties.createdAt);
+    .where(eq(schema.parties.adminToken, token))
+    .limit(1);
 
-  const trips = rows.map((row) => ({
-    id: row.id,
-    slug: row.slug,
-    siteName: row.content?.trip?.siteName,
-    dateLabel: row.content?.trip?.dateLabel,
-    guestCount: row.guestCount,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  }));
+  if (!party) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
 
-  // `parties` kept so existing scripts keep working; `trips` is canonical.
+  const guests = await db
+    .select({ id: schema.guests.id })
+    .from(schema.guests)
+    .where(eq(schema.guests.partyId, party.id));
+
+  const trips = [indexItem(party, guests.length)];
   return NextResponse.json({ trips, parties: trips });
 }
 
-// POST /api/admin/trips — create. siteName is enough; slug and password
-// autogenerate. Returns an organizer packet (url, slug, password, adminToken).
+// POST /api/admin/trips — create, no Authorization. siteName is enough;
+// slug and password autogenerate. Rate-limited per IP. Returns an
+// organizer packet (url, slug, password, adminToken).
 export async function POST(request: Request) {
-  const denied = requireAdmin(request);
-  if (denied) return denied;
+  const limited = rateLimitCreate(request);
+  if (limited) return limited;
 
   const db = getDb();
   if (!db) {
