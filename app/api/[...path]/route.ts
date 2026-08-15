@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { apiNotFound } from "@/lib/api-not-found";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * Catch-all for unmatched `/api/*` paths.
+ * Catch-all for unmatched `/api/*` paths. Exact `/api` and `/api/` are the
+ * sibling `app/api/route.ts` index (same JSON 404).
  *
  * App Router only has Route Handlers for paths with a `route.ts`. Anything else
  * falls through to the HTML `_not-found` page. GET of that page is 404;
@@ -14,14 +15,10 @@ export const runtime = "nodejs";
  * so those still win. `afterFiles` rewrites (`/api/admin/parties`, `/api/openapi.json`)
  * also run before this dynamic route.
  */
-function notFound() {
-  return NextResponse.json({ error: "Not found" }, { status: 404 });
-}
-
-export const GET = notFound;
-export const POST = notFound;
-export const PUT = notFound;
-export const PATCH = notFound;
-export const DELETE = notFound;
-export const HEAD = notFound;
-export const OPTIONS = notFound;
+export const GET = apiNotFound;
+export const POST = apiNotFound;
+export const PUT = apiNotFound;
+export const PATCH = apiNotFound;
+export const DELETE = apiNotFound;
+export const HEAD = apiNotFound;
+export const OPTIONS = apiNotFound;
