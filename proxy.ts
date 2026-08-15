@@ -33,6 +33,11 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
+  // Exact first segment `/api`, not the prefix — `/api-2` is a guest slug.
+  if (pathname === "/api" || pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   const slug = guestSlugFromPathname(pathname);
   if (!slug || (await partyExists(slug))) return NextResponse.next();
 
@@ -41,10 +46,24 @@ export async function proxy(request: NextRequest) {
   return NextResponse.rewrite(url);
 }
 
+/**
+ * Catch-all for guest `/:slug` (and other public paths). Reserved app routes
+ * are excluded as exact first segments (`api`, `api/…`, `admin`, `admin/…`),
+ * not prefixes — otherwise `uniqueSlug("admin")` → `admin-2` / `admin-3` and
+ * `uniqueSlug("api")` → `api-2` never hit the missing-slug rewrite and SSR
+ * Next's `__next_error__` shell. `/admin` and `/admin/:path*` are listed
+ * separately so those HTML routes still get security headers.
+ *
+ * Duplicated inline in `config.matcher`: Next requires matcher entries to be
+ * static string literals.
+ */
+export const GUEST_PATH_MATCHER =
+  "/((?!api(?:/|$)|_next|_not-found|favicon.ico|icon.svg|admin(?:/|$)).*)";
+
 export const config = {
   matcher: [
     "/admin",
     "/admin/:path*",
-    "/((?!api|_next|_not-found|favicon.ico|icon.svg|admin).*)",
+    "/((?!api(?:/|$)|_next|_not-found|favicon.ico|icon.svg|admin(?:/|$)).*)",
   ],
 };

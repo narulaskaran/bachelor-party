@@ -8,13 +8,14 @@ import {
   getAccessFallbackHTTPStatus,
   isHTTPAccessFallbackError,
 } from "next/dist/client/components/http-access-fallback/http-access-fallback";
+import { tryToParsePath } from "next/dist/lib/try-to-parse-path";
 import { getDb } from "@/lib/db";
 import { MISSING_GUEST_REWRITE } from "@/lib/party-exists";
 import { TripNotFound } from "@/components/trip-not-found";
 import RootNotFound from "@/app/not-found";
 import SlugNotFound from "@/app/[slug]/not-found";
 import Page from "@/app/[slug]/page";
-import { proxy } from "@/proxy";
+import { config as proxyConfig, proxy } from "@/proxy";
 
 vi.mock("@/lib/db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/db")>();
@@ -56,6 +57,17 @@ function fakeDb(rows: Record<string, unknown>[]) {
 
 function branded404Html(node: ReactElement) {
   return renderToStaticMarkup(node);
+}
+
+/** True when Next would invoke `proxy` for this pathname (`config.matcher`). */
+function proxyMatcherHits(pathname: string): boolean {
+  return proxyConfig.matcher.some((source) => {
+    const { regexStr, error } = tryToParsePath(source);
+    if (error || !regexStr) {
+      throw error ?? new Error(`invalid matcher ${source}`);
+    }
+    return new RegExp(regexStr).test(pathname);
+  });
 }
 
 async function pageHttpStatus(
@@ -147,5 +159,76 @@ describe("unknown guest slug 404", () => {
 
     const res = await proxy(new NextRequest("http://localhost/jackson-hole-26"));
     expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+  });
+
+  it("matcher includes admin-* and api-* slugs, not only exact /admin and /api", () => {
+    for (const path of [
+      "/admin-3",
+      "/api-2",
+      "/api-foo",
+      "/this-does-not-exist-xyzzy",
+      "/login",
+      "/demo-2",
+    ]) {
+      expect(proxyMatcherHits(path)).toBe(true);
+    }
+
+    expect(proxyMatcherHits("/admin")).toBe(true);
+    expect(proxyMatcherHits("/admin/login")).toBe(true);
+    expect(proxyMatcherHits("/api")).toBe(false);
+    expect(proxyMatcherHits("/api/admin/trips")).toBe(false);
+    expect(proxyMatcherHits("/api/openapi")).toBe(false);
+  });
+
+  it("missing /admin-3 and /api-2 rewrite to the branded 404 path, not __next_error__", async () => {
+    vi.mocked(getDb).mockReturnValue(null);
+
+    for (const slug of ["admin-3", "api-2", "api-foo"]) {
+      expect(proxyMatcherHits(`/${slug}`)).toBe(true);
+      const res = await proxy(new NextRequest(`http://localhost/${slug}`));
+      const rewritten = new URL(res.headers.get("x-middleware-rewrite") ?? "");
+      expect(rewritten.pathname).toBe(MISSING_GUEST_REWRITE);
+    }
+
+    const branded = branded404Html(createElement(RootNotFound));
+    expect(branded).toContain("No trip at this link");
+    expect(branded).not.toContain("__next_error__");
+  });
+
+  it("/admin and /api stay app routes (no guest 404 rewrite)", async () => {
+    vi.mocked(getDb).mockReturnValue(null);
+
+    const admin = await proxy(new NextRequest("http://localhost/admin"));
+    expect(admin.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(admin.headers.get("X-Frame-Options")).toBe("DENY");
+
+    const api = await proxy(new NextRequest("http://localhost/api"));
+    expect(api.headers.get("x-middleware-rewrite")).toBeNull();
+
+    const apiRoute = await proxy(
+      new NextRequest("http://localhost/api/admin/trips"),
+    );
+    expect(apiRoute.headers.get("x-middleware-rewrite")).toBeNull();
+  });
+
+  it("an existing leftover trip at admin-2 is not rewritten", async () => {
+    vi.mocked(getDb).mockReturnValue(
+      fakeDb([
+        {
+          id: 1,
+          password: "crew-secret",
+          content: { kind: "trip", trip: { siteName: "Admin leftover" } },
+        },
+      ]) as never,
+    );
+
+    expect(proxyMatcherHits("/admin-2")).toBe(true);
+    const res = await proxy(new NextRequest("http://localhost/admin-2"));
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+
+    const { status, html } = await pageHttpStatus("admin-2");
+    expect(status).toBe(200);
+    expect(html).toContain("Who goes there");
+    expect(html).not.toContain("No trip at this link");
   });
 });

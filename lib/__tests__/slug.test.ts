@@ -31,6 +31,7 @@ describe("uniqueSlug", () => {
 
   it("skips reserved app-route names even when the DB is empty", async () => {
     expect(await uniqueSlug("admin", async () => false)).toBe("admin-2");
+    expect(await uniqueSlug("api", async () => false)).toBe("api-2");
     expect(await uniqueSlug("demo", async () => false)).toBe("demo-2");
   });
 
