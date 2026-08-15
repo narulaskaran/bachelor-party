@@ -175,7 +175,8 @@ describe("unknown guest slug 404", () => {
 
     expect(proxyMatcherHits("/admin")).toBe(true);
     expect(proxyMatcherHits("/admin/login")).toBe(true);
-    expect(proxyMatcherHits("/api")).toBe(false);
+    expect(proxyMatcherHits("/api")).toBe(true);
+    expect(proxyMatcherHits("/api/")).toBe(true);
     expect(proxyMatcherHits("/api/admin/trips")).toBe(false);
     expect(proxyMatcherHits("/api/openapi")).toBe(false);
   });
@@ -204,6 +205,14 @@ describe("unknown guest slug 404", () => {
 
     const api = await proxy(new NextRequest("http://localhost/api"));
     expect(api.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(api.status).toBe(404);
+    expect(api.headers.get("content-type")).toMatch(/application\/json/);
+    expect(await api.json()).toEqual({ error: "Not found" });
+
+    const apiSlash = await proxy(new NextRequest("http://localhost/api/"));
+    expect(apiSlash.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(apiSlash.status).toBe(404);
+    expect(await apiSlash.json()).toEqual({ error: "Not found" });
 
     const apiRoute = await proxy(
       new NextRequest("http://localhost/api/admin/trips"),

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
 import nextConfig from "../../next.config";
-import { config as proxyConfig, GUEST_PATH_MATCHER, proxy } from "../../proxy";
+import { config as proxyConfig, GUEST_PATH_MATCHER, API_ROOT_MATCHER, proxy } from "../../proxy";
 import {
   ADMIN_HTML_HEADER_SOURCE,
   adminHtmlHeaderRules,
@@ -85,6 +85,7 @@ describe("proxy (admin HTML matcher)", () => {
     expect(proxyConfig.matcher).toEqual([
       "/admin",
       "/admin/:path*",
+      API_ROOT_MATCHER,
       GUEST_PATH_MATCHER,
     ]);
   });

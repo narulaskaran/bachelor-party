@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { apiNotFound } from "@/lib/api-not-found";
 import {
   applyAdminHtmlSecurityHeaders,
   isAdminHtmlPath,
@@ -33,8 +34,14 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
+  // Exact `/api` and `/api/` (matcher `/api` hits both; not `/api/foo`).
+  // Returning JSON here keeps trailing `/api/` from 308ing to `/api`.
+  if (pathname === "/api" || pathname === "/api/") {
+    return apiNotFound();
+  }
+
   // Exact first segment `/api`, not the prefix — `/api-2` is a guest slug.
-  if (pathname === "/api" || pathname.startsWith("/api/")) {
+  if (pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
 
@@ -52,11 +59,15 @@ export async function proxy(request: NextRequest) {
  * not prefixes — otherwise `uniqueSlug("admin")` → `admin-2` / `admin-3` and
  * `uniqueSlug("api")` → `api-2` never hit the missing-slug rewrite and SSR
  * Next's `__next_error__` shell. `/admin` and `/admin/:path*` are listed
- * separately so those HTML routes still get security headers.
+ * separately so those HTML routes still get security headers. `/api` is listed
+ * so exact `/api` and `/api/` return JSON 404 instead of Next's trailing-slash
+ * 308 (the guest matcher still excludes `api` as a first segment).
  *
  * Duplicated inline in `config.matcher`: Next requires matcher entries to be
  * static string literals.
  */
+export const API_ROOT_MATCHER = "/api";
+
 export const GUEST_PATH_MATCHER =
   "/((?!api(?:/|$)|_next|_not-found|favicon.ico|icon.svg|admin(?:/|$)).*)";
 
@@ -64,6 +75,7 @@ export const config = {
   matcher: [
     "/admin",
     "/admin/:path*",
+    "/api",
     "/((?!api(?:/|$)|_next|_not-found|favicon.ico|icon.svg|admin(?:/|$)).*)",
   ],
 };
