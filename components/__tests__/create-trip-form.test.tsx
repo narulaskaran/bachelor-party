@@ -2,7 +2,7 @@
 
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CreateTripForm } from "@/components/create-trip-form";
 import { OrganizerPacketView } from "@/components/organizer-packet-view";
@@ -113,6 +113,45 @@ describe("CreateTripForm", () => {
     expect(screen.getByRole("alert").textContent).toMatch(/few minutes/i);
     expect(screen.queryByText("ADMIN_UI_PASSWORD")).toBeNull();
     expect(screen.queryByRole("link", { name: /admin/i })).toBeNull();
+  });
+
+  it("clamps end.min to the chosen start and rejects an inverted range", async () => {
+    const user = userEvent.setup();
+    const create = vi.fn<(fields: { siteName: string; startDate?: string; endDate?: string }) => Promise<CreateTripResult>>(
+      async () => ({ ok: true, packet: PACKET }),
+    );
+    render(<CreateTripForm create={create} />);
+
+    await user.type(screen.getByLabelText(/trip name/i), "Cabin Weekend");
+    const start = screen.getByLabelText(/start date/i);
+    const end = screen.getByLabelText(/end date/i);
+    expect(end.getAttribute("min")).toBeNull();
+
+    fireEvent.change(start, { target: { value: "2026-12-20" } });
+    expect(end.getAttribute("min")).toBe("2026-12-20");
+
+    fireEvent.change(end, { target: { value: "2026-12-10" } });
+    fireEvent.submit(start.closest("form")!);
+
+    expect(create).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toMatch(/before start date/i);
+  });
+
+  it("still creates when only one date is set or both match", async () => {
+    const user = userEvent.setup();
+    const create = vi.fn<(fields: { siteName: string; startDate?: string; endDate?: string }) => Promise<CreateTripResult>>(
+      async () => ({ ok: true, packet: PACKET }),
+    );
+    render(<CreateTripForm create={create} />);
+
+    await user.type(screen.getByLabelText(/trip name/i), "Cabin Weekend");
+    await user.type(screen.getByLabelText(/start date/i), "2026-12-20");
+    await user.click(screen.getByRole("button", { name: /^create a trip$/i }));
+
+    expect(create).toHaveBeenCalledWith({
+      siteName: "Cabin Weekend",
+      startDate: "2026-12-20",
+    });
   });
 });
 

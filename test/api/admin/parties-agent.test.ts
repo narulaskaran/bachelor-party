@@ -255,6 +255,92 @@ describe("agent API (create / patch / guests)", () => {
     );
   });
 
+  it("POST inverted start/end → 400 and does not create", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: {
+          content: {
+            trip: {
+              siteName: "Cabin Weekend",
+              startDate: "2026-12-20",
+              endDate: "2026-12-10",
+            },
+          },
+        },
+      }),
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.issues.some((i: { path: string; message: string }) =>
+      i.path.includes("endDate") && /before start date/i.test(i.message),
+    )).toBe(true);
+    expect(mem.parties).toHaveLength(0);
+  });
+
+  it("POST same-day or a single date still creates", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const sameDay = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: {
+          content: {
+            trip: { siteName: "Same Day", startDate: "2026-12-20", endDate: "2026-12-20" },
+          },
+        },
+      }),
+    );
+    expect(sameDay.status).toBe(201);
+
+    const startOnly = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: { content: { trip: { siteName: "Start Only", startDate: "2026-12-20" } } },
+      }),
+    );
+    expect(startOnly.status).toBe(201);
+
+    const endOnly = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: { content: { trip: { siteName: "End Only", endDate: "2026-12-10" } } },
+      }),
+    );
+    expect(endOnly.status).toBe(201);
+    expect(mem.parties).toHaveLength(3);
+  });
+
+  it("PATCH inverted start/end → 400 and does not persist", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      slug: "cabin",
+      adminToken: "cabin-tok",
+      content: { kind: "trip", trip: { siteName: "Cabin", startDate: "2026-12-20" } },
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await PATCH(
+      makeRequest("cabin-tok", {
+        method: "PATCH",
+        body: { content: { trip: { endDate: "2026-12-10" } } },
+      }),
+      ctx("cabin"),
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.issues.some((i: { path: string; message: string }) =>
+      i.path.includes("endDate") && /before start date/i.test(i.message),
+    )).toBe(true);
+    expect(
+      (mem.parties[0].content as { trip: { endDate?: string } }).trip.endDate,
+    ).toBeUndefined();
+  });
+
   it("POST kind: event → 400", async () => {
     vi.mocked(getDb).mockReturnValue(createMemoryDb().db as never);
 

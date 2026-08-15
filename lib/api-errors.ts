@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
+import { END_BEFORE_START_MESSAGE } from "@/lib/trip-dates";
 import { RESERVED_SLUGS } from "@/lib/slug";
 
 export type Issue = {
@@ -15,6 +16,7 @@ const HINTS: Record<string, string> = {
   reservedSlug: `These slugs collide with app routes: ${RESERVED_SLUGS.join(", ")}. Omit slug to autogenerate.`,
   password: "At least 4 characters, or omit it and we'll generate one.",
   kind: "Only kind \"trip\" is supported right now. Omit the field.",
+  invertedDates: END_BEFORE_START_MESSAGE,
 };
 
 export function issuesFromZod(error: ZodError): Issue[] {
@@ -56,6 +58,12 @@ export async function readJsonBody(
 function hintFor(path: string, message: string): string | undefined {
   if (path === "slug" && message.toLowerCase().includes("reserved")) {
     return HINTS.reservedSlug;
+  }
+  if (
+    message === END_BEFORE_START_MESSAGE ||
+    (path.endsWith("endDate") && message.toLowerCase().includes("before start"))
+  ) {
+    return HINTS.invertedDates;
   }
   if (HINTS[path]) return HINTS[path];
   if (

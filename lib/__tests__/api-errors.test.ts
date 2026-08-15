@@ -21,6 +21,18 @@ describe("issuesFromZod", () => {
     expect(issues.some((i) => i.path === "kind" && i.hint?.includes("trip"))).toBe(true);
   });
 
+  it("hints when end date is before start date", () => {
+    const parsed = partyContentSchema.safeParse({
+      trip: { siteName: "Cabin", startDate: "2026-12-20", endDate: "2026-12-10" },
+    });
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    const issues = issuesFromZod(parsed.error);
+    const endDate = issues.find((i) => i.path === "endDate" || i.path.endsWith(".endDate"));
+    expect(endDate?.message).toMatch(/before start date/i);
+    expect(endDate?.hint).toMatch(/before start date/i);
+  });
+
   it("hints reserved slugs collide with app routes", () => {
     const parsed = createPartySchema.safeParse({
       slug: "admin",

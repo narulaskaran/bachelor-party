@@ -1,3 +1,10 @@
+import {
+  END_BEFORE_START_MESSAGE,
+  isInvertedDateRange,
+} from "@/lib/trip-dates";
+
+export { END_BEFORE_START_MESSAGE, isInvertedDateRange };
+
 export type OrganizerPacket = {
   url: string;
   slug: string;
@@ -122,6 +129,9 @@ export async function createTripFromUi(
 ): Promise<CreateTripResult> {
   const siteName = fields.siteName.trim();
   if (!siteName) return { ok: false, error: "Give the trip a name." };
+  if (isInvertedDateRange(fields.startDate, fields.endDate)) {
+    return { ok: false, error: END_BEFORE_START_MESSAGE };
+  }
 
   let res: Response;
   try {

@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { OrganizerPacketView } from "@/components/organizer-packet-view";
 import {
   createTripFromUi,
+  END_BEFORE_START_MESSAGE,
+  isInvertedDateRange,
   type CreateTripFields,
   type CreateTripResult,
   type OrganizerPacket,
@@ -21,6 +23,7 @@ export function CreateTripForm({
   const [packet, setPacket] = useState<OrganizerPacket | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [startMin, setStartMin] = useState("");
 
   if (packet) {
     return (
@@ -29,6 +32,7 @@ export function CreateTripForm({
         onCreateAnother={() => {
           setPacket(null);
           setError(null);
+          setStartMin("");
         }}
       />
     );
@@ -40,6 +44,10 @@ export function CreateTripForm({
     const siteName = String(form.get("siteName") ?? "");
     const startDate = String(form.get("startDate") ?? "").trim();
     const endDate = String(form.get("endDate") ?? "").trim();
+    if (isInvertedDateRange(startDate, endDate)) {
+      setError(END_BEFORE_START_MESSAGE);
+      return;
+    }
     setError(null);
     setPending(true);
     try {
@@ -92,6 +100,9 @@ export function CreateTripForm({
               name="startDate"
               type="date"
               disabled={pending}
+              aria-invalid={error === END_BEFORE_START_MESSAGE ? true : undefined}
+              aria-describedby={error === END_BEFORE_START_MESSAGE ? "create-trip-error" : undefined}
+              onChange={(event) => setStartMin(event.target.value)}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -100,7 +111,10 @@ export function CreateTripForm({
               id="endDate"
               name="endDate"
               type="date"
+              min={startMin || undefined}
               disabled={pending}
+              aria-invalid={error === END_BEFORE_START_MESSAGE ? true : undefined}
+              aria-describedby={error === END_BEFORE_START_MESSAGE ? "create-trip-error" : undefined}
             />
           </div>
         </div>

@@ -5,6 +5,7 @@ import {
   partyContentSchema,
   updatePartySchema,
 } from "@/lib/party-schema";
+import { isInvertedDateRange } from "@/lib/trip-dates";
 
 describe("partyContentSchema", () => {
   it("accepts siteName-only content", () => {
@@ -62,6 +63,39 @@ describe("partyContentSchema", () => {
     });
     expect(parsed.success).toBe(true);
   });
+
+  it("rejects an inverted start/end range", () => {
+    const parsed = partyContentSchema.safeParse({
+      trip: { siteName: "Cabin", startDate: "2026-12-20", endDate: "2026-12-10" },
+    });
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    expect(parsed.error.issues.some((i) => i.path.includes("endDate"))).toBe(true);
+    expect(parsed.error.issues.some((i) => /before start date/i.test(i.message))).toBe(true);
+  });
+
+  it("accepts same-day start and end, a single date, and omitted dates", () => {
+    expect(
+      partyContentSchema.safeParse({
+        trip: { siteName: "Cabin", startDate: "2026-12-20", endDate: "2026-12-20" },
+      }).success,
+    ).toBe(true);
+    expect(
+      partyContentSchema.safeParse({
+        trip: { siteName: "Cabin", startDate: "2026-12-20" },
+      }).success,
+    ).toBe(true);
+    expect(
+      partyContentSchema.safeParse({
+        trip: { siteName: "Cabin", endDate: "2026-12-10" },
+      }).success,
+    ).toBe(true);
+    expect(
+      partyContentSchema.safeParse({
+        trip: { siteName: "Cabin" },
+      }).success,
+    ).toBe(true);
+  });
 });
 
 describe("updatePartySchema", () => {
@@ -70,5 +104,17 @@ describe("updatePartySchema", () => {
       content: { schedule: [{ key: "saturday" }] },
     });
     expect(parsed.success).toBe(true);
+  });
+});
+
+describe("isInvertedDateRange", () => {
+  it("is true only when both dates are set and end is before start", () => {
+    expect(isInvertedDateRange("2026-12-20", "2026-12-10")).toBe(true);
+    expect(isInvertedDateRange("2026-12-20", "2026-12-20")).toBe(false);
+    expect(isInvertedDateRange("2026-12-20", "2026-12-21")).toBe(false);
+    expect(isInvertedDateRange("2026-12-20", undefined)).toBe(false);
+    expect(isInvertedDateRange(undefined, "2026-12-10")).toBe(false);
+    expect(isInvertedDateRange("  ", "2026-12-10")).toBe(false);
+    expect(isInvertedDateRange(undefined, undefined)).toBe(false);
   });
 });

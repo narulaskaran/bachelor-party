@@ -120,6 +120,18 @@ describe("create-from-UI helper", () => {
     expect(result).toEqual({ ok: false, error: "Give the trip a name." });
   });
 
+  it("rejects an inverted date range before calling the API", async () => {
+    const fetchImpl = vi.fn();
+    const result = await createTripFromUi(
+      { siteName: "Cabin Weekend", startDate: "2026-12-20", endDate: "2026-12-10" },
+      fetchImpl,
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/before start date/i);
+  });
+
   it("maps rate-limit, reserved-slug, and outages without env-var names", () => {
     for (const status of [429, 503]) {
       const message = visitorSafeCreateError(status, {

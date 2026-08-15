@@ -1,5 +1,8 @@
 import { z } from "zod";
+import { END_BEFORE_START_MESSAGE, isInvertedDateRange } from "@/lib/trip-dates";
 import { isReservedSlug, RESERVED_SLUG_MESSAGE, RESERVED_SLUGS } from "@/lib/slug";
+
+export { END_BEFORE_START_MESSAGE, isInvertedDateRange };
 
 // Mirrors lib/party-types.ts, used to validate content posted to the
 // admin API (agents send arbitrary JSON — this is the actual gate).
@@ -7,17 +10,22 @@ import { isReservedSlug, RESERVED_SLUG_MESSAGE, RESERVED_SLUGS } from "@/lib/slu
 // fields except siteName are optional so a site can exist before lodging
 // and flights are booked.
 
-const tripSchema = z.object({
-  siteName: z.string().min(1),
-  tagline: z.string().min(1).optional(),
-  startDate: z.string().min(1).optional(),
-  endDate: z.string().min(1).optional(),
-  dateLabel: z.string().min(1).optional(),
-  location: z.string().min(1).optional(),
-  coordinates: z.string().min(1).optional(),
-  elevation: z.string().min(1).optional(),
-  airport: z.string().min(1).optional(),
-});
+const tripSchema = z
+  .object({
+    siteName: z.string().min(1),
+    tagline: z.string().min(1).optional(),
+    startDate: z.string().min(1).optional(),
+    endDate: z.string().min(1).optional(),
+    dateLabel: z.string().min(1).optional(),
+    location: z.string().min(1).optional(),
+    coordinates: z.string().min(1).optional(),
+    elevation: z.string().min(1).optional(),
+    airport: z.string().min(1).optional(),
+  })
+  .refine((trip) => !isInvertedDateRange(trip.startDate, trip.endDate), {
+    message: END_BEFORE_START_MESSAGE,
+    path: ["endDate"],
+  });
 
 const lodgingSchema = z.object({
   name: z.string().min(1),
