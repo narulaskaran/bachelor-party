@@ -99,6 +99,16 @@ describe("homepage trip entry", () => {
     expect(screen.queryByText(/bachelor-party-eight\.vercel\.app/i)).toBeNull();
   });
 
+  it("keeps the invite example URL on one line instead of wrapping mid-slug", () => {
+    const { container } = render(<LandingView />);
+    const example = container.querySelector("#trip-entry-hint span.font-mono");
+
+    expect(example?.textContent).toBe("party.narula.xyz/your-trip");
+    expect(example?.className).toMatch(/whitespace-nowrap/);
+    expect(example?.className).toMatch(/break-normal/);
+    expect(example?.className).not.toMatch(/break-words|break-all/);
+  });
+
   it("navigates to /{slug} when the form is submitted", async () => {
     const user = userEvent.setup();
     render(<LandingView />);
