@@ -45,5 +45,5 @@ export default async function Page({ params }: Params) {
     );
   }
 
-  return <PartyView content={resolved.content} />;
+  return <PartyView content={resolved.content} sample={slug === "demo"} />;
 }

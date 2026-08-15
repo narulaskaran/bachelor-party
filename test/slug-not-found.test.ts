@@ -38,7 +38,8 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@/components/party-view", () => ({
-  PartyView: () => "DEMO_TRIP",
+  PartyView: ({ sample }: { sample?: boolean }) =>
+    sample ? "DEMO_TRIP_SAMPLE" : "LIVE_TRIP",
 }));
 
 function fakeDb(rows: Record<string, unknown>[]) {
@@ -122,7 +123,7 @@ describe("unknown guest slug 404", () => {
 
     const { status, html } = await pageHttpStatus("demo");
     expect(status).toBe(200);
-    expect(html).toContain("DEMO_TRIP");
+    expect(html).toContain("DEMO_TRIP_SAMPLE");
 
     const res = await proxy(new NextRequest("http://localhost/demo"));
     expect(res.headers.get("x-middleware-rewrite")).toBeNull();

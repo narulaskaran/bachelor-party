@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { submitGuestInfo, submitSampleGuestInfo } from "@/lib/rsvp-actions";
+import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { rsvpFieldDefaults, type RsvpPrefill } from "@/lib/merge-guest";
 import type { Activity } from "@/lib/party-types";
 import { VoteActivityGroup } from "@/components/vote-activity-group";
@@ -55,8 +56,22 @@ export function RsvpForm({
     }
   }, [state, router]);
 
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    if (sample) event.preventDefault();
+  }
+
   return (
-    <form action={formAction} className="mx-auto max-w-2xl space-y-10">
+    <form
+      action={sample ? undefined : formAction}
+      onSubmit={onSubmit}
+      noValidate={sample}
+      className="mx-auto max-w-2xl space-y-10"
+    >
+      {sample ? (
+        <Alert id="demo-rsvp-banner">
+          <AlertDescription>{DEMO_RSVP_MESSAGE}</AlertDescription>
+        </Alert>
+      ) : null}
       {/* WHO */}
       <section className="space-y-4">
         <Eyebrow>Who</Eyebrow>
@@ -65,7 +80,7 @@ export function RsvpForm({
           <Input
             id="name"
             name="name"
-            required
+            required={!sample}
             placeholder="Full name"
             defaultValue={defaults.name}
           />
@@ -182,19 +197,25 @@ export function RsvpForm({
         </div>
       </section>
 
-      {state?.error ? (
+      {sample ? null : state?.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
 
-      {state?.ok ? (
+      {sample ? null : state?.ok ? (
         <Alert>
           <AlertDescription>Saved. You&rsquo;re on the board.</AlertDescription>
         </Alert>
       ) : null}
 
-      <Button type="submit" size="lg" className="w-full" disabled={isPending}>
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full"
+        disabled={sample || isPending}
+        aria-describedby={sample ? "demo-rsvp-banner" : undefined}
+      >
         {isPending ? "Saving…" : state?.ok ? "Saved" : "Save"}
       </Button>
     </form>

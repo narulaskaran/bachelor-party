@@ -3,6 +3,7 @@ import { createMemoryDb } from "@/test/api/memory-db";
 import { getDb } from "@/lib/db";
 import { getCurrentParty } from "@/lib/current-party";
 import { RSVP_COOKIE } from "@/lib/merge-guest";
+import { DEMO_PARTY, DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 
 const cookieStore = {
   get: vi.fn(),
@@ -340,6 +341,8 @@ describe("sample trip RSVP", () => {
   afterEach(() => {
     vi.mocked(getDb).mockReset();
     vi.mocked(getCurrentParty).mockReset();
+    cookieStore.get.mockReset();
+    cookieStore.set.mockReset();
   });
 
   it("does not save and never consults a logged-in trip cookie", async () => {
@@ -347,9 +350,25 @@ describe("sample trip RSVP", () => {
     const result = await submitSampleGuestInfo();
     expect(result).toEqual({
       ok: false,
-      error: "Demo mode — this sample trip doesn't save RSVPs.",
+      error: DEMO_RSVP_MESSAGE,
     });
     expect(getCurrentParty).not.toHaveBeenCalled();
     expect(getDb).not.toHaveBeenCalled();
+  });
+
+  it("submitGuestInfo does not persist when the current trip is the demo fixture", async () => {
+    const { submitGuestInfo } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    vi.mocked(getCurrentParty).mockResolvedValue({
+      partyId: "demo",
+      slug: "demo",
+      content: DEMO_PARTY,
+    });
+
+    const result = await submitGuestInfo(null, form({ name: "Alex" }));
+    expect(result).toEqual({ ok: false, error: DEMO_RSVP_MESSAGE });
+    expect(mem.guests).toHaveLength(0);
+    expect(cookieStore.set).not.toHaveBeenCalled();
   });
 });

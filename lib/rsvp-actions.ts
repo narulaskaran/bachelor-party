@@ -7,6 +7,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { getCurrentParty } from "@/lib/current-party";
+import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { pollActivities } from "@/lib/party-types";
 import {
   RSVP_COOKIE,
@@ -65,8 +66,6 @@ const guestSchema = z.object({
   notes: z.string().trim().max(1000).optional(),
 });
 
-const SAMPLE_RSVP_MESSAGE = "Demo mode — this sample trip doesn't save RSVPs.";
-
 export type SubmitResult = {
   ok: boolean;
   error?: string;
@@ -74,7 +73,7 @@ export type SubmitResult = {
 
 /** Lives in a "use server" file, so this must be async. */
 async function sampleTripRsvpResult(): Promise<SubmitResult> {
-  return { ok: false, error: SAMPLE_RSVP_MESSAGE };
+  return { ok: false, error: DEMO_RSVP_MESSAGE };
 }
 
 export async function submitSampleGuestInfo(): Promise<SubmitResult> {

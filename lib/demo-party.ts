@@ -3,6 +3,9 @@ import type { PartyContent } from "@/lib/party-types";
 // Fictional placeholder trip. Always served at `/demo` locally and in
 // production (even when DATABASE_URL is set, and even if a leftover
 // `slug=demo` row exists). Safe to publish.
+export const DEMO_RSVP_MESSAGE =
+  "Demo mode — this sample trip doesn't save RSVPs.";
+
 export const DEMO_PARTY: PartyContent = {
   kind: "trip",
   trip: {
