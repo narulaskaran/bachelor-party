@@ -9,6 +9,9 @@ vi.mock("next/headers", () => ({
     get: () => undefined,
     set: vi.fn(),
   })),
+  headers: vi.fn(async () => ({
+    get: () => null,
+  })),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -62,7 +65,7 @@ vi.mock("@/components/party-view", () => ({
 
 vi.mock("@/app/globals.css", () => ({}));
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import Page from "@/app/page";
 import RootLayout from "@/app/layout";
 import TripLayout from "@/app/[slug]/layout";
@@ -114,6 +117,10 @@ describe("GET /", () => {
   afterEach(() => {
     vi.mocked(getDb).mockReset();
     vi.mocked(cookies).mockReset();
+    vi.mocked(headers).mockReset();
+    vi.mocked(headers).mockResolvedValue({
+      get: () => null,
+    } as never);
   });
 
   it("with an access cookie still renders the marketing landing, not the private trip", async () => {
@@ -138,6 +145,21 @@ describe("GET /", () => {
     expect(html).not.toContain(TRIP_NAME);
     expect(html).not.toContain(SCHEDULE_TITLE);
     expect(html).not.toContain(LODGE_NAME);
+    expect(html).toContain("party.narula.xyz/your-trip");
+    expect(html).not.toContain("yoursite.com");
+  });
+
+  it("landing invite hint uses the request host so previews stay accurate", async () => {
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) =>
+        name === "x-forwarded-host" ? "preview.example" : null,
+    } as never);
+    vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
+
+    const html = renderToStaticMarkup(await Page());
+
+    expect(html).toContain("preview.example/your-trip");
+    expect(html).not.toContain("yoursite.com");
   });
 
   it("root layout chrome stays marketing when a leftover access cookie is set", async () => {

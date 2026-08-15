@@ -2,10 +2,15 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CreateTripForm } from "@/components/create-trip-form";
 import { TripEntryForm } from "@/components/trip-entry-form";
+import { DEFAULT_INVITE_HOST } from "@/lib/invite-host";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 import { pageTitleClass, quietLinkClass, sectionTitleClass } from "@/lib/type";
 
-export function LandingView() {
+export function LandingView({
+  inviteHost = DEFAULT_INVITE_HOST,
+}: {
+  inviteHost?: string;
+}) {
   return (
     <div className="mx-auto max-w-3xl px-6">
       <section className="flex flex-col items-center py-16 text-center sm:py-24">
@@ -48,7 +53,7 @@ export function LandingView() {
         </h2>
         <p id="trip-entry-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
           Invite links look like{" "}
-          <span className="font-mono text-foreground">yoursite.com/your-trip</span>
+          <span className="font-mono text-foreground">{inviteHost}/your-trip</span>
           . Paste that URL or just the trip code, then enter the password on the
           next page.
         </p>

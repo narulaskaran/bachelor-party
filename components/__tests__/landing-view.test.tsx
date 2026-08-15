@@ -81,7 +81,15 @@ describe("homepage trip entry", () => {
     }
     expect(screen.getByLabelText(/trip code/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /open trip/i })).toBeTruthy();
-    expect(screen.getByText(/yoursite.com\/your-trip/i)).toBeTruthy();
+    expect(screen.getByText(/party\.narula\.xyz\/your-trip/i)).toBeTruthy();
+    expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
+  });
+
+  it("shows a request-host invite example when provided", () => {
+    render(<LandingView inviteHost="preview.example" />);
+
+    expect(screen.getByText(/preview\.example\/your-trip/i)).toBeTruthy();
+    expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
   });
 
   it("navigates to /{slug} when the form is submitted", async () => {
