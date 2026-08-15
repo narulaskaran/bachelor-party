@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import nextConfig from "@/next.config";
+import { legacyProductionHostRedirects } from "@/lib/invite-host";
 import {
   LEGACY_PAGE_HASHES,
   LEGACY_PAGE_REDIRECTS,
@@ -25,6 +26,9 @@ describe("legacy page redirects", () => {
     const redirects = nextConfig.redirects
       ? await nextConfig.redirects()
       : [];
-    expect(redirects).toEqual([...LEGACY_PAGE_REDIRECTS]);
+    expect(redirects).toEqual([
+      ...legacyProductionHostRedirects(),
+      ...LEGACY_PAGE_REDIRECTS,
+    ]);
   });
 });

@@ -18,9 +18,10 @@ export const DEMO_PARTY: PartyContent = {
   },
   lodging: {
     name: "Pinewood Lodge",
-    url: "https://example.com/listing",
     address: "1 Lodge Road, Alpine Meadows, CO 80000",
-    mapsUrl: "https://maps.google.com",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=" +
+      encodeURIComponent("1 Lodge Road, Alpine Meadows, CO"),
     bedrooms: 4,
     beds: 8,
     bathrooms: 3,

@@ -102,6 +102,28 @@ describe("proxy (admin HTML matcher)", () => {
     const home = await proxy(new NextRequest("http://localhost/"));
     expect(home.headers.get("x-middleware-rewrite")).toBeNull();
   });
+
+  it("308s the old Vercel production alias to party.narula.xyz with path and query", async () => {
+    const res = await proxy(
+      new NextRequest("https://bachelor-party-eight.vercel.app/demo?from=bookmark"),
+    );
+    expect(res.status).toBe(308);
+    expect(res.headers.get("Location")).toBe(
+      "https://party.narula.xyz/demo?from=bookmark",
+    );
+  });
+
+  it("does not redirect localhost or Vercel preview deployments", async () => {
+    const local = await proxy(new NextRequest("http://localhost:3000/"));
+    expect(local.status).not.toBe(308);
+    expect(local.headers.get("Location")).toBeNull();
+
+    const preview = await proxy(
+      new NextRequest("https://bachelor-party-eight-git-feat-acme.vercel.app/"),
+    );
+    expect(preview.status).not.toBe(308);
+    expect(preview.headers.get("Location")).toBeNull();
+  });
 });
 
 describe("next.config headers()", () => {

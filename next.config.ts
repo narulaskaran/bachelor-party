@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { adminHtmlHeaderRules } from "./lib/admin-security-headers";
+import { legacyProductionHostRedirects } from "./lib/invite-host";
 import { LEGACY_PAGE_REDIRECTS } from "./lib/legacy-page-redirects";
 
 const nextConfig: NextConfig = {
@@ -11,7 +12,7 @@ const nextConfig: NextConfig = {
     // Old multi-page URLs → single-page anchors. On the logged-out homepage
     // those hashes land on the trip-entry form; on a logged-in PartyView they
     // still hit the real schedule / activities / basecamp / RSVP sections.
-    return [...LEGACY_PAGE_REDIRECTS];
+    return [...legacyProductionHostRedirects(), ...LEGACY_PAGE_REDIRECTS];
   },
   async rewrites() {
     // /parties is an alias, not a second set of route files. Dual-mounting

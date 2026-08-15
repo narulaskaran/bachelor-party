@@ -92,6 +92,13 @@ describe("homepage trip entry", () => {
     expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
   });
 
+  it("does not advertise the retired Vercel production alias as the invite host", () => {
+    render(<LandingView />);
+
+    expect(screen.getByText(/party\.narula\.xyz\/your-trip/i)).toBeTruthy();
+    expect(screen.queryByText(/bachelor-party-eight\.vercel\.app/i)).toBeNull();
+  });
+
   it("navigates to /{slug} when the form is submitted", async () => {
     const user = userEvent.setup();
     render(<LandingView />);

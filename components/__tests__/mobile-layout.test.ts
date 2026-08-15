@@ -120,4 +120,32 @@ describe("mobile trip layout", () => {
     expect(html).not.toContain("overflow-x-auto");
     expect(html).not.toContain("shrink-0 px-6");
   });
+
+  it("does not link the demo lodge listing at example.com", () => {
+    const html = renderToStaticMarkup(
+      createElement(BasecampSection, {
+        trip: DEMO_PARTY.trip,
+        lodging: DEMO_PARTY.lodging!,
+      }),
+    );
+    expect(html).not.toContain("example.com");
+    expect(html).not.toContain(">Listing<");
+    expect(html).toContain("Open in Maps");
+    expect(html).toContain("google.com/maps");
+    expect(html).toContain("Lodge");
+  });
+
+  it("keeps a long totalCost on one line instead of break-words", () => {
+    const html = renderToStaticMarkup(
+      createElement(BasecampSection, {
+        trip: { siteName: "X" },
+        lodging: { name: "Lodge", totalCost: "$2,400.00" },
+      }),
+    );
+    const costIdx = html.indexOf("$2,400.00");
+    expect(costIdx).toBeGreaterThan(-1);
+    const pTag = html.slice(html.lastIndexOf("<p", costIdx), costIdx);
+    expect(pTag).toContain("whitespace-nowrap");
+    expect(pTag).not.toContain("break-words");
+  });
 });

@@ -17,4 +17,32 @@ describe("organizerPacket", () => {
       adminToken: "tok",
     });
   });
+
+  it("mints party.narula.xyz invites when the request host is the old Vercel alias", () => {
+    expect(
+      organizerPacket(
+        new Request("https://bachelor-party-eight.vercel.app/api/admin/trips"),
+        {
+          slug: "jackson-hole-26",
+          password: "secret-pw",
+          adminToken: "tok",
+        },
+      ).url,
+    ).toBe("https://party.narula.xyz/jackson-hole-26");
+  });
+
+  it("keeps Vercel preview origins so preview packets stay on the preview host", () => {
+    expect(
+      organizerPacket(
+        new Request(
+          "https://bachelor-party-eight-git-feat-acme.vercel.app/api/admin/trips",
+        ),
+        {
+          slug: "jackson-hole-26",
+          password: "secret-pw",
+          adminToken: "tok",
+        },
+      ).url,
+    ).toBe("https://bachelor-party-eight-git-feat-acme.vercel.app/jackson-hole-26");
+  });
 });

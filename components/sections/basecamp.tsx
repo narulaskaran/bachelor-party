@@ -32,7 +32,16 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
         <div className="mt-8 grid grid-cols-2 gap-px overflow-hidden border border-border bg-border sm:grid-cols-4">
           {facts.map((fact) => (
             <div key={fact.label} className="min-w-0 bg-background px-4 py-6 sm:px-8">
-              <p className="break-words font-mono text-3xl font-bold sm:text-4xl">{fact.value}</p>
+              <p
+                className={cn(
+                  "font-mono font-bold",
+                  fact.label === "Total cost"
+                    ? "whitespace-nowrap text-2xl sm:text-3xl"
+                    : "break-words text-3xl sm:text-4xl",
+                )}
+              >
+                {fact.value}
+              </p>
               <p className={cn("mt-1 break-words", kickerClass)}>{fact.label}</p>
             </div>
           ))}

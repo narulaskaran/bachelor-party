@@ -162,6 +162,19 @@ describe("GET /", () => {
     expect(html).not.toContain("yoursite.com");
   });
 
+  it("landing invite hint uses party.narula.xyz when the request is the old Vercel alias", async () => {
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) =>
+        name === "x-forwarded-host" ? "bachelor-party-eight.vercel.app" : null,
+    } as never);
+    vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
+
+    const html = renderToStaticMarkup(await Page());
+
+    expect(html).toContain("party.narula.xyz/your-trip");
+    expect(html).not.toContain("bachelor-party-eight.vercel.app/your-trip");
+  });
+
   it("root layout chrome stays marketing when a leftover access cookie is set", async () => {
     const cookie = await authCookieValue(42, PASSWORD);
     vi.mocked(cookies).mockResolvedValue({

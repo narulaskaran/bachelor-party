@@ -4,6 +4,7 @@ import {
   applyAdminHtmlSecurityHeaders,
   isAdminHtmlPath,
 } from "@/lib/admin-security-headers";
+import { canonicalRedirectLocation } from "@/lib/invite-host";
 import {
   guestSlugFromPathname,
   MISSING_GUEST_REWRITE,
@@ -21,6 +22,9 @@ import {
  * SSRs `app/not-found.tsx` inside the root layout and keeps HTTP 404.
  */
 export async function proxy(request: NextRequest) {
+  const canonical = canonicalRedirectLocation(request);
+  if (canonical) return NextResponse.redirect(canonical, 308);
+
   const { pathname } = request.nextUrl;
 
   if (isAdminHtmlPath(pathname)) {
