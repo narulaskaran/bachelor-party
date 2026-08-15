@@ -4,6 +4,9 @@ import { legacyProductionHostRedirects } from "./lib/invite-host";
 import { LEGACY_PAGE_REDIRECTS } from "./lib/legacy-page-redirects";
 
 const nextConfig: NextConfig = {
+  // So proxy can 404 JSON `/api/` instead of Next 308ing it onto `/api`.
+  // Proxy restores the default strip-slash 308 for every other path.
+  skipTrailingSlashRedirect: true,
   // CDN/routing copy of the same admin HTML headers (see lib/admin-security-headers.ts).
   async headers() {
     return adminHtmlHeaderRules();

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
 import nextConfig from "../../next.config";
-import { config as proxyConfig, GUEST_PATH_MATCHER, API_ROOT_MATCHER, proxy } from "../../proxy";
+import { config as proxyConfig, GUEST_PATH_MATCHER, API_ROOT_MATCHER, API_SUBPATH_MATCHER, proxy } from "../../proxy";
 import {
   ADMIN_HTML_HEADER_SOURCE,
   adminHtmlHeaderRules,
@@ -86,6 +86,7 @@ describe("proxy (admin HTML matcher)", () => {
       "/admin",
       "/admin/:path*",
       API_ROOT_MATCHER,
+      API_SUBPATH_MATCHER,
       GUEST_PATH_MATCHER,
     ]);
   });
@@ -138,5 +139,11 @@ describe("next.config headers()", () => {
     expect(h["x-frame-options"]).toBe("DENY");
     expect(h["x-content-type-options"]).toBe("nosniff");
     expect(h["content-security-policy"]).toMatch(/frame-ancestors 'none'/);
+  });
+});
+
+describe("next.config skipTrailingSlashRedirect", () => {
+  it("is on so proxy can 404 JSON /api/ instead of a 308", () => {
+    expect(nextConfig.skipTrailingSlashRedirect).toBe(true);
   });
 });

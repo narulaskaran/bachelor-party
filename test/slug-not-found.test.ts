@@ -177,8 +177,8 @@ describe("unknown guest slug 404", () => {
     expect(proxyMatcherHits("/admin/login")).toBe(true);
     expect(proxyMatcherHits("/api")).toBe(true);
     expect(proxyMatcherHits("/api/")).toBe(true);
-    expect(proxyMatcherHits("/api/admin/trips")).toBe(false);
-    expect(proxyMatcherHits("/api/openapi")).toBe(false);
+    expect(proxyMatcherHits("/api/admin/trips")).toBe(true);
+    expect(proxyMatcherHits("/api/openapi")).toBe(true);
   });
 
   it("missing /admin-3 and /api-2 rewrite to the branded 404 path, not __next_error__", async () => {
@@ -218,6 +218,21 @@ describe("unknown guest slug 404", () => {
       new NextRequest("http://localhost/api/admin/trips"),
     );
     expect(apiRoute.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(apiRoute.status).not.toBe(404);
+
+    const openapiSlash = await proxy(
+      new NextRequest("http://localhost/api/openapi/"),
+    );
+    expect(openapiSlash.status).toBe(308);
+    expect(new URL(openapiSlash.headers.get("Location") ?? "").pathname).toBe(
+      "/api/openapi",
+    );
+
+    const demoSlash = await proxy(new NextRequest("http://localhost/demo/"));
+    expect(demoSlash.status).toBe(308);
+    expect(new URL(demoSlash.headers.get("Location") ?? "").pathname).toBe(
+      "/demo",
+    );
   });
 
   it("an existing leftover trip at admin-2 is not rewritten", async () => {

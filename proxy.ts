@@ -28,16 +28,23 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // Exact `/api` and `/api/` — JSON 404, not Next's trailing-slash 308.
+  if (pathname === "/api" || pathname === "/api/") {
+    return apiNotFound();
+  }
+
+  // skipTrailingSlashRedirect: restore default strip-slash 308 elsewhere.
+  // Use a WHATWG URL — NextURL keeps the trailing slash on Location.
+  if (pathname !== "/" && pathname.endsWith("/")) {
+    const url = new URL(request.url);
+    url.pathname = pathname.replace(/\/+$/, "") || "/";
+    return NextResponse.redirect(url, 308);
+  }
+
   if (isAdminHtmlPath(pathname)) {
     const response = NextResponse.next();
     applyAdminHtmlSecurityHeaders(response.headers);
     return response;
-  }
-
-  // Exact `/api` and `/api/` (matcher `/api` hits both; not `/api/foo`).
-  // Returning JSON here keeps trailing `/api/` from 308ing to `/api`.
-  if (pathname === "/api" || pathname === "/api/") {
-    return apiNotFound();
   }
 
   // Exact first segment `/api`, not the prefix — `/api-2` is a guest slug.
@@ -59,14 +66,16 @@ export async function proxy(request: NextRequest) {
  * not prefixes — otherwise `uniqueSlug("admin")` → `admin-2` / `admin-3` and
  * `uniqueSlug("api")` → `api-2` never hit the missing-slug rewrite and SSR
  * Next's `__next_error__` shell. `/admin` and `/admin/:path*` are listed
- * separately so those HTML routes still get security headers. `/api` is listed
- * so exact `/api` and `/api/` return JSON 404 instead of Next's trailing-slash
- * 308 (the guest matcher still excludes `api` as a first segment).
+ * separately so those HTML routes still get security headers. `/api` and
+ * `/api/:path*` are listed so exact `/api` and `/api/` return JSON 404 (and
+ * other `/api/…/` paths still 308-strip) under skipTrailingSlashRedirect.
+ * `/api-2` is not an `/api` segment and still hits the guest matcher.
  *
  * Duplicated inline in `config.matcher`: Next requires matcher entries to be
  * static string literals.
  */
 export const API_ROOT_MATCHER = "/api";
+export const API_SUBPATH_MATCHER = "/api/:path*";
 
 export const GUEST_PATH_MATCHER =
   "/((?!api(?:/|$)|_next|_not-found|favicon.ico|icon.svg|admin(?:/|$)).*)";
@@ -76,6 +85,7 @@ export const config = {
     "/admin",
     "/admin/:path*",
     "/api",
+    "/api/:path*",
     "/((?!api(?:/|$)|_next|_not-found|favicon.ico|icon.svg|admin(?:/|$)).*)",
   ],
 };
