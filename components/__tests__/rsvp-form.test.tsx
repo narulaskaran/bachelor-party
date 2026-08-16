@@ -60,6 +60,7 @@ describe("RsvpForm", () => {
     expect(screen.getByPlaceholderText(/allergies, vegetarian, no shellfish/i)).toBeTruthy();
     const save = screen.getByRole("button", { name: /^save$/i });
     expect((save as HTMLButtonElement).disabled).toBe(true);
+    expect(save.className).toMatch(/min-h-11/);
     expect(save.className).toMatch(/disabled:bg-muted/);
     expect(save.className).toMatch(/disabled:text-muted-foreground/);
     expect(save.className).toMatch(/disabled:opacity-100/);

@@ -190,7 +190,11 @@ describe("OrganizerPacketView", () => {
     expect(container.innerHTML).not.toMatch(/admin token/i);
     expect(container.innerHTML).not.toMatch(/only way to edit/i);
     expect(container.innerHTML).toMatch(/add dates, lodge, and a schedule/i);
-    expect(container.innerHTML).toMatch(/isn.t an in-product editor/i);
+    expect(container.innerHTML).toMatch(
+      /Text the invite URL and guest password to the group/,
+    );
+    expect(container.innerHTML).not.toMatch(/isn.t an in-product editor/i);
+    expect(container.innerHTML).not.toMatch(/host key is for the API/i);
     assertNoAdminRequirement(container.innerHTML);
   });
 

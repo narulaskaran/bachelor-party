@@ -108,8 +108,7 @@ export function OrganizerPacketView({
         <AlertTitle>The host key will not be shown again</AlertTitle>
         <AlertDescription>
           Text the invite URL and guest password to the group. Keep the host key
-          to yourself — we cannot display it after you leave this page. There
-          isn&apos;t an in-product editor yet; the host key is for the API.
+          to yourself — we cannot display it after you leave this page.
         </AlertDescription>
       </Alert>
 

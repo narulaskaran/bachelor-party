@@ -212,11 +212,10 @@ export function RsvpForm({
 
       <Button
         type="submit"
-        size="lg"
         variant={sample ? "secondary" : "default"}
         className={
           sample
-            ? "w-full disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
+            ? "min-h-11 w-full disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
             : "w-full"
         }
         disabled={sample || isPending}

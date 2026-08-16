@@ -18,7 +18,7 @@ export function TripNotFound() {
             <Link href="/">Back home</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/#enter">Enter a trip code</Link>
+            <Link href="/#enter">Enter an invite link or trip name</Link>
           </Button>
         </div>
       </section>
