@@ -55,8 +55,12 @@ describe("mobile trip layout", () => {
     expect(html).not.toContain("overflow-x-auto");
     expect(html).toContain("Schedule");
     expect(html).toContain("Activities");
-    expect(html).toContain("Basecamp");
-    expect(html).toContain("Your Info");
+    expect(html).toContain("Lodge");
+    expect(html).toContain("RSVP");
+    expect(html).toContain("Do your part");
+    expect(html).toContain("At a glance");
+    expect(html).not.toContain("Your Info");
+    expect(html).not.toContain("Basecamp");
     expect(html).not.toContain('id="site-nav-marketing"');
     expect(html).toContain("data-trip-chrome");
   });
@@ -96,6 +100,8 @@ describe("mobile trip layout", () => {
     expect(html).toContain("min-w-0");
     expect(html).toContain("w-full");
     expect(html).not.toContain("overflow-x-auto");
+    expect(html).toContain('id="glance"');
+    expect(html).toContain('id="do-your-part"');
   });
 
   it("wraps long hero titles instead of overflowing", () => {
@@ -135,7 +141,7 @@ describe("mobile trip layout", () => {
     expect(html).toContain("Lodge");
   });
 
-  it("keeps a long totalCost on one line instead of break-words", () => {
+  it("lets a long totalCost wrap instead of nowrap in a 2-col grid", () => {
     const html = renderToStaticMarkup(
       createElement(BasecampSection, {
         trip: { siteName: "X" },
@@ -145,7 +151,7 @@ describe("mobile trip layout", () => {
     const costIdx = html.indexOf("$2,400.00");
     expect(costIdx).toBeGreaterThan(-1);
     const pTag = html.slice(html.lastIndexOf("<p", costIdx), costIdx);
-    expect(pTag).toContain("whitespace-nowrap");
-    expect(pTag).not.toContain("break-words");
+    expect(pTag).toContain("break-words");
+    expect(pTag).not.toContain("whitespace-nowrap");
   });
 });

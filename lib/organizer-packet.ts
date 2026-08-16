@@ -11,3 +11,8 @@ export function organizerPacket(
     adminToken: party.adminToken,
   };
 }
+
+/** Invite + guest password only — never the host key. */
+export function groupInviteText(packet: { url: string; password: string }): string {
+  return `Here's the trip:\n${packet.url}\nPassword: ${packet.password}`;
+}

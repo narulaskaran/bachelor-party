@@ -8,13 +8,13 @@ Live: [party.narula.xyz](https://party.narula.xyz)
 
 ## Host
 
-Open the [site](https://party.narula.xyz), hit **Create a trip**,
-and save the organizer packet — invite URL, guest password, admin token. The
-token is shown once. That's the only way to edit the trip later.
+Open the [site](https://party.narula.xyz), hit **I'm hosting**,
+and save the organizer packet — invite URL, guest password, host key. The
+host key is shown once. Keep it for the API; there isn't an in-product editor yet.
 
 ## Guest
 
-Open the invite, enter the password, RSVP.
+Open the invite (or **I have an invite** on the homepage), enter the password, RSVP.
 
 ## Try it
 

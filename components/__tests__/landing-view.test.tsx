@@ -34,27 +34,32 @@ describe("homepage trip entry", () => {
     cleanup();
   });
 
-  it("offers Create a trip on the marketing landing without /admin", () => {
+  it("offers equal host and invite CTAs, and a quieter sample path", () => {
     const { container } = render(<LandingView />);
 
-    expect(screen.getByRole("link", { name: /^create a trip$/i }).getAttribute("href")).toBe(
-      "#create",
-    );
+    const hosting = screen.getByRole("link", { name: /^i.m hosting$/i });
+    const invite = screen.getByRole("link", { name: /^i have an invite$/i });
+    expect(hosting.getAttribute("href")).toBe("#create");
+    expect(invite.getAttribute("href")).toBe("#enter");
+    expect(hosting.closest("[data-slot=button]")).toBeTruthy();
+    expect(invite.closest("[data-slot=button]")).toBeTruthy();
     expect(document.getElementById("create")).toBeTruthy();
-    expect(screen.getByLabelText(/trip name/i)).toBeTruthy();
+    expect(document.getElementById("enter")).toBeTruthy();
+    expect(screen.getByLabelText(/^trip name$/i)).toBeTruthy();
     expect(screen.getByLabelText(/start date/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: /^try a sample$/i }).getAttribute("href")).toBe(
       "/demo",
     );
-    expect(screen.getByRole("link", { name: /^enter your trip$/i }).getAttribute("href")).toBe(
-      "#rsvp",
-    );
+    expect(screen.getByRole("link", { name: /^try a sample$/i }).closest("[data-slot=button]")).toBeNull();
     expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
     expect(container.innerHTML).not.toContain("ADMIN_UI_PASSWORD");
     expect(container.innerHTML).not.toContain('href="/admin"');
+    expect(container.innerHTML).not.toContain("password-gated");
+    expect(container.innerHTML).not.toMatch(/#rsvp"/);
+    expect(invite.getAttribute("href")).not.toBe("#rsvp");
   });
 
-  it("is a quiet centered tool page, not a poster with competing CTAs", () => {
+  it("is a quiet centered tool page, not a poster", () => {
     const { container } = render(<LandingView />);
     const html = container.innerHTML;
 
@@ -66,11 +71,7 @@ describe("homepage trip entry", () => {
     expect(html).not.toContain("Trip Logistics, Handled");
     expect(html).not.toContain("One Password");
     expect(html).not.toContain("Every Trip Detail");
-
-    const create = screen.getByRole("link", { name: /^create a trip$/i });
-    expect(create.closest("[data-slot=button]")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /^enter your trip$/i }).closest("[data-slot=button]")).toBeNull();
-    expect(screen.getByRole("link", { name: /^try a sample$/i }).closest("[data-slot=button]")).toBeNull();
+    expect(html).toContain("One private page for the trip");
   });
 
   it("renders a trip-entry form on every legacy hash the old pages 307 to", () => {
@@ -79,41 +80,41 @@ describe("homepage trip entry", () => {
     for (const hash of LEGACY_PAGE_HASHES) {
       expect(document.getElementById(hash), `#${hash}`).toBeTruthy();
     }
-    expect(screen.getByLabelText(/trip code/i)).toBeTruthy();
+    expect(screen.getByLabelText(/invite link or trip name/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /open trip/i })).toBeTruthy();
-    expect(screen.getByText(/party\.narula\.xyz\/your-trip/i)).toBeTruthy();
+    expect(screen.getByText(/party\.narula\.xyz/i)).toBeTruthy();
     expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
   });
 
   it("shows a request-host invite example when provided", () => {
     render(<LandingView inviteHost="preview.example" />);
 
-    expect(screen.getByText(/preview\.example\/your-trip/i)).toBeTruthy();
+    expect(screen.getByText(/preview\.example/i)).toBeTruthy();
     expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
   });
 
   it("does not advertise the retired Vercel production alias as the invite host", () => {
     render(<LandingView />);
 
-    expect(screen.getByText(/party\.narula\.xyz\/your-trip/i)).toBeTruthy();
+    expect(screen.getByText(/party\.narula\.xyz/i)).toBeTruthy();
     expect(screen.queryByText(/bachelor-party-eight\.vercel\.app/i)).toBeNull();
   });
 
-  it("keeps the invite example URL on one line instead of wrapping mid-slug", () => {
+  it("wraps the invite example before the path, not mid-slug", () => {
     const { container } = render(<LandingView />);
-    const example = container.querySelector("#trip-entry-hint span.font-mono");
+    const example = container.querySelector("#trip-entry-hint .font-mono");
 
     expect(example?.textContent).toBe("party.narula.xyz/your-trip");
-    expect(example?.className).toMatch(/whitespace-nowrap/);
-    expect(example?.className).toMatch(/break-normal/);
-    expect(example?.className).not.toMatch(/break-words|break-all/);
+    expect(example?.innerHTML).toContain("<wbr>");
+    expect(example?.querySelector(".whitespace-nowrap")?.textContent).toBe("party.narula.xyz");
+    expect(example?.className).not.toMatch(/whitespace-nowrap/);
   });
 
   it("navigates to /{slug} when the form is submitted", async () => {
     const user = userEvent.setup();
     render(<LandingView />);
 
-    await user.type(screen.getByLabelText(/trip code/i), "jackson-hole-26");
+    await user.type(screen.getByLabelText(/invite link or trip name/i), "jackson-hole-26");
     await user.click(screen.getByRole("button", { name: /open trip/i }));
 
     expect(push).toHaveBeenCalledWith("/jackson-hole-26");
@@ -124,7 +125,7 @@ describe("homepage trip entry", () => {
     render(<LandingView />);
 
     await user.type(
-      screen.getByLabelText(/trip code/i),
+      screen.getByLabelText(/invite link or trip name/i),
       "https://example.com/cabin-weekend",
     );
     await user.click(screen.getByRole("button", { name: /open trip/i }));

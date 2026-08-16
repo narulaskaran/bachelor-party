@@ -4,7 +4,7 @@ import { sectionTitleClass } from "@/lib/type";
 
 export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
   return (
-    <section className="py-12 sm:py-16">
+    <section id="do-your-part" className="scroll-mt-20 py-12 sm:py-16">
       <h2 className={sectionTitleClass}>Do your part</h2>
 
       <ol className="mt-8 flex flex-col gap-6">
@@ -23,7 +23,7 @@ export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
               )}
               {item.anchor && (
                 <Button asChild size="sm" className="mt-3">
-                  <a href={item.anchor}>Go to your info</a>
+                  <a href={item.anchor}>RSVP</a>
                 </Button>
               )}
             </div>

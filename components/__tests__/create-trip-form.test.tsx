@@ -23,6 +23,12 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+const { openTrip } = vi.hoisted(() => ({ openTrip: vi.fn() }));
+
+vi.mock("@/lib/guest-access", () => ({
+  openAsGuest: (...args: unknown[]) => openTrip(...args),
+}));
+
 const PACKET: OrganizerPacket = {
   url: "https://preview.example/cabin-weekend",
   slug: "cabin-weekend",
@@ -53,6 +59,8 @@ describe("CreateTripForm", () => {
     const { container } = render(<CreateTripForm create={create} />);
 
     assertNoAdminRequirement(container.innerHTML);
+    expect(container.innerHTML).toMatch(/host key/i);
+    expect(container.innerHTML).not.toMatch(/admin token/i);
     expect(screen.getByLabelText(/trip name/i)).toBeTruthy();
     expect(screen.getByLabelText(/start date/i)).toBeTruthy();
     expect(screen.getByLabelText(/end date/i)).toBeTruthy();
@@ -82,13 +90,13 @@ describe("CreateTripForm", () => {
     expect(screen.getByText(PACKET.password)).toBeTruthy();
     expect(screen.getByText(PACKET.adminToken)).toBeTruthy();
     expect(screen.getAllByText(/will not be shown again/i).length).toBeGreaterThan(0);
-    const open = screen.getByRole("link", { name: /open the trip/i });
-    expect(open.tagName).toBe("A");
-    expect(open.getAttribute("href")).toBe("/cabin-weekend");
-    expect(open.getAttribute("target")).not.toBe("_blank");
+    expect(screen.getByRole("button", { name: /open as guest/i })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /open the trip/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /text these to the group/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /copy invite url/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /copy guest password/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /copy admin token/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /copy host key/i })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /copy admin token/i })).toBeNull();
     expect(screen.queryByLabelText(/trip name/i)).toBeNull();
     expect(screen.queryByText("ADMIN_UI_PASSWORD")).toBeNull();
 
@@ -158,21 +166,35 @@ describe("CreateTripForm", () => {
 describe("OrganizerPacketView", () => {
   beforeEach(() => {
     cleanup();
+    openTrip.mockReset();
   });
 
-  it("shows invite URL, guest password, admin token, and copy controls", () => {
+  it("shows invite URL, guest password, host key, and copy controls", () => {
     const { container } = render(<OrganizerPacketView packet={PACKET} />);
     expect(container.innerHTML).toContain(PACKET.url);
     expect(container.innerHTML).toContain(PACKET.password);
     expect(container.innerHTML).toContain(PACKET.adminToken);
     expect(screen.getByRole("button", { name: /copy invite url/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /copy guest password/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /copy admin token/i })).toBeTruthy();
-    const open = screen.getByRole("link", { name: /open the trip/i });
-    expect(open.tagName).toBe("A");
-    expect(open.getAttribute("href")).toBe("/cabin-weekend");
-    expect(open.getAttribute("target")).not.toBe("_blank");
+    expect(screen.getByRole("button", { name: /copy host key/i })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /copy admin token/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /open as guest/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /text these to the group/i })).toBeTruthy();
     expect(screen.getAllByText(/will not be shown again/i).length).toBeGreaterThan(0);
+    expect(container.innerHTML).toMatch(/host key/i);
+    expect(container.innerHTML).not.toMatch(/admin token/i);
+    expect(container.innerHTML).not.toMatch(/only way to edit/i);
+    expect(container.innerHTML).toMatch(/add dates, lodge, and a schedule/i);
+    expect(container.innerHTML).toMatch(/isn.t an in-product editor/i);
     assertNoAdminRequirement(container.innerHTML);
+  });
+
+  it("Open as guest submits slug and password so the trip unlocks", async () => {
+    const user = userEvent.setup();
+    render(<OrganizerPacketView packet={PACKET} openTrip={openTrip} />);
+
+    await user.click(screen.getByRole("button", { name: /open as guest/i }));
+
+    expect(openTrip).toHaveBeenCalledWith("cabin-weekend", "guest-pw");
   });
 });

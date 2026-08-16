@@ -86,7 +86,7 @@ export const DEMO_PARTY: PartyContent = {
   },
   actionItems: [
     { title: "Book your flight", note: "Land Friday by late morning" },
-    { title: "Drop your info below", note: "Flights, food, votes — two minutes", anchor: "#rsvp" },
+    { title: "RSVP below", note: "Flights, food, votes — two minutes", anchor: "#rsvp" },
     { title: "Settle up when the split lands" },
   ],
 };

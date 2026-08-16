@@ -12,7 +12,7 @@ export function Hero({ trip, meta }: { trip: Trip; meta: string[] }) {
       ) : null}
 
       {meta.length > 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">{meta.join(" · ")}</p>
+        <p className="mt-4 break-words text-sm text-muted-foreground">{meta.join(" · ")}</p>
       ) : null}
 
       {trip.startDate ? (

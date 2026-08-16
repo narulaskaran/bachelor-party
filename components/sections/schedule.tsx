@@ -23,7 +23,7 @@ export function ScheduleSection({ schedule }: { schedule: ScheduleDay[] }) {
                 <span className="text-sm text-muted-foreground">{day.label}</span>
               </div>
               {!day.timed && (
-                <p className={cn("mt-1", kickerClass)}>Order locked, times loose</p>
+                <p className={cn("mt-1", kickerClass)}>Order is set — times may slip.</p>
               )}
             </div>
 

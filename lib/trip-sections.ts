@@ -76,7 +76,7 @@ export function glanceFacts(trip: Trip, lodging?: Lodging): GlanceFact[] {
       facts.push({
         label: "Total",
         value: lodging.totalCost,
-        note: "split by headcount",
+        note: costEachNote(lodging.totalCost, lodging.beds),
       });
     }
   }
@@ -92,6 +92,21 @@ export function lodgingSleepsLabel(lodging: Lodging): string | null {
     parts.push(`${lodging.beds} beds`);
   }
   return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+export function parseMoneyAmount(value: string): number | null {
+  const n = Number(value.replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
+
+export function costEachNote(totalCost: string, headcount?: number): string {
+  const total = parseMoneyAmount(totalCost);
+  if (total != null && headcount != null && headcount > 0) {
+    const each = Math.round(total / headcount);
+    return `About $${each.toLocaleString("en-US")} each once everyone's in`;
+  }
+  return "You'll get a request once we know who's coming.";
 }
 
 export function visibleSections(content: PartyContent): VisibleSections {

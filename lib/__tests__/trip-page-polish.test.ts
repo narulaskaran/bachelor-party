@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ActivitiesSection } from "@/components/sections/activities";
 import { Glance } from "@/components/sections/glance";
 import { Hero } from "@/components/sections/hero";
+import { ScheduleSection } from "@/components/sections/schedule";
 import { VoteActivityGroup } from "@/components/vote-activity-group";
 import { heroMeta } from "@/lib/trip-sections";
 
@@ -52,6 +53,38 @@ describe("trip page polish", () => {
     expect(html).not.toContain("text-7xl");
     expect(html).not.toContain("uppercase tracking-wide");
     expect(html).not.toContain("Group Trip");
+  });
+
+  it("lets hero coordinates wrap", () => {
+    const trip = {
+      siteName: "X",
+      coordinates: "39.0000° N, 106.0000° W",
+      dateLabel: "Aug 30 – Sep 2, 2030",
+    };
+    const html = renderToStaticMarkup(
+      createElement(Hero, { trip, meta: heroMeta(trip) }),
+    );
+    expect(html).toContain("break-words");
+    expect(html).toContain("39.0000");
+  });
+
+  it("uses plain language when schedule times are still loose", () => {
+    const html = renderToStaticMarkup(
+      createElement(ScheduleSection, {
+        schedule: [
+          {
+            key: "saturday",
+            date: "2026-09-05",
+            weekday: "Saturday",
+            label: "Main day",
+            timed: false,
+            entries: [{ title: "Hike" }],
+          },
+        ],
+      }),
+    );
+    expect(html).toContain("Order is set — times may slip.");
+    expect(html).not.toContain("Order locked, times loose");
   });
 
   it("exposes RSVP vote groups as a labeled radiogroup with clickable pills", () => {

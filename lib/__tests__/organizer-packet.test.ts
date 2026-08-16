@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { organizerPacket } from "@/lib/organizer-packet";
+import { groupInviteText, organizerPacket } from "@/lib/organizer-packet";
 
 describe("organizerPacket", () => {
   it("builds a guest URL from the request origin", () => {
@@ -44,5 +44,17 @@ describe("organizerPacket", () => {
         },
       ).url,
     ).toBe("https://bachelor-party-eight-git-feat-acme.vercel.app/jackson-hole-26");
+  });
+});
+
+describe("groupInviteText", () => {
+  it("includes the invite URL and guest password, not the host key", () => {
+    const text = groupInviteText({
+      url: "https://party.narula.xyz/cabin-weekend",
+      password: "guest-pw",
+    });
+    expect(text).toContain("https://party.narula.xyz/cabin-weekend");
+    expect(text).toContain("guest-pw");
+    expect(text).not.toMatch(/host key|admin token|party-tok/i);
   });
 });

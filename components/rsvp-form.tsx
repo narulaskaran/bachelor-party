@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -158,7 +159,7 @@ export function RsvpForm({
           <Textarea
             id="dietary"
             name="dietary"
-            placeholder="Allergies, no-gos, keto martyrdom…"
+            placeholder="Allergies, vegetarian, no shellfish…"
             defaultValue={defaults.dietary}
           />
         </div>
@@ -212,12 +213,24 @@ export function RsvpForm({
       <Button
         type="submit"
         size="lg"
-        className="w-full"
+        variant={sample ? "secondary" : "default"}
+        className={
+          sample
+            ? "w-full disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
+            : "w-full"
+        }
         disabled={sample || isPending}
         aria-describedby={sample ? "demo-rsvp-banner" : undefined}
       >
         {isPending ? "Saving…" : state?.ok ? "Saved" : "Save"}
       </Button>
+      {sample ? (
+        <p className="text-center text-sm text-muted-foreground">
+          <Link href="/#create" className="underline-offset-4 hover:text-primary hover:underline">
+            Create your own trip to collect RSVPs
+          </Link>
+        </p>
+      ) : null}
     </form>
   );
 }

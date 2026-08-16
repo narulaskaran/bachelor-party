@@ -8,5 +8,8 @@ describe("README production links", () => {
     expect(readme).toContain("https://party.narula.xyz");
     expect(readme).toContain("https://party.narula.xyz/demo");
     expect(readme).not.toContain("bachelor-party-eight.vercel.app");
+    expect(readme).toMatch(/host key/i);
+    expect(readme).not.toMatch(/admin token/i);
+    expect(readme).not.toMatch(/only way to edit/i);
   });
 });

@@ -5,6 +5,8 @@ import { Check, Copy } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type { OrganizerPacket } from "@/lib/create-trip";
+import { openAsGuest } from "@/lib/guest-access";
+import { groupInviteText } from "@/lib/organizer-packet";
 import { kickerClass, sectionTitleClass } from "@/lib/type";
 
 function CopyField({
@@ -56,13 +58,39 @@ function CopyField({
   );
 }
 
+function CopyGroupButton({ packet }: { packet: OrganizerPacket }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(groupInviteText(packet));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <Button type="button" variant="outline" onClick={copy}>
+      {copied ? "Copied" : "Text these to the group"}
+    </Button>
+  );
+}
+
 export function OrganizerPacketView({
   packet,
   onCreateAnother,
+  openTrip = openAsGuest,
 }: {
   packet: OrganizerPacket;
   onCreateAnother?: () => void;
+  openTrip?: (slug: string, password: string) => Promise<unknown>;
 }) {
+  async function openGuestTrip() {
+    await openTrip(packet.slug, packet.password);
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -70,16 +98,18 @@ export function OrganizerPacketView({
           Trip created
         </h2>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Save these now — especially the admin token. It is the only way to
-          edit this trip later, and it will not be shown again.
+          Copy the invite link, guest password, and host key now. The host key
+          will not be shown again. The trip page is just the name and RSVP until
+          you add dates, lodge, and a schedule.
         </p>
       </div>
 
       <Alert>
-        <AlertTitle>The admin token will not be shown again</AlertTitle>
+        <AlertTitle>The host key will not be shown again</AlertTitle>
         <AlertDescription>
-          Copy the invite URL and guest password for your crew. Keep the admin
-          token to yourself — we cannot display it after you leave this page.
+          Text the invite URL and guest password to the group. Keep the host key
+          to yourself — we cannot display it after you leave this page. There
+          isn&apos;t an in-product editor yet; the host key is for the API.
         </AlertDescription>
       </Alert>
 
@@ -96,17 +126,17 @@ export function OrganizerPacketView({
           hint="The shared password for the trip site."
         />
         <CopyField
-          label="Admin token"
+          label="Host key"
           value={packet.adminToken}
-          hint="Authorizes edits for this trip only. Not a site-wide secret."
+          hint="Authorizes API edits for this trip only. Not a site-wide secret."
         />
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {/* Real <a>: Next.js Link's client transition was a no-op after create. */}
-        <Button asChild>
-          <a href={`/${packet.slug}`}>Open the trip</a>
-        </Button>
+        <CopyGroupButton packet={packet} />
+        <form action={openGuestTrip}>
+          <Button type="submit">Open as guest</Button>
+        </form>
         {onCreateAnother ? (
           <Button type="button" variant="outline" onClick={onCreateAnother}>
             Create another

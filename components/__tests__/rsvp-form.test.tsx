@@ -1,5 +1,6 @@
 /** @vitest-environment jsdom */
 
+import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -9,6 +10,21 @@ import { submitGuestInfo, submitSampleGuestInfo } from "@/lib/rsvp-actions";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
+}));
+
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: ReactNode;
+    href: string;
+  } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock("sonner", () => ({
@@ -41,8 +57,15 @@ describe("RsvpForm", () => {
     );
 
     expect(screen.getByRole("alert").textContent).toBe(DEMO_RSVP_MESSAGE);
+    expect(screen.getByPlaceholderText(/allergies, vegetarian, no shellfish/i)).toBeTruthy();
     const save = screen.getByRole("button", { name: /^save$/i });
     expect((save as HTMLButtonElement).disabled).toBe(true);
+    expect(save.className).toMatch(/disabled:bg-muted/);
+    expect(save.className).toMatch(/disabled:text-muted-foreground/);
+    expect(save.className).toMatch(/disabled:opacity-100/);
+    expect(
+      screen.getByRole("link", { name: /create your own trip to collect RSVPs/i }).getAttribute("href"),
+    ).toBe("/#create");
 
     await user.type(screen.getByLabelText(/^name$/i), "Alex");
     await user.click(save);
@@ -62,5 +85,6 @@ describe("RsvpForm", () => {
     expect(screen.queryByText(DEMO_RSVP_MESSAGE)).toBeNull();
     const save = screen.getByRole("button", { name: /^save$/i });
     expect((save as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByRole("link", { name: /create your own trip to collect RSVPs/i })).toBeNull();
   });
 });

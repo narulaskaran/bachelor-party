@@ -23,7 +23,7 @@ export async function RsvpSection({
 
   return (
     <section id="rsvp" className="scroll-mt-20 py-12 sm:py-16">
-      <h2 className={sectionTitleClass}>Your info</h2>
+      <h2 className={sectionTitleClass}>RSVP</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         {sample
           ? "Preview of the guest RSVP form — flights, food, and votes."
@@ -43,10 +43,14 @@ export async function RsvpSection({
       </div>
 
       <div className="mt-12 border-t border-border pt-8">
-        <h3 className="text-xl font-semibold tracking-tight">Who&rsquo;s checked in</h3>
+        <h3 className="text-xl font-semibold tracking-tight">Who&rsquo;s coming</h3>
 
         {guests.length === 0 ? (
-          <p className="mt-6 text-sm text-muted-foreground">No check-ins yet.</p>
+          <p className="mt-6 text-sm text-muted-foreground">
+            {sample
+              ? "No one's on this sample list. RSVPs aren't saved here."
+              : "No one's on the list yet. Add yours above."}
+          </p>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {guests.map((guest) => (

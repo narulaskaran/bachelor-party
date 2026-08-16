@@ -17,7 +17,7 @@ export function TripEntryForm() {
       String(new FormData(event.currentTarget).get("slug") ?? ""),
     );
     if (!path) {
-      setError("Enter your trip code or invite link.");
+      setError("Enter your invite link or trip name.");
       return;
     }
     setError("");
@@ -28,7 +28,7 @@ export function TripEntryForm() {
     <form onSubmit={onSubmit} className="mt-6 flex max-w-md flex-col gap-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <Label htmlFor="trip-slug">Trip code</Label>
+          <Label htmlFor="trip-slug">Invite link or trip name</Label>
           <Input
             id="trip-slug"
             name="slug"

@@ -139,15 +139,21 @@ describe("GET /", () => {
     expect(html).toContain("Try a sample");
     expect(html).toContain("Create a trip");
     expect(html).toContain('href="#create"');
+    expect(html).toContain('href="#enter"');
+    expect(html).toContain("I have an invite");
+    expect(html).toContain("I&#x27;m hosting");
+    expect(html).not.toContain("password-gated");
+    expect(html).not.toMatch(/href="#rsvp"/);
     expect(html).not.toContain("ADMIN_UI_PASSWORD");
     expect(html).not.toContain('href="/admin"');
     expect(html).not.toContain("PRIVATE_TRIP_VIEW");
     expect(html).not.toContain(TRIP_NAME);
     expect(html).not.toContain(SCHEDULE_TITLE);
     expect(html).not.toContain(LODGE_NAME);
-    expect(html).toContain("party.narula.xyz/your-trip");
+    expect(html).toContain("party.narula.xyz");
+    expect(html).toContain("/your-trip");
     expect(html).not.toContain("yoursite.com");
-    expect(html).toMatch(/trip-entry-hint[\s\S]*whitespace-nowrap/);
+    expect(html).toMatch(/trip-entry-hint[\s\S]*<wbr\/?>/);
   });
 
   it("landing invite hint uses the request host so previews stay accurate", async () => {
@@ -159,7 +165,8 @@ describe("GET /", () => {
 
     const html = renderToStaticMarkup(await Page());
 
-    expect(html).toContain("preview.example/your-trip");
+    expect(html).toContain("preview.example");
+    expect(html).toContain("/your-trip");
     expect(html).not.toContain("yoursite.com");
   });
 
@@ -172,7 +179,8 @@ describe("GET /", () => {
 
     const html = renderToStaticMarkup(await Page());
 
-    expect(html).toContain("party.narula.xyz/your-trip");
+    expect(html).toContain("party.narula.xyz");
+    expect(html).toContain("/your-trip");
     expect(html).not.toContain("bachelor-party-eight.vercel.app/your-trip");
   });
 
@@ -225,10 +233,12 @@ describe("GET /{slug} chrome", () => {
 
     expect(html).toContain(TRIP_NAME);
     expect(html).toContain(DATE_LABEL);
-    expect(html).toContain("/qa-tester-e2e#schedule");
+    expect(html).toContain("/qa-tester-e2e#rsvp");
+    expect(html).toContain("RSVP");
     expect(html).toContain("TRIP_BODY");
     expect(html).toContain("data-trip-chrome");
     expect(html).not.toContain("Create a trip");
+    expect(html).not.toContain("Your Info");
   });
 
   it("does not brand another trip's login gate with leftover cookie chrome", async () => {
@@ -277,5 +287,32 @@ describe("GET /{slug} chrome", () => {
     expect(html).not.toContain(TRIP_NAME);
     expect(html).not.toContain("/qa-tester-e2e#schedule");
     expect(html).not.toContain("data-trip-chrome");
+  });
+
+  it("shows trip in-page nav on /demo without a cookie", async () => {
+    vi.mocked(cookies).mockResolvedValue({
+      get: () => undefined,
+      set: vi.fn(),
+    } as never);
+    vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
+
+    const html = renderToStaticMarkup(
+      await TripLayout({
+        children: createElement("p", null, "DEMO_BODY"),
+        params: Promise.resolve({ slug: "demo" }),
+      }),
+    );
+
+    expect(html).toContain("Alpine Weekend");
+    expect(html).toContain("data-trip-chrome");
+    expect(html).toContain("/demo#rsvp");
+    expect(html).toContain("RSVP");
+    expect(html).toContain("/demo#do-your-part");
+    expect(html).toContain("Do your part");
+    expect(html).toContain("/demo#glance");
+    expect(html).toContain("Lodge");
+    expect(html).not.toContain("Your Info");
+    expect(html).not.toContain("Create a trip");
+    expect(html).toContain("DEMO_BODY");
   });
 });

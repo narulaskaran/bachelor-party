@@ -36,7 +36,7 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
                 className={cn(
                   "font-mono font-bold",
                   fact.label === "Total cost"
-                    ? "whitespace-nowrap text-2xl sm:text-3xl"
+                    ? "break-words text-xl sm:text-2xl md:text-3xl"
                     : "break-words text-3xl sm:text-4xl",
                 )}
               >
@@ -93,7 +93,7 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
 
           {lodging.totalCost ? (
             <p className="mt-6 text-sm text-muted-foreground">
-              Cost split lands once headcount is final.
+              You&apos;ll get a request once we know who&apos;s coming.
             </p>
           ) : null}
         </div>

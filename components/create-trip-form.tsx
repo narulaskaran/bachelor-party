@@ -73,7 +73,7 @@ export function CreateTripForm({
       </h2>
       <p id="create-trip-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
         Name it — that&apos;s enough. Dates are optional. You&apos;ll get an
-        invite link, a guest password, and an admin token once. No account
+        invite link, a guest password, and a host key once. No account
         required.
       </p>
       <form onSubmit={onSubmit} className="mt-6 flex max-w-md flex-col gap-4">

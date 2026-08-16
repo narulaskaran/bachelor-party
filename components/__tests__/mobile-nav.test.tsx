@@ -22,10 +22,10 @@ vi.mock("next/link", () => ({
 }));
 
 const links = [
+  { href: "/demo#rsvp", label: "RSVP" },
   { href: "/demo#schedule", label: "Schedule" },
   { href: "/demo#activities", label: "Activities" },
-  { href: "/demo#basecamp", label: "Basecamp" },
-  { href: "/demo#rsvp", label: "Your Info" },
+  { href: "/demo#basecamp", label: "Lodge" },
 ];
 
 describe("MobileNav", () => {
@@ -59,7 +59,7 @@ describe("MobileNav", () => {
     await user.click(screen.getByLabelText("Open menu"));
     expect(details.open).toBe(true);
 
-    await user.click(screen.getByRole("link", { name: "Your Info" }));
+    await user.click(screen.getByRole("link", { name: "RSVP" }));
     expect(details.open).toBe(false);
   });
 

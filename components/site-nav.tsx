@@ -4,10 +4,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import type { VisibleSections } from "@/lib/trip-sections";
 
 const allLinks: { href: string; label: string; section: keyof VisibleSections }[] = [
+  { href: "#rsvp", label: "RSVP", section: "rsvp" },
+  { href: "#do-your-part", label: "Do your part", section: "actionItems" },
+  { href: "#glance", label: "At a glance", section: "glance" },
   { href: "#schedule", label: "Schedule", section: "schedule" },
   { href: "#activities", label: "Activities", section: "activities" },
-  { href: "#basecamp", label: "Basecamp", section: "lodging" },
-  { href: "#rsvp", label: "Your Info", section: "rsvp" },
+  { href: "#basecamp", label: "Lodge", section: "lodging" },
 ];
 
 export function SiteNav({

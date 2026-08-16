@@ -16,20 +16,18 @@ export function LandingView({
       <section className="flex flex-col items-center py-16 text-center sm:py-24">
         <h1 className={pageTitleClass}>The Big Send</h1>
         <p className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
-          A password-gated logistics site for group trips — schedule, lodging,
-          activities, and RSVPs, all behind one link only your crew has.
+          One private page for the trip — schedule, cabin, and who&apos;s coming.
         </p>
 
-        <div className="mt-10">
+        <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <Button asChild>
-            <a href="#create">Create a trip</a>
+            <a href="#create">I&apos;m hosting</a>
+          </Button>
+          <Button asChild>
+            <a href="#enter">I have an invite</a>
           </Button>
         </div>
         <p className="mt-6 text-sm text-muted-foreground">
-          <a href="#rsvp" className={quietLinkClass}>
-            Enter your trip
-          </a>
-          <span aria-hidden="true"> · </span>
           <Link href="/demo" className={quietLinkClass}>
             Try a sample
           </Link>
@@ -44,7 +42,11 @@ export function LandingView({
         <CreateTripForm />
       </section>
 
-      <section className="py-10 sm:py-12" aria-labelledby="trip-entry-heading">
+      <section
+        id="enter"
+        className="scroll-mt-20 py-10 sm:py-12"
+        aria-labelledby="trip-entry-heading"
+      >
         {LEGACY_PAGE_HASHES.map((hash) => (
           <div key={hash} id={hash} className="scroll-mt-20" aria-hidden="true" />
         ))}
@@ -53,10 +55,12 @@ export function LandingView({
         </h2>
         <p id="trip-entry-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
           Invite links look like{" "}
-          <span className="inline-block whitespace-nowrap break-normal font-mono text-foreground">
-            {inviteHost}/your-trip
+          <span className="font-mono text-foreground">
+            <span className="whitespace-nowrap">{inviteHost}</span>
+            <wbr />
+            /your-trip
           </span>
-          . Paste that URL or just the trip code, then enter the password on the
+          . Paste that URL or just the trip name, then enter the password on the
           next page.
         </p>
         <TripEntryForm />
