@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
@@ -10,9 +10,11 @@ export type MobileNavLink = { href: string; label: string };
 
 export function MobileNav({ links }: { links: MobileNavLink[] }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
+  const [open, setOpen] = useState(false);
 
   function closeMenu() {
     detailsRef.current?.removeAttribute("open");
+    setOpen(false);
   }
 
   useEffect(() => {
@@ -21,6 +23,7 @@ export function MobileNav({ links }: { links: MobileNavLink[] }) {
       if (!details?.open) return;
       if (details.contains(event.target as Node)) return;
       details.removeAttribute("open");
+      setOpen(false);
     }
 
     document.addEventListener("pointerdown", onPointerDown);
@@ -28,13 +31,18 @@ export function MobileNav({ links }: { links: MobileNavLink[] }) {
   }, []);
 
   return (
-    <details ref={detailsRef} className="group md:hidden">
+    <details
+      ref={detailsRef}
+      className="group md:hidden"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
       <summary
         className={cn(
           buttonVariants({ variant: "ghost", size: "icon" }),
           "cursor-pointer list-none [&::-webkit-details-marker]:hidden",
         )}
-        aria-label="Open menu"
+        aria-expanded={open}
+        aria-label={open ? "Close menu" : "Open menu"}
       >
         <Menu className="size-4 group-open:hidden" aria-hidden />
         <X className="hidden size-4 group-open:block" aria-hidden />

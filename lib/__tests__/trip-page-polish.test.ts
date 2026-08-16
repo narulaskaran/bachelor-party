@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ActivitiesSection } from "@/components/sections/activities";
+import { ActionItems } from "@/components/sections/action-items";
 import { Glance } from "@/components/sections/glance";
 import { Hero } from "@/components/sections/hero";
 import { ScheduleSection } from "@/components/sections/schedule";
@@ -97,9 +98,30 @@ describe("trip page polish", () => {
     expect(html).toContain("<fieldset");
     expect(html).toContain("<legend");
     expect(html).toContain("Bonus round");
-    expect(html).not.toContain("sr-only");
+    expect(html).toContain("sr-only");
     expect(html).toContain('type="radio"');
-    expect(html).toContain("absolute inset-0");
+    expect(html).toContain("has-[:focus-visible]:ring-3");
+    expect(html).not.toContain("opacity-0");
+    expect(html).not.toContain("absolute inset-0");
     expect(html).toContain("<label");
+  });
+
+  it("labels action-item buttons from the in-page target", () => {
+    const html = renderToStaticMarkup(
+      createElement(ActionItems, {
+        actionItems: [
+          { title: "RSVP below", anchor: "#rsvp" },
+          { title: "See the plan", anchor: "#schedule" },
+          { title: "Cabin details", anchor: "#lodge" },
+        ],
+      }),
+    );
+    expect(html).toContain('href="#rsvp"');
+    expect(html).toContain(">RSVP<");
+    expect(html).toContain('href="#schedule"');
+    expect(html).toContain(">Schedule<");
+    expect(html).toContain('href="#lodge"');
+    expect(html).toContain(">Lodge<");
+    expect(html).not.toContain("Go to your info");
   });
 });

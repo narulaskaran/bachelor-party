@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     // Old multi-page URLs → single-page anchors. On the logged-out homepage
     // those hashes land on the trip-entry form; on a logged-in PartyView they
-    // still hit the real schedule / activities / basecamp / RSVP sections.
+    // still hit the real schedule / activities / lodge / RSVP sections.
     return [...legacyProductionHostRedirects(), ...LEGACY_PAGE_REDIRECTS];
   },
   async rewrites() {

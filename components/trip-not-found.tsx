@@ -13,9 +13,12 @@ export function TripNotFound() {
           organizer, or head home.
         </p>
 
-        <div className="mt-10">
+        <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <Button asChild>
             <Link href="/">Back home</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/#enter">Enter a trip code</Link>
           </Button>
         </div>
       </section>

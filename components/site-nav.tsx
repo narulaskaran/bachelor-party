@@ -9,7 +9,7 @@ const allLinks: { href: string; label: string; section: keyof VisibleSections }[
   { href: "#glance", label: "At a glance", section: "glance" },
   { href: "#schedule", label: "Schedule", section: "schedule" },
   { href: "#activities", label: "Activities", section: "activities" },
-  { href: "#basecamp", label: "Lodge", section: "lodging" },
+  { href: "#lodge", label: "Lodge", section: "lodging" },
 ];
 
 export function SiteNav({
@@ -39,8 +39,7 @@ export function SiteNav({
           href={homeHref}
           className="min-w-0 truncate text-sm font-semibold tracking-tight"
         >
-          <span className="md:hidden">The Big Send</span>
-          <span className="hidden md:inline">{siteName ?? "The Big Send"}</span>
+          {siteName ?? "The Big Send"}
           {dateLabel && (
             <span className="ml-2 hidden text-xs font-normal normal-case tracking-normal text-muted-foreground lg:inline">
               {dateLabel}

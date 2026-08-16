@@ -232,6 +232,7 @@ describe("GET /{slug} chrome", () => {
     );
 
     expect(html).toContain(TRIP_NAME);
+    expect(html).not.toContain("The Big Send");
     expect(html).toContain(DATE_LABEL);
     expect(html).toContain("/qa-tester-e2e#rsvp");
     expect(html).toContain("RSVP");
@@ -304,12 +305,15 @@ describe("GET /{slug} chrome", () => {
     );
 
     expect(html).toContain("Alpine Weekend");
+    expect(html).not.toContain("The Big Send");
     expect(html).toContain("data-trip-chrome");
     expect(html).toContain("/demo#rsvp");
     expect(html).toContain("RSVP");
     expect(html).toContain("/demo#do-your-part");
     expect(html).toContain("Do your part");
     expect(html).toContain("/demo#glance");
+    expect(html).toContain("/demo#lodge");
+    expect(html).not.toContain("#basecamp");
     expect(html).toContain("Lodge");
     expect(html).not.toContain("Your Info");
     expect(html).not.toContain("Create a trip");

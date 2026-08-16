@@ -25,7 +25,7 @@ const links = [
   { href: "/demo#rsvp", label: "RSVP" },
   { href: "/demo#schedule", label: "Schedule" },
   { href: "/demo#activities", label: "Activities" },
-  { href: "/demo#basecamp", label: "Lodge" },
+  { href: "/demo#lodge", label: "Lodge" },
 ];
 
 describe("MobileNav", () => {
@@ -59,8 +59,12 @@ describe("MobileNav", () => {
     await user.click(screen.getByLabelText("Open menu"));
     expect(details.open).toBe(true);
 
+    expect(screen.getByLabelText("Close menu")).toBeTruthy();
+    expect(screen.queryByLabelText("Open menu")).toBeNull();
+
     await user.click(screen.getByRole("link", { name: "RSVP" }));
     expect(details.open).toBe(false);
+    expect(screen.getByLabelText("Open menu")).toBeTruthy();
   });
 
   it("closes on an outside tap", async () => {

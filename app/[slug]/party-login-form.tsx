@@ -25,9 +25,12 @@ export function PartyLoginForm({ loginAction }: { loginAction: LoginAction }) {
           autoFocus
           required
           aria-invalid={state.error ? true : undefined}
+          aria-describedby={state.error ? "party-login-error" : undefined}
         />
         {state.error ? (
-          <p className="text-sm text-destructive">{state.error}</p>
+          <p id="party-login-error" className="text-sm text-destructive" role="alert">
+            {state.error}
+          </p>
         ) : null}
       </div>
 

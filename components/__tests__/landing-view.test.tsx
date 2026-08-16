@@ -32,6 +32,7 @@ describe("homepage trip entry", () => {
   beforeEach(() => {
     push.mockReset();
     cleanup();
+    HTMLElement.prototype.scrollIntoView = vi.fn();
   });
 
   it("offers equal host and invite CTAs, and a quieter sample path", () => {
@@ -43,6 +44,8 @@ describe("homepage trip entry", () => {
     expect(invite.getAttribute("href")).toBe("#enter");
     expect(hosting.closest("[data-slot=button]")).toBeTruthy();
     expect(invite.closest("[data-slot=button]")).toBeTruthy();
+    expect(hosting.closest("[data-slot=button]")!.className).toMatch(/min-h-11/);
+    expect(invite.closest("[data-slot=button]")!.className).toMatch(/min-h-11/);
     expect(document.getElementById("create")).toBeTruthy();
     expect(document.getElementById("enter")).toBeTruthy();
     expect(screen.getByLabelText(/^trip name$/i)).toBeTruthy();
@@ -82,6 +85,8 @@ describe("homepage trip entry", () => {
     }
     expect(screen.getByLabelText(/invite link or trip name/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /open trip/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /open trip/i }).className).toMatch(/min-h-11/);
+    expect(screen.getByRole("button", { name: /^create a trip$/i }).className).toMatch(/min-h-11/);
     expect(screen.getByText(/party\.narula\.xyz/i)).toBeTruthy();
     expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
   });
@@ -131,5 +136,39 @@ describe("homepage trip entry", () => {
     await user.click(screen.getByRole("button", { name: /open trip/i }));
 
     expect(push).toHaveBeenCalledWith("/cabin-weekend");
+  });
+
+  it("focuses the trip name field after I'm hosting", async () => {
+    const user = userEvent.setup();
+    render(<LandingView />);
+
+    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+
+    expect(document.activeElement).toBe(screen.getByLabelText(/^trip name$/i));
+  });
+
+  it("focuses the invite field after I have an invite", async () => {
+    const user = userEvent.setup();
+    render(<LandingView />);
+
+    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
+
+    expect(document.activeElement).toBe(screen.getByLabelText(/invite link or trip name/i));
+  });
+
+  it("wires enter errors to the invite field", async () => {
+    const user = userEvent.setup();
+    render(<LandingView />);
+
+    await user.type(screen.getByLabelText(/invite link or trip name/i), "!!!");
+    await user.click(screen.getByRole("button", { name: /open trip/i }));
+
+    const input = screen.getByLabelText(/invite link or trip name/i);
+    const alert = screen.getByRole("alert");
+    expect(alert.id).toBe("trip-entry-error");
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(input.getAttribute("aria-describedby")).toContain("trip-entry-error");
+    expect(input.getAttribute("aria-describedby")).toContain("trip-entry-hint");
+    expect(push).not.toHaveBeenCalled();
   });
 });

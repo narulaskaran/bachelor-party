@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CreateTripForm } from "@/components/create-trip-form";
+import { HashFocusLink } from "@/components/hash-focus-link";
 import { TripEntryForm } from "@/components/trip-entry-form";
 import { DEFAULT_INVITE_HOST } from "@/lib/invite-host";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
@@ -21,10 +22,14 @@ export function LandingView({
 
         <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <Button asChild>
-            <a href="#create">I&apos;m hosting</a>
+            <HashFocusLink href="#create" focusId={["siteName", "create-trip-heading"]}>
+              I&apos;m hosting
+            </HashFocusLink>
           </Button>
           <Button asChild>
-            <a href="#enter">I have an invite</a>
+            <HashFocusLink href="#enter" focusId={["trip-slug", "trip-entry-heading"]}>
+              I have an invite
+            </HashFocusLink>
           </Button>
         </div>
         <p className="mt-6 text-sm text-muted-foreground">
@@ -50,7 +55,7 @@ export function LandingView({
         {LEGACY_PAGE_HASHES.map((hash) => (
           <div key={hash} id={hash} className="scroll-mt-20" aria-hidden="true" />
         ))}
-        <h2 id="trip-entry-heading" className={sectionTitleClass}>
+        <h2 id="trip-entry-heading" tabIndex={-1} className={sectionTitleClass}>
           Enter your trip
         </h2>
         <p id="trip-entry-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">

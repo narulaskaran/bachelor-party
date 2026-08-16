@@ -56,6 +56,10 @@ describe("mobile trip layout", () => {
     expect(html).toContain("Schedule");
     expect(html).toContain("Activities");
     expect(html).toContain("Lodge");
+    expect(html).toContain("/demo#lodge");
+    expect(html).not.toContain("#basecamp");
+    expect(html).toContain("Alpine Weekend");
+    expect(html).not.toContain("The Big Send");
     expect(html).toContain("RSVP");
     expect(html).toContain("Do your part");
     expect(html).toContain("At a glance");
@@ -123,6 +127,8 @@ describe("mobile trip layout", () => {
     );
     expect(html).toContain("grid-cols-2");
     expect(html).toContain("min-w-0");
+    expect(html).toContain('id="lodge"');
+    expect(html).not.toContain('id="basecamp"');
     expect(html).not.toContain("overflow-x-auto");
     expect(html).not.toContain("shrink-0 px-6");
   });
@@ -137,6 +143,7 @@ describe("mobile trip layout", () => {
     expect(html).not.toContain("example.com");
     expect(html).not.toContain(">Listing<");
     expect(html).toContain("Open in Maps");
+    expect(html).toMatch(/min-h-11/);
     expect(html).toContain("google.com/maps");
     expect(html).toContain("Lodge");
   });

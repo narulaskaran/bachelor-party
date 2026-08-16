@@ -38,13 +38,19 @@ export function TripEntryForm() {
             spellCheck={false}
             required
             placeholder="your-trip"
-            aria-describedby="trip-entry-hint"
+            aria-describedby={
+              error ? "trip-entry-error trip-entry-hint" : "trip-entry-hint"
+            }
             aria-invalid={error ? true : undefined}
           />
         </div>
         <Button type="submit">Open trip</Button>
       </div>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p id="trip-entry-error" className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
     </form>
   );
 }

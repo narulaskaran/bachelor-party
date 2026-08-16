@@ -21,9 +21,12 @@ export function AdminLoginForm() {
           autoFocus
           required
           aria-invalid={state.error ? true : undefined}
+          aria-describedby={state.error ? "admin-login-error" : undefined}
         />
         {state.error ? (
-          <p className="text-sm text-destructive">{state.error}</p>
+          <p id="admin-login-error" className="text-sm text-destructive" role="alert">
+            {state.error}
+          </p>
         ) : null}
       </div>
 

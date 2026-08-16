@@ -94,7 +94,7 @@ export function OrganizerPacketView({
   return (
     <div className="space-y-6">
       <div>
-        <h2 id="create-trip-heading" className={sectionTitleClass}>
+        <h2 id="create-trip-heading" tabIndex={-1} className={sectionTitleClass}>
           Trip created
         </h2>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
@@ -128,7 +128,7 @@ export function OrganizerPacketView({
         <CopyField
           label="Host key"
           value={packet.adminToken}
-          hint="Authorizes API edits for this trip only. Not a site-wide secret."
+          hint="Keep this to yourself. It's how you change the trip via the API. We can't show it again."
         />
       </div>
 

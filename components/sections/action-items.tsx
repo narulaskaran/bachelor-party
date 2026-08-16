@@ -2,6 +2,22 @@ import { Button } from "@/components/ui/button";
 import type { ActionItem } from "@/lib/party-types";
 import { sectionTitleClass } from "@/lib/type";
 
+const ANCHOR_LABELS: Record<string, string> = {
+  rsvp: "RSVP",
+  schedule: "Schedule",
+  activities: "Activities",
+  lodge: "Lodge",
+  basecamp: "Lodge",
+  glance: "At a glance",
+  "do-your-part": "Do your part",
+};
+
+/** Button copy for an action-item in-page target. */
+export function actionItemCtaLabel(anchor: string): string {
+  const id = anchor.replace(/^#/, "").split(/[/?]/)[0] ?? "";
+  return ANCHOR_LABELS[id] ?? "Open";
+}
+
 export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
   return (
     <section id="do-your-part" className="scroll-mt-20 py-12 sm:py-16">
@@ -23,7 +39,7 @@ export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
               )}
               {item.anchor && (
                 <Button asChild size="sm" className="mt-3">
-                  <a href={item.anchor}>RSVP</a>
+                  <a href={item.anchor}>{actionItemCtaLabel(item.anchor)}</a>
                 </Button>
               )}
             </div>

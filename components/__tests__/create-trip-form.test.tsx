@@ -182,6 +182,11 @@ describe("OrganizerPacketView", () => {
     expect(screen.getByRole("button", { name: /text these to the group/i })).toBeTruthy();
     expect(screen.getAllByText(/will not be shown again/i).length).toBeGreaterThan(0);
     expect(container.innerHTML).toMatch(/host key/i);
+    expect(container.innerHTML).toContain(
+      "Keep this to yourself. It's how you change the trip via the API. We can't show it again.",
+    );
+    expect(container.innerHTML).not.toContain("Authorizes API edits for this trip only");
+    expect(container.innerHTML).not.toContain("Not a site-wide secret");
     expect(container.innerHTML).not.toMatch(/admin token/i);
     expect(container.innerHTML).not.toMatch(/only way to edit/i);
     expect(container.innerHTML).toMatch(/add dates, lodge, and a schedule/i);

@@ -93,6 +93,8 @@ describe("unknown guest slug 404", () => {
     expect(html).toContain("The Big Send");
     expect(html).toContain("Back home");
     expect(html).toContain('href="/"');
+    expect(html).toContain("Enter a trip code");
+    expect(html).toContain('href="/#enter"');
     expect(html).not.toContain("__next_error__");
     expect(html).not.toContain("This page could not be found");
   });

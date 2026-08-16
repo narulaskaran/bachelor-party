@@ -34,16 +34,16 @@ export function VoteActivityGroup({
         {VOTE_OPTIONS.map((opt) => (
           <label
             key={opt.value}
-            className="relative inline-flex cursor-pointer items-center rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
+            className="inline-flex cursor-pointer items-center rounded-full border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
           >
             <input
               type="radio"
               name={`pref:${activity.slug}`}
               value={opt.value}
               defaultChecked={defaultValue === opt.value}
-              className="absolute inset-0 cursor-pointer opacity-0"
+              className="sr-only"
             />
-            <span className="relative">{opt.label}</span>
+            <span>{opt.label}</span>
           </label>
         ))}
       </div>

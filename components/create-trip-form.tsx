@@ -68,7 +68,7 @@ export function CreateTripForm({
 
   return (
     <>
-      <h2 id="create-trip-heading" className={sectionTitleClass}>
+      <h2 id="create-trip-heading" tabIndex={-1} className={sectionTitleClass}>
         Create a trip
       </h2>
       <p id="create-trip-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">

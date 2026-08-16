@@ -22,7 +22,7 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
   const subtitle = [trip.location, trip.elevation, lodging.driveFromAirport].filter(Boolean);
 
   return (
-    <section id="basecamp" className="scroll-mt-20 py-12 sm:py-16">
+    <section id="lodge" className="scroll-mt-20 py-12 sm:py-16">
       <h2 className={cn(sectionTitleClass, "break-words")}>{lodging.name}</h2>
       {subtitle.length > 0 ? (
         <p className="mt-2 max-w-xl text-muted-foreground">{subtitle.join(" · ")}</p>
