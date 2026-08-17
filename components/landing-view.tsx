@@ -6,12 +6,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CreateTripForm } from "@/components/create-trip-form";
 import { HashFocusLink } from "@/components/hash-focus-link";
+import { LandingPanelSection } from "@/components/landing-panel-section";
 import { TripEntryForm } from "@/components/trip-entry-form";
 import { DEFAULT_INVITE_HOST } from "@/lib/invite-host";
 import { panelFromHash, type LandingPanel } from "@/lib/landing-panel";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 import { pageTitleClass, quietLinkClass, sectionTitleClass } from "@/lib/type";
-import { cn } from "@/lib/utils";
 
 export function LandingView({
   inviteHost = DEFAULT_INVITE_HOST,
@@ -19,13 +19,16 @@ export function LandingView({
   inviteHost?: string;
 }) {
   const [panel, setPanel] = useState<LandingPanel | null>(null);
+  const [animate, setAnimate] = useState(false);
 
   useLayoutEffect(() => {
     const sync = () => setPanel(panelFromHash(window.location.hash));
     sync();
+    const motion = requestAnimationFrame(() => setAnimate(true));
     window.addEventListener("hashchange", sync);
     window.addEventListener("popstate", sync);
     return () => {
+      cancelAnimationFrame(motion);
       window.removeEventListener("hashchange", sync);
       window.removeEventListener("popstate", sync);
     };
@@ -36,18 +39,8 @@ export function LandingView({
   }
 
   return (
-    <div
-      className={cn(
-        "mx-auto flex max-w-3xl flex-col px-6",
-        !panel && "min-h-[calc(100svh-3.75rem)]",
-      )}
-    >
-      <section
-        className={cn(
-          "flex flex-col items-center text-center",
-          panel ? "py-12 sm:py-16" : "flex-1 justify-center py-16 sm:py-24",
-        )}
-      >
+    <div className="mx-auto flex min-h-[calc(100svh-3.75rem)] max-w-3xl flex-col px-6">
+      <section className="flex flex-col items-center py-16 text-center sm:py-24">
         <h1 className={pageTitleClass}>The Big Send</h1>
         <p className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
           One private page for the trip — schedule, cabin, and who&apos;s coming.
@@ -58,6 +51,7 @@ export function LandingView({
             <HashFocusLink
               href="#create"
               focusId={["siteName", "create-trip-heading"]}
+              scroll={false}
               aria-expanded={panel === "create"}
               aria-controls="create"
               onClick={() => reveal("create")}
@@ -69,6 +63,7 @@ export function LandingView({
             <HashFocusLink
               href="#enter"
               focusId={["trip-slug", "trip-entry-heading"]}
+              scroll={false}
               aria-expanded={panel === "enter"}
               aria-controls="enter"
               onClick={() => reveal("enter")}
@@ -84,41 +79,43 @@ export function LandingView({
         </p>
       </section>
 
-      <section
-        id="create"
-        hidden={panel !== "create"}
-        className="scroll-mt-20 py-10 sm:py-12"
-        aria-labelledby="create-trip-heading"
-      >
-        <CreateTripForm />
-      </section>
+      <div className="grid">
+        <LandingPanelSection
+          id="create"
+          open={panel === "create"}
+          animate={animate}
+          labelledBy="create-trip-heading"
+        >
+          <CreateTripForm />
+        </LandingPanelSection>
 
-      <section
-        id="enter"
-        hidden={panel !== "enter"}
-        className="scroll-mt-20 py-10 sm:py-12"
-        aria-labelledby="trip-entry-heading"
-      >
-        {LEGACY_PAGE_HASHES.map((hash) => (
-          <div key={hash} id={hash} className="scroll-mt-20" aria-hidden="true" />
-        ))}
-        <h2 id="trip-entry-heading" tabIndex={-1} className={sectionTitleClass}>
-          Enter your trip
-        </h2>
-        <p id="trip-entry-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Invite links look like{" "}
-          <span className="font-mono text-foreground">
-            <span className="whitespace-nowrap">{inviteHost}</span>
-            <wbr />
-            /your-trip
-          </span>
-          . Paste that URL or just the trip name, then enter the password on the
-          next page.
-        </p>
-        <TripEntryForm />
-      </section>
+        <LandingPanelSection
+          id="enter"
+          open={panel === "enter"}
+          animate={animate}
+          labelledBy="trip-entry-heading"
+        >
+          {LEGACY_PAGE_HASHES.map((hash) => (
+            <div key={hash} id={hash} className="scroll-mt-20" aria-hidden="true" />
+          ))}
+          <h2 id="trip-entry-heading" tabIndex={-1} className={sectionTitleClass}>
+            Enter your trip
+          </h2>
+          <p id="trip-entry-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
+            Invite links look like{" "}
+            <span className="font-mono text-foreground">
+              <span className="whitespace-nowrap">{inviteHost}</span>
+              <wbr />
+              /your-trip
+            </span>
+            . Paste that URL or just the trip name, then enter the password on the
+            next page.
+          </p>
+          <TripEntryForm />
+        </LandingPanelSection>
+      </div>
 
-      <footer className="py-8 text-center text-xs text-muted-foreground">
+      <footer className="mt-auto py-8 text-center text-xs text-muted-foreground">
         <Link
           href="https://github.com/narulaskaran/bachelor-party"
           target="_blank"

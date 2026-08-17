@@ -35,12 +35,27 @@ function resetHash() {
   window.history.replaceState(null, "", url);
 }
 
+function panelEl(id: string) {
+  return document.getElementById(id);
+}
+
+function expectPanel(id: string, open: boolean) {
+  const el = panelEl(id);
+  expect(el, `#${id}`).toBeTruthy();
+  expect(el?.getAttribute("data-open")).toBe(open ? "true" : "false");
+  expect(el?.hasAttribute("inert")).toBe(!open);
+  expect(el?.getAttribute("aria-hidden")).toBe(open ? null : "true");
+}
+
+const scrollIntoView = vi.fn();
+
 describe("homepage trip entry", () => {
   beforeEach(() => {
     push.mockReset();
     cleanup();
     resetHash();
-    HTMLElement.prototype.scrollIntoView = vi.fn();
+    scrollIntoView.mockReset();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
   });
 
   it("offers equal host and invite CTAs, and a quieter sample path", () => {
@@ -56,10 +71,10 @@ describe("homepage trip entry", () => {
     expect(invite.closest("[data-slot=button]")!.className).toMatch(/min-h-11/);
     expect(hosting.getAttribute("aria-expanded")).toBe("false");
     expect(invite.getAttribute("aria-expanded")).toBe("false");
-    expect(document.getElementById("create")).toBeTruthy();
-    expect(document.getElementById("enter")).toBeTruthy();
-    expect(document.getElementById("create")?.hidden).toBe(true);
-    expect(document.getElementById("enter")?.hidden).toBe(true);
+    expect(panelEl("create")).toBeTruthy();
+    expect(panelEl("enter")).toBeTruthy();
+    expectPanel("create", false);
+    expectPanel("enter", false);
     expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();
     expect(screen.queryByRole("heading", { name: /enter your trip/i })).toBeNull();
     expect(screen.getByRole("link", { name: /^try a sample$/i }).getAttribute("href")).toBe(
@@ -161,8 +176,9 @@ describe("homepage trip entry", () => {
 
     await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
 
-    expect(document.getElementById("create")?.hidden).toBe(false);
-    expect(document.getElementById("enter")?.hidden).toBe(true);
+    expectPanel("create", true);
+    expectPanel("enter", false);
+    expect(scrollIntoView).not.toHaveBeenCalled();
     expect(screen.getByRole("link", { name: /^i.m hosting$/i }).getAttribute("aria-expanded")).toBe(
       "true",
     );
@@ -176,8 +192,9 @@ describe("homepage trip entry", () => {
 
     await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
 
-    expect(document.getElementById("enter")?.hidden).toBe(false);
-    expect(document.getElementById("create")?.hidden).toBe(true);
+    expectPanel("enter", true);
+    expectPanel("create", false);
+    expect(scrollIntoView).not.toHaveBeenCalled();
     expect(screen.getByRole("link", { name: /^i have an invite$/i }).getAttribute("aria-expanded")).toBe(
       "true",
     );
@@ -191,8 +208,8 @@ describe("homepage trip entry", () => {
     await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
     await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
 
-    expect(document.getElementById("create")?.hidden).toBe(true);
-    expect(document.getElementById("enter")?.hidden).toBe(false);
+    expectPanel("create", false);
+    expectPanel("enter", true);
     expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();
     expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
     expect(screen.getByRole("link", { name: /^i.m hosting$/i }).closest("[data-slot=button]")?.getAttribute("data-variant")).toBe(
@@ -207,7 +224,7 @@ describe("homepage trip entry", () => {
     window.history.replaceState(null, "", "/#create");
     render(<LandingView />);
 
-    expect(document.getElementById("create")?.hidden).toBe(false);
+    expectPanel("create", true);
     expect(screen.getByRole("heading", { name: /^create a trip$/i })).toBeTruthy();
   });
 
@@ -215,7 +232,7 @@ describe("homepage trip entry", () => {
     window.history.replaceState(null, "", "/#rsvp");
     render(<LandingView />);
 
-    expect(document.getElementById("enter")?.hidden).toBe(false);
+    expectPanel("enter", true);
     expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
   });
 
@@ -224,15 +241,36 @@ describe("homepage trip entry", () => {
     render(<LandingView />);
 
     await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
-    expect(document.getElementById("create")?.hidden).toBe(false);
+    expectPanel("create", true);
 
     await act(async () => {
       window.history.pushState(null, "", "#");
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
 
-    expect(document.getElementById("create")?.hidden).toBe(true);
+    expectPanel("create", false);
     expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();
+  });
+
+  it("keeps the hero still and animates the panel open", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<LandingView />);
+    const hero = container.querySelector("h1")?.closest("section");
+    const heroClass = hero?.className;
+
+    expect(heroClass).not.toMatch(/justify-center/);
+    expect(heroClass).toMatch(/py-16/);
+
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    });
+
+    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+
+    expect(hero?.className).toBe(heroClass);
+    expect(panelEl("create")?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
+    expect(panelEl("create")?.className).toMatch(/motion-reduce:transition-none/);
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
   it("wires enter errors to the invite field", async () => {

@@ -14,15 +14,17 @@ function firstElement(ids: string[]): HTMLElement | null {
   return null;
 }
 
-/** In-page hash link that moves keyboard/AT focus after scroll. */
+/** In-page hash link that moves keyboard/AT focus after the target is shown. */
 export function HashFocusLink({
   href,
   focusId,
+  scroll = true,
   onClick,
   ...props
 }: ComponentProps<"a"> & {
   href: `#${string}`;
   focusId: string | string[];
+  scroll?: boolean;
 }) {
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     onClick?.(event);
@@ -37,7 +39,9 @@ export function HashFocusLink({
 
     event.preventDefault();
     history.pushState(null, "", href);
-    (section ?? target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (scroll) {
+      (section ?? target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     target?.focus({ preventScroll: true });
   }
 
