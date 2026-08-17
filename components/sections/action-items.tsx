@@ -8,6 +8,7 @@ const ANCHOR_LABELS: Record<string, string> = {
   activities: "Activities",
   lodge: "Lodge",
   basecamp: "Lodge",
+  pack: "Pack",
   glance: "At a glance",
   "do-your-part": "Do your part",
 };

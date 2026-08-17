@@ -11,6 +11,7 @@ const allLinks: { href: string; label: string; section: keyof VisibleSections }[
   { href: "#schedule", label: "Schedule", section: "schedule" },
   { href: "#activities", label: "Activities", section: "activities" },
   { href: "#lodge", label: "Lodge", section: "lodging" },
+  { href: "#pack", label: "Pack", section: "packing" },
 ];
 
 export function SiteNav({

@@ -71,6 +71,11 @@ const actionItemSchema = z.object({
   anchor: z.string().optional(),
 });
 
+const packingItemSchema = z.object({
+  title: z.string().min(1),
+  note: z.string().optional(),
+});
+
 export const partyContentSchema = z.object({
   kind: z.literal("trip").optional(),
   trip: tripSchema,
@@ -84,6 +89,7 @@ export const partyContentSchema = z.object({
     })
     .optional(),
   actionItems: z.array(actionItemSchema).optional(),
+  packing: z.array(packingItemSchema).optional(),
 });
 
 const slugSchema = z

@@ -413,6 +413,7 @@ describe("agent API (create / patch / guests)", () => {
     const body = await res.json();
     expect(body.party.content.trip.siteName).toBe(DEMO_PARTY.trip.siteName);
     expect(body.party.content.lodging.name).toBe(DEMO_PARTY.lodging?.name);
+    expect(body.party.content.packing).toEqual(DEMO_PARTY.packing);
   });
 
   it("party token cannot GET or PATCH a different slug", async () => {
@@ -656,5 +657,31 @@ describe("agent API (create / patch / guests)", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.trip.content.lodging).toBeUndefined();
+  });
+
+  it("PATCH packing is kept after the content schema gate", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      slug: "cabin",
+      adminToken: "cabin-tok",
+      content: { kind: "trip", trip: { siteName: "Cabin" } },
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const packing = [
+      { title: "Government ID" },
+      { title: "Layers", note: "Nights drop below 40" },
+    ];
+    const res = await PATCH(
+      makeRequest("cabin-tok", {
+        method: "PATCH",
+        body: { content: { packing } },
+      }),
+      ctx("cabin"),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.trip.content.packing).toEqual(packing);
+    expect(body.trip.content.trip.siteName).toBe("Cabin");
   });
 });

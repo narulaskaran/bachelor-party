@@ -5,6 +5,7 @@ import {
   glanceFacts,
   hasActivities,
   hasLodging,
+  hasPacking,
   heroMeta,
   showFlightFields,
   visibleSections,
@@ -15,13 +16,14 @@ const sparse: PartyContent = {
 };
 
 describe("visibleSections", () => {
-  it("hides lodging, schedule, activities, and glance when only a name exists", () => {
+  it("hides lodging, schedule, activities, packing, and glance when only a name exists", () => {
     expect(visibleSections(sparse)).toEqual({
       glance: false,
       actionItems: false,
       schedule: false,
       activities: false,
       lodging: false,
+      packing: false,
       rsvp: true,
     });
   });
@@ -33,6 +35,7 @@ describe("visibleSections", () => {
       schedule: true,
       activities: true,
       lodging: true,
+      packing: true,
       rsvp: true,
     });
   });
@@ -48,6 +51,15 @@ describe("visibleSections", () => {
         activities: { core: [{ slug: "x", name: "   " }], backups: [] },
       }),
     ).toBe(false);
+  });
+
+  it("does not treat empty or untitled packing as present", () => {
+    expect(hasPacking({ trip: { siteName: "X" } })).toBe(false);
+    expect(hasPacking({ trip: { siteName: "X" }, packing: [] })).toBe(false);
+    expect(hasPacking({ trip: { siteName: "X" }, packing: [{ title: "   " }] })).toBe(false);
+    expect(hasPacking({ trip: { siteName: "X" }, packing: [{ title: "Government ID" }] })).toBe(
+      true,
+    );
   });
 });
 

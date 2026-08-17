@@ -40,6 +40,13 @@ curl https://your-deploy.vercel.app/api/admin/trips/jackson-hole-26 \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"content":{"schedule":[{"key":"saturday","date":"2026-09-05","weekday":"Saturday","label":"Dinner","timed":true,"entries":[{"title":"Dinner","time":"7:00 PM"}]}]}}'
+
+# Packing list (guest check-off is local to each browser)
+curl https://your-deploy.vercel.app/api/admin/trips/jackson-hole-26 \
+  -X PATCH \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":{"packing":[{"title":"Government ID"},{"title":"Layers","note":"Nights drop below 40"}]}}'
 ```
 
 Content shape: `lib/party-types.ts`, validated by `lib/party-schema.ts`. Demo:
@@ -47,6 +54,13 @@ Content shape: `lib/party-types.ts`, validated by `lib/party-schema.ts`. Demo:
 even when a database is configured, and even if a leftover `slug=demo` row
 exists — so the guest site can be evaluated without creating a trip. New
 creates cannot use the reserved `demo` slug.
+
+Optional `content.packing` is `{ title, note? }[]` — a host packing list.
+Guests check items off in their own browser (`localStorage` keyed by trip
+slug). It is not a shared roster. Author it the same way as `schedule`:
+party content JSON, PATCH, or `bigsend set`. Empty or missing packing hides
+the Pack section and nav link. There is no host editor and no packing
+fields on create.
 
 | Route | Method | Does |
 | --- | --- | --- |

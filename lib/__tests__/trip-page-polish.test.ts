@@ -113,6 +113,7 @@ describe("trip page polish", () => {
           { title: "RSVP below", anchor: "#rsvp" },
           { title: "See the plan", anchor: "#schedule" },
           { title: "Cabin details", anchor: "#lodge" },
+          { title: "Pack the list", anchor: "#pack" },
         ],
       }),
     );
@@ -122,6 +123,8 @@ describe("trip page polish", () => {
     expect(html).toContain(">Schedule<");
     expect(html).toContain('href="#lodge"');
     expect(html).toContain(">Lodge<");
+    expect(html).toContain('href="#pack"');
+    expect(html).toContain(">Pack<");
     expect(html).not.toContain("Go to your info");
   });
 });

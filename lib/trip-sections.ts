@@ -1,6 +1,7 @@
 import {
   type Activity,
   type Lodging,
+  type PackingItem,
   type PartyContent,
   type Trip,
 } from "@/lib/party-types";
@@ -17,6 +18,7 @@ export type VisibleSections = {
   schedule: boolean;
   activities: boolean;
   lodging: boolean;
+  packing: boolean;
   rsvp: boolean;
 };
 
@@ -40,6 +42,14 @@ export function hasActivities(content: PartyContent): boolean {
     nonemptyActivities(a.ifTimeAllows).length > 0 ||
     nonemptyActivities(a.backups).length > 0
   );
+}
+
+export function nonemptyPacking(list?: PackingItem[]): PackingItem[] {
+  return (list ?? []).filter((item) => Boolean(item.title?.trim()));
+}
+
+export function hasPacking(content: PartyContent): boolean {
+  return nonemptyPacking(content.packing).length > 0;
 }
 
 export function heroMeta(trip: Trip): string[] {
@@ -116,6 +126,7 @@ export function visibleSections(content: PartyContent): VisibleSections {
     schedule: (content.schedule?.length ?? 0) > 0,
     activities: hasActivities(content),
     lodging: hasLodging(content),
+    packing: hasPacking(content),
     rsvp: true,
   };
 }

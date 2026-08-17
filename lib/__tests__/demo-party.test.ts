@@ -17,3 +17,17 @@ describe("DEMO_RSVP_MESSAGE", () => {
     expect(DEMO_RSVP_MESSAGE).toMatch(/doesn't save RSVPs/i);
   });
 });
+
+describe("DEMO_PARTY packing", () => {
+  it("lists alpine-weekend items and a Pack action-item", () => {
+    expect(DEMO_PARTY.packing?.map((item) => item.title)).toEqual([
+      "Government ID",
+      "Layers",
+      "Hiking shoes",
+      "Warm jacket",
+      "Sunscreen",
+      "Refillable bottle",
+    ]);
+    expect(DEMO_PARTY.actionItems?.some((item) => item.anchor === "#pack")).toBe(true);
+  });
+});

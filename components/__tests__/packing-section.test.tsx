@@ -1,0 +1,60 @@
+/** @vitest-environment jsdom */
+
+import { describe, it, expect, beforeEach } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { PackingSection } from "@/components/sections/packing";
+import { packingStorageKey } from "@/lib/packing-storage";
+
+const items = [
+  { title: "Government ID" },
+  { title: "Layers", note: "Nights drop below 40" },
+];
+
+describe("PackingSection", () => {
+  beforeEach(() => {
+    cleanup();
+    window.localStorage.clear();
+  });
+
+  it("renders titled items with 44px tap rows and hides blank titles", () => {
+    const { container } = render(
+      <PackingSection
+        slug="demo"
+        packing={[...items, { title: "   " }]}
+      />,
+    );
+    expect(container.querySelector("#pack")).toBeTruthy();
+    expect(screen.getByText("Pack")).toBeTruthy();
+    expect(screen.getByText("Don't forget these.")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: /government id/i })).toBeTruthy();
+    expect(screen.getByText("Nights drop below 40")).toBeTruthy();
+    expect(container.querySelectorAll("[class*='min-h-11']").length).toBeGreaterThan(0);
+  });
+
+  it("checks, unchecks, and persists immediately per trip slug", async () => {
+    const user = userEvent.setup();
+    render(<PackingSection slug="demo" packing={items} />);
+
+    await user.click(screen.getByRole("checkbox", { name: /government id/i }));
+    expect(window.localStorage.getItem(packingStorageKey("demo"))).toBe(
+      '{"Government ID":true}',
+    );
+    expect(window.localStorage.getItem(packingStorageKey("cabin"))).toBeNull();
+
+    await user.click(screen.getByRole("checkbox", { name: /government id/i }));
+    expect(window.localStorage.getItem(packingStorageKey("demo"))).toBe("{}");
+  });
+
+  it("restores checks for this slug after a remount", () => {
+    window.localStorage.setItem(packingStorageKey("demo"), '{"Layers":true}');
+    render(<PackingSection slug="demo" packing={items} />);
+
+    expect(screen.getByRole("checkbox", { name: /layers/i }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("checkbox", { name: /government id/i }).getAttribute("aria-checked")).toBe(
+      "false",
+    );
+  });
+});

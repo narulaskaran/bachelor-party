@@ -57,6 +57,8 @@ describe("mobile trip layout", () => {
     expect(html).toContain("Activities");
     expect(html).toContain("Lodge");
     expect(html).toContain("/demo#lodge");
+    expect(html).toContain("Pack");
+    expect(html).toContain("/demo#pack");
     expect(html).not.toContain("#basecamp");
     expect(html).toContain("Alpine Weekend");
     expect(html).not.toContain("The Big Send");
@@ -99,6 +101,19 @@ describe("mobile trip layout", () => {
     expect(html).not.toContain('href="/admin"');
   });
 
+  it("omits Pack from trip nav when the packing list is empty", () => {
+    const html = renderToStaticMarkup(
+      createElement(SiteNav, {
+        siteName: "Cabin",
+        slug: "cabin",
+        sections: visibleSections({ trip: { siteName: "Cabin" } }),
+      }),
+    );
+    expect(html).toContain("RSVP");
+    expect(html).not.toContain("#pack");
+    expect(html).not.toContain(">Pack<");
+  });
+
   it("keeps trip page shells from forcing a min-content width past ~390px", () => {
     const html = renderToStaticMarkup(createElement(PartyView, { content: DEMO_PARTY }));
     expect(html).toContain("min-w-0");
@@ -106,6 +121,23 @@ describe("mobile trip layout", () => {
     expect(html).not.toContain("overflow-x-auto");
     expect(html).toContain('id="glance"');
     expect(html).toContain('id="do-your-part"');
+    expect(html).toContain('id="lodge"');
+    expect(html).toContain('id="pack"');
+    expect(html).toContain('id="rsvp"');
+    const lodgeIdx = html.indexOf('id="lodge"');
+    const packIdx = html.indexOf('id="pack"');
+    const rsvpIdx = html.indexOf('id="rsvp"');
+    expect(lodgeIdx).toBeGreaterThan(-1);
+    expect(packIdx).toBeGreaterThan(lodgeIdx);
+    expect(rsvpIdx).toBeGreaterThan(packIdx);
+  });
+
+  it("hides Pack when the trip has no packing list", () => {
+    const html = renderToStaticMarkup(
+      createElement(PartyView, { content: { trip: { siteName: "X" } } }),
+    );
+    expect(html).not.toContain('id="pack"');
+    expect(html).not.toContain("Don&#x27;t forget these.");
   });
 
   it("wraps long hero titles instead of overflowing", () => {

@@ -59,6 +59,11 @@ export type ActionItem = {
   anchor?: string; // in-page anchor like "#rsvp"
 };
 
+export type PackingItem = {
+  title: string; // short name, e.g. "Government ID"
+  note?: string; // one-line detail
+};
+
 export type Activities = {
   core?: Activity[];
   ifTimeAllows?: Activity[];
@@ -72,6 +77,7 @@ export type PartyContent = {
   schedule?: ScheduleDay[];
   activities?: Activities;
   actionItems?: ActionItem[];
+  packing?: PackingItem[];
 };
 
 // The maybes the guests vote on in the RSVP form (core are locked in).

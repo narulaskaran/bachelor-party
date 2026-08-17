@@ -11,15 +11,18 @@ import { ActionItems } from "@/components/sections/action-items";
 import { ScheduleSection } from "@/components/sections/schedule";
 import { ActivitiesSection } from "@/components/sections/activities";
 import { BasecampSection } from "@/components/sections/basecamp";
+import { PackingSection } from "@/components/sections/packing";
 import { RsvpSection } from "@/components/sections/rsvp";
 
 export function PartyView({
   content,
   sample = false,
+  slug,
 }: {
   content: PartyContent;
   /** Public /demo fixture — RSVP must not read or write a real trip. */
   sample?: boolean;
+  slug?: string;
 }) {
   const sections = visibleSections(content);
   const footerBits = [
@@ -45,6 +48,9 @@ export function PartyView({
       ) : null}
       {sections.lodging && content.lodging ? (
         <BasecampSection trip={content.trip} lodging={content.lodging} />
+      ) : null}
+      {sections.packing && content.packing ? (
+        <PackingSection packing={content.packing} slug={slug ?? ""} />
       ) : null}
       <RsvpSection
         sample={sample}

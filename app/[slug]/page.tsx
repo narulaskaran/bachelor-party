@@ -20,7 +20,7 @@ export default async function Page({ params }: Params) {
   if (resolved.status === "missing") notFound();
 
   if (resolved.status === "open") {
-    return <PartyView content={resolved.content} sample />;
+    return <PartyView content={resolved.content} sample slug={slug} />;
   }
 
   const raw = (await cookies()).get(AUTH_COOKIE)?.value;
@@ -45,5 +45,5 @@ export default async function Page({ params }: Params) {
     );
   }
 
-  return <PartyView content={resolved.content} sample={slug === "demo"} />;
+  return <PartyView content={resolved.content} sample={slug === "demo"} slug={slug} />;
 }

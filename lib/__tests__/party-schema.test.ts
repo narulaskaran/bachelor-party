@@ -64,6 +64,24 @@ describe("partyContentSchema", () => {
     expect(parsed.success).toBe(true);
   });
 
+  it("accepts packing items and strips unknown keys so they survive the admin gate", () => {
+    const parsed = partyContentSchema.parse({
+      trip: { siteName: "Cabin" },
+      packing: [{ title: "Government ID", note: "Wallet", extra: true }],
+      mystery: "nope",
+    } as unknown);
+    expect(parsed.packing).toEqual([{ title: "Government ID", note: "Wallet" }]);
+    expect("mystery" in parsed).toBe(false);
+  });
+
+  it("rejects packing items without a title", () => {
+    const parsed = partyContentSchema.safeParse({
+      trip: { siteName: "Cabin" },
+      packing: [{ note: "Wallet" }],
+    });
+    expect(parsed.success).toBe(false);
+  });
+
   it("rejects an inverted start/end range", () => {
     const parsed = partyContentSchema.safeParse({
       trip: { siteName: "Cabin", startDate: "2026-12-20", endDate: "2026-12-10" },

@@ -87,6 +87,15 @@ export const DEMO_PARTY: PartyContent = {
   actionItems: [
     { title: "Book your flight", note: "Land Friday by late morning" },
     { title: "RSVP below", note: "Flights, food, votes — two minutes", anchor: "#rsvp" },
+    { title: "Pack the list", note: "ID, layers, shoes — check them off as you go", anchor: "#pack" },
     { title: "Settle up when the split lands" },
+  ],
+  packing: [
+    { title: "Government ID" },
+    { title: "Layers", note: "Nights drop below 40" },
+    { title: "Hiking shoes" },
+    { title: "Warm jacket" },
+    { title: "Sunscreen", note: "9,000 ft" },
+    { title: "Refillable bottle" },
   ],
 };

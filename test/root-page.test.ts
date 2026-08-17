@@ -318,6 +318,8 @@ describe("GET /{slug} chrome", () => {
     expect(html).toContain("/demo#lodge");
     expect(html).not.toContain("#basecamp");
     expect(html).toContain("Lodge");
+    expect(html).toContain("/demo#pack");
+    expect(html).toContain("Pack");
     expect(html).not.toContain("Your Info");
     expect(html).not.toContain("Create a trip");
     expect(html).toContain("DEMO_BODY");
