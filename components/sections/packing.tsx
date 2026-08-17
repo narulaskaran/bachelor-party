@@ -56,7 +56,7 @@ export function PackingSection({
                 />
                 <Label
                   htmlFor={id}
-                  className="flex min-h-11 min-w-0 flex-1 cursor-pointer flex-col justify-center font-normal"
+                  className="flex min-h-11 min-w-0 flex-1 cursor-pointer flex-col items-start justify-center text-left font-normal"
                 >
                   <span className="font-medium">{item.title}</span>
                   {item.note ? (

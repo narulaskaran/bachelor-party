@@ -32,6 +32,18 @@ describe("PackingSection", () => {
     expect(container.querySelectorAll("[class*='min-h-11']").length).toBeGreaterThan(0);
   });
 
+  it("left-aligns title and note immediately after the checkbox", () => {
+    const { container } = render(<PackingSection slug="demo" packing={items} />);
+    const labels = container.querySelectorAll("[data-slot=label]");
+    expect(labels.length).toBe(items.length);
+    for (const label of labels) {
+      expect(label.className).toMatch(/items-start/);
+      expect(label.className).toMatch(/text-left/);
+      expect(label.className).toMatch(/min-h-11/);
+      expect(label.className).not.toMatch(/items-center/);
+    }
+  });
+
   it("checks, unchecks, and persists immediately per trip slug", async () => {
     const user = userEvent.setup();
     render(<PackingSection slug="demo" packing={items} />);
