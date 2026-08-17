@@ -153,7 +153,10 @@ describe("GET /", () => {
     expect(html).toContain("party.narula.xyz");
     expect(html).toContain("/your-trip");
     expect(html).not.toContain("yoursite.com");
-    expect(html).toMatch(/trip-entry-hint[\s\S]*<wbr\/?>/);
+    expect(html).toMatch(
+      /trip-entry-hint[\s\S]*whitespace-nowrap font-mono[\s\S]*party\.narula\.xyz\/your-trip/,
+    );
+    expect(html).not.toMatch(/trip-entry-hint[\s\S]*<wbr\/?>/);
   });
 
   it("landing invite hint uses the request host so previews stay accurate", async () => {

@@ -103,10 +103,8 @@ export function LandingView({
           </h2>
           <p id="trip-entry-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
             Invite links look like{" "}
-            <span className="font-mono text-foreground">
-              <span className="whitespace-nowrap">{inviteHost}</span>
-              <wbr />
-              /your-trip
+            <span className="whitespace-nowrap font-mono text-foreground">
+              {inviteHost}/your-trip
             </span>
             . Paste that URL or just the trip name, then enter the password on the
             next page.

@@ -135,14 +135,14 @@ describe("homepage trip entry", () => {
     expect(screen.queryByText(/bachelor-party-eight\.vercel\.app/i)).toBeNull();
   });
 
-  it("wraps the invite example before the path, not mid-slug", () => {
+  it("keeps the invite example URL as one nowrap token", () => {
     const { container } = render(<LandingView />);
     const example = container.querySelector("#trip-entry-hint .font-mono");
 
     expect(example?.textContent).toBe("party.narula.xyz/your-trip");
-    expect(example?.innerHTML).toContain("<wbr>");
-    expect(example?.querySelector(".whitespace-nowrap")?.textContent).toBe("party.narula.xyz");
-    expect(example?.className).not.toMatch(/whitespace-nowrap/);
+    expect(example?.innerHTML).not.toContain("<wbr>");
+    expect(example?.querySelector(".whitespace-nowrap")).toBeNull();
+    expect(example?.className).toMatch(/whitespace-nowrap/);
   });
 
   it("navigates to /{slug} when the form is submitted", async () => {
