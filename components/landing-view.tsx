@@ -1,33 +1,78 @@
+"use client";
+
+import { useLayoutEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CreateTripForm } from "@/components/create-trip-form";
 import { HashFocusLink } from "@/components/hash-focus-link";
 import { TripEntryForm } from "@/components/trip-entry-form";
 import { DEFAULT_INVITE_HOST } from "@/lib/invite-host";
+import { panelFromHash, type LandingPanel } from "@/lib/landing-panel";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 import { pageTitleClass, quietLinkClass, sectionTitleClass } from "@/lib/type";
+import { cn } from "@/lib/utils";
 
 export function LandingView({
   inviteHost = DEFAULT_INVITE_HOST,
 }: {
   inviteHost?: string;
 }) {
+  const [panel, setPanel] = useState<LandingPanel | null>(null);
+
+  useLayoutEffect(() => {
+    const sync = () => setPanel(panelFromHash(window.location.hash));
+    sync();
+    window.addEventListener("hashchange", sync);
+    window.addEventListener("popstate", sync);
+    return () => {
+      window.removeEventListener("hashchange", sync);
+      window.removeEventListener("popstate", sync);
+    };
+  }, []);
+
+  function reveal(next: LandingPanel) {
+    flushSync(() => setPanel(next));
+  }
+
   return (
-    <div className="mx-auto max-w-3xl px-6">
-      <section className="flex flex-col items-center py-16 text-center sm:py-24">
+    <div
+      className={cn(
+        "mx-auto flex max-w-3xl flex-col px-6",
+        !panel && "min-h-[calc(100svh-3.75rem)]",
+      )}
+    >
+      <section
+        className={cn(
+          "flex flex-col items-center text-center",
+          panel ? "py-12 sm:py-16" : "flex-1 justify-center py-16 sm:py-24",
+        )}
+      >
         <h1 className={pageTitleClass}>The Big Send</h1>
         <p className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
           One private page for the trip — schedule, cabin, and who&apos;s coming.
         </p>
 
         <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
-          <Button asChild>
-            <HashFocusLink href="#create" focusId={["siteName", "create-trip-heading"]}>
+          <Button asChild variant={panel === "enter" ? "outline" : "default"}>
+            <HashFocusLink
+              href="#create"
+              focusId={["siteName", "create-trip-heading"]}
+              aria-expanded={panel === "create"}
+              aria-controls="create"
+              onClick={() => reveal("create")}
+            >
               I&apos;m hosting
             </HashFocusLink>
           </Button>
-          <Button asChild>
-            <HashFocusLink href="#enter" focusId={["trip-slug", "trip-entry-heading"]}>
+          <Button asChild variant={panel === "create" ? "outline" : "default"}>
+            <HashFocusLink
+              href="#enter"
+              focusId={["trip-slug", "trip-entry-heading"]}
+              aria-expanded={panel === "enter"}
+              aria-controls="enter"
+              onClick={() => reveal("enter")}
+            >
               I have an invite
             </HashFocusLink>
           </Button>
@@ -41,6 +86,7 @@ export function LandingView({
 
       <section
         id="create"
+        hidden={panel !== "create"}
         className="scroll-mt-20 py-10 sm:py-12"
         aria-labelledby="create-trip-heading"
       >
@@ -49,6 +95,7 @@ export function LandingView({
 
       <section
         id="enter"
+        hidden={panel !== "enter"}
         className="scroll-mt-20 py-10 sm:py-12"
         aria-labelledby="trip-entry-heading"
       >
