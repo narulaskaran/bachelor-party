@@ -4,6 +4,7 @@ import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { act } from "react";
 import { LandingView } from "@/components/landing-view";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 
@@ -28,11 +29,33 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+function resetHash() {
+  const url = new URL(window.location.href);
+  url.hash = "";
+  window.history.replaceState(null, "", url);
+}
+
+function panelEl(id: string) {
+  return document.getElementById(id);
+}
+
+function expectPanel(id: string, open: boolean) {
+  const el = panelEl(id);
+  expect(el, `#${id}`).toBeTruthy();
+  expect(el?.getAttribute("data-open")).toBe(open ? "true" : "false");
+  expect(el?.hasAttribute("inert")).toBe(!open);
+  expect(el?.getAttribute("aria-hidden")).toBe(open ? null : "true");
+}
+
+const scrollIntoView = vi.fn();
+
 describe("homepage trip entry", () => {
   beforeEach(() => {
     push.mockReset();
     cleanup();
-    HTMLElement.prototype.scrollIntoView = vi.fn();
+    resetHash();
+    scrollIntoView.mockReset();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
   });
 
   it("offers equal host and invite CTAs, and a quieter sample path", () => {
@@ -46,15 +69,18 @@ describe("homepage trip entry", () => {
     expect(invite.closest("[data-slot=button]")).toBeTruthy();
     expect(hosting.closest("[data-slot=button]")!.className).toMatch(/min-h-11/);
     expect(invite.closest("[data-slot=button]")!.className).toMatch(/min-h-11/);
-    expect(document.getElementById("create")).toBeTruthy();
-    expect(document.getElementById("enter")).toBeTruthy();
-    expect(screen.getByLabelText(/^trip name$/i)).toBeTruthy();
-    expect(screen.getByLabelText(/start date/i)).toBeTruthy();
+    expect(hosting.getAttribute("aria-expanded")).toBe("false");
+    expect(invite.getAttribute("aria-expanded")).toBe("false");
+    expect(panelEl("create")).toBeTruthy();
+    expect(panelEl("enter")).toBeTruthy();
+    expectPanel("create", false);
+    expectPanel("enter", false);
+    expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();
+    expect(screen.queryByRole("heading", { name: /enter your trip/i })).toBeNull();
     expect(screen.getByRole("link", { name: /^try a sample$/i }).getAttribute("href")).toBe(
       "/demo",
     );
     expect(screen.getByRole("link", { name: /^try a sample$/i }).closest("[data-slot=button]")).toBeNull();
-    expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
     expect(container.innerHTML).not.toContain("ADMIN_UI_PASSWORD");
     expect(container.innerHTML).not.toContain('href="/admin"');
     expect(container.innerHTML).not.toContain("password-gated");
@@ -84,9 +110,13 @@ describe("homepage trip entry", () => {
       expect(document.getElementById(hash), `#${hash}`).toBeTruthy();
     }
     expect(screen.getByLabelText(/invite link or trip name/i)).toBeTruthy();
-    expect(screen.getByRole("button", { name: /open trip/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /open trip/i }).className).toMatch(/min-h-11/);
-    expect(screen.getByRole("button", { name: /^create a trip$/i }).className).toMatch(/min-h-11/);
+    expect(screen.getByRole("button", { name: /open trip/i, hidden: true })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /open trip/i, hidden: true }).className).toMatch(
+      /min-h-11/,
+    );
+    expect(screen.getByRole("button", { name: /^create a trip$/i, hidden: true }).className).toMatch(
+      /min-h-11/,
+    );
     expect(screen.getByText(/party\.narula\.xyz/i)).toBeTruthy();
     expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
   });
@@ -119,6 +149,7 @@ describe("homepage trip entry", () => {
     const user = userEvent.setup();
     render(<LandingView />);
 
+    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
     await user.type(screen.getByLabelText(/invite link or trip name/i), "jackson-hole-26");
     await user.click(screen.getByRole("button", { name: /open trip/i }));
 
@@ -129,6 +160,7 @@ describe("homepage trip entry", () => {
     const user = userEvent.setup();
     render(<LandingView />);
 
+    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
     await user.type(
       screen.getByLabelText(/invite link or trip name/i),
       "https://example.com/cabin-weekend",
@@ -138,28 +170,114 @@ describe("homepage trip entry", () => {
     expect(push).toHaveBeenCalledWith("/cabin-weekend");
   });
 
-  it("focuses the trip name field after I'm hosting", async () => {
+  it("reveals and focuses the trip name field after I'm hosting", async () => {
     const user = userEvent.setup();
     render(<LandingView />);
 
     await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
 
+    expectPanel("create", true);
+    expectPanel("enter", false);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: /^i.m hosting$/i }).getAttribute("aria-expanded")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("heading", { name: /^create a trip$/i })).toBeTruthy();
     expect(document.activeElement).toBe(screen.getByLabelText(/^trip name$/i));
   });
 
-  it("focuses the invite field after I have an invite", async () => {
+  it("reveals and focuses the invite field after I have an invite", async () => {
     const user = userEvent.setup();
     render(<LandingView />);
 
     await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
 
+    expectPanel("enter", true);
+    expectPanel("create", false);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: /^i have an invite$/i }).getAttribute("aria-expanded")).toBe(
+      "true",
+    );
     expect(document.activeElement).toBe(screen.getByLabelText(/invite link or trip name/i));
+  });
+
+  it("switches from host to invite without keeping both forms in the a11y tree", async () => {
+    const user = userEvent.setup();
+    render(<LandingView />);
+
+    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
+
+    expectPanel("create", false);
+    expectPanel("enter", true);
+    expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();
+    expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /^i.m hosting$/i }).closest("[data-slot=button]")?.getAttribute("data-variant")).toBe(
+      "outline",
+    );
+    expect(screen.getByRole("link", { name: /^i have an invite$/i }).closest("[data-slot=button]")?.getAttribute("data-variant")).toBe(
+      "default",
+    );
+  });
+
+  it("opens the create form when the URL hash is #create", () => {
+    window.history.replaceState(null, "", "/#create");
+    render(<LandingView />);
+
+    expectPanel("create", true);
+    expect(screen.getByRole("heading", { name: /^create a trip$/i })).toBeTruthy();
+  });
+
+  it("opens the invite form from a legacy page hash", () => {
+    window.history.replaceState(null, "", "/#rsvp");
+    render(<LandingView />);
+
+    expectPanel("enter", true);
+    expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
+  });
+
+  it("hides the form again when the hash is cleared", async () => {
+    const user = userEvent.setup();
+    render(<LandingView />);
+
+    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+    expectPanel("create", true);
+
+    await act(async () => {
+      window.history.pushState(null, "", "#");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    expectPanel("create", false);
+    expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();
+  });
+
+  it("keeps the hero still and animates the panel open", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<LandingView />);
+    const hero = container.querySelector("h1")?.closest("section");
+    const heroClass = hero?.className;
+
+    expect(heroClass).not.toMatch(/justify-center/);
+    expect(heroClass).toMatch(/py-16/);
+
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    });
+
+    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+
+    expect(hero?.className).toBe(heroClass);
+    expect(panelEl("create")?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
+    expect(panelEl("create")?.className).toMatch(/motion-reduce:transition-none/);
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
   it("wires enter errors to the invite field", async () => {
     const user = userEvent.setup();
     render(<LandingView />);
 
+    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
     await user.type(screen.getByLabelText(/invite link or trip name/i), "!!!");
     await user.click(screen.getByRole("button", { name: /open trip/i }));
 
