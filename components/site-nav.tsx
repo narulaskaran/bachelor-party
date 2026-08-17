@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { LandingPanelLink } from "@/components/landing-panel-link";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { VisibleSections } from "@/lib/trip-sections";
@@ -39,6 +38,7 @@ export function SiteNav({
       <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-3 px-4 py-3">
         <Link
           href={homeHref}
+          data-marketing-brand={siteName ? undefined : ""}
           className="min-w-0 truncate text-sm font-semibold tracking-tight"
         >
           {siteName ?? "The Big Send"}
@@ -48,7 +48,7 @@ export function SiteNav({
             </span>
           )}
         </Link>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           {siteName ? (
             <>
               <nav className="hidden items-center gap-1 md:flex" aria-label="Trip sections">
@@ -64,14 +64,7 @@ export function SiteNav({
               </nav>
               <MobileNav links={links} />
             </>
-          ) : (
-            <LandingPanelLink
-              panel="create"
-              className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Create a trip
-            </LandingPanelLink>
-          )}
+          ) : null}
           <ThemeToggle />
         </div>
       </div>

@@ -96,8 +96,12 @@ describe("mobile trip layout", () => {
     expect(html).not.toContain('aria-label="Open menu"');
     expect(html).not.toContain("<details");
     expect(html).toContain('id="site-nav-marketing"');
-    expect(html).toContain("Create a trip");
-    expect(html).toContain('href="/#create"');
+    expect(html).toContain("data-marketing-brand");
+    expect(html).toContain("The Big Send");
+    expect(html).toContain("ml-auto");
+    expect(html).toContain('aria-label="Toggle theme"');
+    expect(html).not.toContain("Create a trip");
+    expect(html).not.toContain('href="/#create"');
     expect(html).not.toContain('href="/admin"');
   });
 
