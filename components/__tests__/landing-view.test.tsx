@@ -4,6 +4,7 @@ import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { act } from "react";
 import { LandingView } from "@/components/landing-view";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 
@@ -29,7 +30,9 @@ vi.mock("next/link", () => ({
 }));
 
 function resetHash() {
-  window.history.replaceState(null, "", "/");
+  const url = new URL(window.location.href);
+  url.hash = "";
+  window.history.replaceState(null, "", url);
 }
 
 describe("homepage trip entry", () => {
@@ -223,8 +226,10 @@ describe("homepage trip entry", () => {
     await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
     expect(document.getElementById("create")?.hidden).toBe(false);
 
-    window.history.replaceState(null, "", "/");
-    window.dispatchEvent(new Event("hashchange"));
+    await act(async () => {
+      window.history.pushState(null, "", "#");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
 
     expect(document.getElementById("create")?.hidden).toBe(true);
     expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();

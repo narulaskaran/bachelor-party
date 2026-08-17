@@ -24,7 +24,9 @@ vi.mock("next/link", () => ({
 describe("LandingPanelLink", () => {
   beforeEach(() => {
     cleanup();
-    window.history.replaceState(null, "", "/");
+    const url = new URL(window.location.href);
+    url.hash = "";
+    window.history.replaceState(null, "", url);
   });
 
   it("points at the landing hash so other pages can deep-link", () => {
