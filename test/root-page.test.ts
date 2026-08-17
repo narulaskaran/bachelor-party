@@ -138,6 +138,7 @@ describe("GET /", () => {
     expect(html).toContain("Enter your trip");
     expect(html).toContain("Try a sample");
     expect(html).toContain("Create a trip");
+    expect(html).toContain("data-landing-page");
     expect(html).toContain('href="#create"');
     expect(html).toContain('href="#enter"');
     expect(html).toContain("I have an invite");
@@ -203,12 +204,29 @@ describe("GET /", () => {
     expect(html).toContain("The Big Send");
     expect(html).toContain("LANDING_BODY");
     expect(html).toContain('id="site-nav-marketing"');
-    expect(html).toContain("Create a trip");
-    expect(html).toContain('href="/#create"');
+    expect(html).toContain("data-marketing-brand");
+    expect(html).not.toContain("Create a trip");
+    expect(html).not.toContain('href="/#create"');
     expect(html).not.toContain(TRIP_NAME);
     expect(html).not.toContain(DATE_LABEL);
     expect(html).not.toContain("/qa-tester-e2e#schedule");
     expect(html).not.toContain("/qa-tester-e2e#activities");
+  });
+
+  it("landing chrome hides the nav wordmark and does not add a second create CTA", async () => {
+    vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
+
+    const html = renderToStaticMarkup(
+      RootLayout({ children: await Page() }),
+    );
+
+    expect(html).toContain("data-landing-page");
+    expect(html).toContain('id="site-nav-marketing"');
+    expect(html).toContain("data-marketing-brand");
+    expect(html).toContain("I&#x27;m hosting");
+    expect(html).toContain('href="#create"');
+    expect(html).not.toContain('href="/#create"');
+    expect(html).not.toContain("Create a trip</a>");
   });
 });
 
@@ -263,7 +281,9 @@ describe("GET /{slug} chrome", () => {
     expect(html).toContain("Who Goes There");
     expect(html).toContain("The Big Send");
     expect(html).toContain('id="site-nav-marketing"');
-    expect(html).toContain("Create a trip");
+    expect(html).toContain("data-marketing-brand");
+    expect(html).not.toContain("Create a trip");
+    expect(html).not.toContain('href="/#create"');
     expect(html).not.toContain(TRIP_NAME);
     expect(html).not.toContain(DATE_LABEL);
     expect(html).not.toContain("data-trip-chrome");

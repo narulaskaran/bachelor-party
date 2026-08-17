@@ -95,6 +95,7 @@ describe("homepage trip entry", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
     expect(html).toContain("tracking-tight");
     expect(html).toContain("max-w-3xl");
+    expect(html).toContain("data-landing-page");
     expect(html).not.toContain("text-7xl");
     expect(html).not.toContain("uppercase tracking-wide");
     expect(html).not.toContain("Trip Logistics, Handled");

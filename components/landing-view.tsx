@@ -39,7 +39,10 @@ export function LandingView({
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100svh-3.75rem)] max-w-3xl flex-col px-6">
+    <div
+      data-landing-page=""
+      className="mx-auto flex min-h-[calc(100svh-3.75rem)] max-w-3xl flex-col px-6"
+    >
       <section className="flex flex-col items-center py-16 text-center sm:py-24">
         <h1 className={pageTitleClass}>The Big Send</h1>
         <p className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">

@@ -141,3 +141,16 @@
 body:has([data-trip-chrome]) #site-nav-marketing {
   display: none;
 }
+
+/* Landing already titles the page in the hero. Keep the wordmark as the home
+   link on login/404/admin. ml-auto on the actions cluster keeps the theme
+   toggle on the right once the brand is out of the flex layout. */
+body:has([data-landing-page]) #site-nav-marketing [data-marketing-brand] {
+  display: none;
+}
+
+body:has([data-landing-page]) #site-nav-marketing {
+  border-color: transparent;
+  background: transparent;
+  backdrop-filter: none;
+}
