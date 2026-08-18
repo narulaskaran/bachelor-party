@@ -21,22 +21,23 @@ const SCAN_EXT = new Set([
 ]);
 
 const LIGHT = {
-  background: "#fafafa",
+  background: "#f5f5f4",
   foreground: "#171717",
   primary: "#d97706",
   ring: "#d97706",
+  muted: "#eeebe8",
   "muted-foreground": "#71717a",
-  border: "#e4e4e7",
-  input: "#e4e4e7",
+  border: "#e7e5e4",
+  input: "#e7e5e4",
 } as const;
 
 const DARK = {
-  background: "#000000",
+  background: "#0c0a09",
   foreground: "#ededed",
   primary: "#d97706",
   ring: "#d97706",
-  muted: "#27272a",
-  border: "#27272a",
+  muted: "#292524",
+  border: "#292524",
   "muted-foreground": "#a1a1aa",
 } as const;
 
@@ -92,11 +93,11 @@ describe("theme tokens", () => {
     expect(hits).toEqual([]);
   });
 
-  it("uses shrink-style light tokens on :root", () => {
+  it("uses stone paper light tokens on :root", () => {
     expectTokens(blockVars(css, ":root"), LIGHT);
   });
 
-  it("uses shrink-style dark tokens on .dark", () => {
+  it("uses stone charcoal dark tokens on .dark", () => {
     expectTokens(blockVars(css, ".dark"), DARK);
   });
 });
