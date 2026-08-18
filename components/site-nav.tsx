@@ -9,13 +9,13 @@ const allLinks: {
   label: string;
   section: keyof VisibleSections;
 }[] = [
-  { href: "#rsvp", label: "RSVP", section: "rsvp" },
-  { href: "#do-your-part", label: "Do your part", section: "actionItems" },
   { href: "#glance", label: "At a glance", section: "glance" },
+  { href: "#do-your-part", label: "Do your part", section: "actionItems" },
   { href: "#schedule", label: "Schedule", section: "schedule" },
   { href: "#activities", label: "Activities", section: "activities" },
   { href: "#lodge", label: "Lodge", section: "lodging" },
   { href: "#pack", label: "Pack", section: "packing" },
+  { href: "#rsvp", label: "RSVP", section: "rsvp" },
 ];
 
 export function SiteNav({
