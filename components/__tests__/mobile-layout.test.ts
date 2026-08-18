@@ -56,9 +56,9 @@ describe("mobile trip layout", () => {
     expect(html).toContain("Schedule");
     expect(html).toContain("Activities");
     expect(html).toContain("Lodge");
-    expect(html).toContain("/demo#lodge");
+    expect(html).toContain('href="#lodge"');
     expect(html).toContain("Pack");
-    expect(html).toContain("/demo#pack");
+    expect(html).toContain('href="#pack"');
     expect(html).not.toContain("#basecamp");
     expect(html).toContain("Alpine Weekend");
     expect(html).not.toContain("The Big Send");

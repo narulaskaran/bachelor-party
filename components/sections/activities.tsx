@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HashFocusLink } from "@/components/hash-focus-link";
 import type { Activity, PartyContent } from "@/lib/party-types";
 import { nonemptyActivities } from "@/lib/trip-sections";
 import { kickerClass, sectionTitleClass } from "@/lib/type";
@@ -51,9 +52,13 @@ export function ActivitiesSection({
             ))}
           </ul>
           <p className="mt-4 text-sm text-muted-foreground">
-            <a href="#rsvp" className="text-primary underline-offset-4 hover:underline">
+            <HashFocusLink
+              href="#rsvp"
+              focusId="rsvp"
+              className="text-primary underline-offset-4 hover:underline"
+            >
               Vote on these below.
-            </a>
+            </HashFocusLink>
           </p>
         </div>
       ) : null}

@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { HashFocusLink } from "@/components/hash-focus-link";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import type { VisibleSections } from "@/lib/trip-sections";
 
-const allLinks: { href: string; label: string; section: keyof VisibleSections }[] = [
+const allLinks: {
+  href: `#${string}`;
+  label: string;
+  section: keyof VisibleSections;
+}[] = [
   { href: "#rsvp", label: "RSVP", section: "rsvp" },
   { href: "#do-your-part", label: "Do your part", section: "actionItems" },
   { href: "#glance", label: "At a glance", section: "glance" },
@@ -26,7 +31,7 @@ export function SiteNav({
 }) {
   const homeHref = slug ? `/${slug}` : "/";
   const links = (sections ? allLinks.filter((link) => sections[link.section]) : allLinks).map(
-    (link) => ({ href: `${homeHref}${link.href}`, label: link.label }),
+    (link) => ({ href: link.href, label: link.label, focusId: link.href.slice(1) }),
   );
 
   return (
@@ -53,13 +58,14 @@ export function SiteNav({
             <>
               <nav className="hidden items-center gap-1 md:flex" aria-label="Trip sections">
                 {links.map((link) => (
-                  <Link
+                  <HashFocusLink
                     key={link.href}
                     href={link.href}
+                    focusId={link.focusId}
                     className="whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                   >
                     {link.label}
-                  </Link>
+                  </HashFocusLink>
                 ))}
               </nav>
               <MobileNav links={links} />

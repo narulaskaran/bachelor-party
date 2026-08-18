@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { HashFocusLink } from "@/components/hash-focus-link";
 import type { ActionItem } from "@/lib/party-types";
 import { sectionTitleClass } from "@/lib/type";
 
@@ -40,7 +41,16 @@ export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
               )}
               {item.anchor && (
                 <Button asChild size="sm" className="mt-3">
-                  <a href={item.anchor}>{actionItemCtaLabel(item.anchor)}</a>
+                  {item.anchor.startsWith("#") ? (
+                    <HashFocusLink
+                      href={item.anchor as `#${string}`}
+                      focusId={item.anchor.slice(1).split(/[/?]/)[0] ?? ""}
+                    >
+                      {actionItemCtaLabel(item.anchor)}
+                    </HashFocusLink>
+                  ) : (
+                    <a href={item.anchor}>{actionItemCtaLabel(item.anchor)}</a>
+                  )}
                 </Button>
               )}
             </div>

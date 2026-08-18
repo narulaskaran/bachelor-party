@@ -179,7 +179,7 @@ describe("homepage trip entry", () => {
 
     expectPanel("create", true);
     expectPanel("enter", false);
-    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
     expect(screen.getByRole("link", { name: /^i.m hosting$/i }).getAttribute("aria-expanded")).toBe(
       "true",
     );
@@ -195,7 +195,7 @@ describe("homepage trip entry", () => {
 
     expectPanel("enter", true);
     expectPanel("create", false);
-    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
     expect(screen.getByRole("link", { name: /^i have an invite$/i }).getAttribute("aria-expanded")).toBe(
       "true",
     );
@@ -271,7 +271,7 @@ describe("homepage trip entry", () => {
     expect(hero?.className).toBe(heroClass);
     expect(panelEl("create")?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
     expect(panelEl("create")?.className).toMatch(/motion-reduce:transition-none/);
-    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
   });
 
   it("wires enter errors to the invite field", async () => {

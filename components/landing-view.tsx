@@ -54,7 +54,6 @@ export function LandingView({
             <HashFocusLink
               href="#create"
               focusId={["siteName", "create-trip-heading"]}
-              scroll={false}
               aria-expanded={panel === "create"}
               aria-controls="create"
               onClick={() => reveal("create")}
@@ -66,7 +65,6 @@ export function LandingView({
             <HashFocusLink
               href="#enter"
               focusId={["trip-slug", "trip-entry-heading"]}
-              scroll={false}
               aria-expanded={panel === "enter"}
               aria-controls="enter"
               onClick={() => reveal("enter")}

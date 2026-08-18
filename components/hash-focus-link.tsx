@@ -14,17 +14,34 @@ function firstElement(ids: string[]): HTMLElement | null {
   return null;
 }
 
+function focusDestination(element: HTMLElement) {
+  if (!element.hasAttribute("tabindex") && element.tabIndex < 0) {
+    element.tabIndex = -1;
+  }
+  element.focus({ preventScroll: true });
+}
+
+function prefersReducedMotion() {
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 /** In-page hash link that moves keyboard/AT focus after the target is shown. */
 export function HashFocusLink({
   href,
   focusId,
   scroll = true,
+  deferFocus = false,
   onClick,
   ...props
 }: ComponentProps<"a"> & {
   href: `#${string}`;
   focusId: string | string[];
   scroll?: boolean;
+  /** Defer focus until after click handlers close transient UI such as menus. */
+  deferFocus?: boolean;
 }) {
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     onClick?.(event);
@@ -40,9 +57,17 @@ export function HashFocusLink({
     event.preventDefault();
     history.pushState(null, "", href);
     if (scroll) {
-      (section ?? target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      (section ?? target)?.scrollIntoView({
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+        block: "start",
+      });
     }
-    target?.focus({ preventScroll: true });
+    const destination = target ?? section;
+    if (destination) {
+      const focus = () => focusDestination(destination);
+      if (deferFocus) queueMicrotask(focus);
+      else focus();
+    }
   }
 
   return <a href={href} onClick={handleClick} {...props} />;

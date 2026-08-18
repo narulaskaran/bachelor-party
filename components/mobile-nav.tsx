@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { HashFocusLink } from "@/components/hash-focus-link";
 import { cn } from "@/lib/utils";
 
-export type MobileNavLink = { href: string; label: string };
+export type MobileNavLink = { href: `#${string}`; label: string; focusId: string };
 
 export function MobileNav({ links }: { links: MobileNavLink[] }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -55,13 +55,15 @@ export function MobileNav({ links }: { links: MobileNavLink[] }) {
           <ul className="mx-auto flex max-w-5xl flex-col">
             {links.map((link) => (
               <li key={link.href}>
-                <Link
+                <HashFocusLink
                   href={link.href}
+                  focusId={link.focusId}
+                  deferFocus
                   className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   onClick={closeMenu}
                 >
                   {link.label}
-                </Link>
+                </HashFocusLink>
               </li>
             ))}
           </ul>

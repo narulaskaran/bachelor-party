@@ -1,36 +1,26 @@
 /** @vitest-environment jsdom */
 
-import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MobileNav } from "@/components/mobile-nav";
+import { MobileNav, type MobileNavLink } from "@/components/mobile-nav";
 
-vi.mock("next/link", () => ({
-  default: ({
-    children,
-    href,
-    ...props
-  }: {
-    children: ReactNode;
-    href: string;
-  } & AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a href={href} {...props}>
-      {children}
-    </a>
-  ),
-}));
-
-const links = [
-  { href: "/demo#rsvp", label: "RSVP" },
-  { href: "/demo#schedule", label: "Schedule" },
-  { href: "/demo#activities", label: "Activities" },
-  { href: "/demo#lodge", label: "Lodge" },
+const links: MobileNavLink[] = [
+  { href: "#rsvp", label: "RSVP", focusId: "rsvp" },
+  { href: "#schedule", label: "Schedule", focusId: "schedule" },
+  { href: "#activities", label: "Activities", focusId: "activities" },
+  { href: "#lodge", label: "Lodge", focusId: "lodge" },
 ];
+
+const scrollIntoView = vi.fn();
 
 describe("MobileNav", () => {
   beforeEach(() => {
     cleanup();
+    document.body.replaceChildren();
+    window.history.replaceState(null, "", "/demo");
+    scrollIntoView.mockReset();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
   });
 
   it("uses an opaque panel background with an opaque parent", () => {
@@ -65,6 +55,23 @@ describe("MobileNav", () => {
     await user.click(screen.getByRole("link", { name: "RSVP" }));
     expect(details.open).toBe(false);
     expect(screen.getByLabelText("Open menu")).toBeTruthy();
+  });
+
+  it("smooth-scrolls to the selected section", async () => {
+    const user = userEvent.setup();
+    const target = document.createElement("section");
+    target.id = "rsvp";
+    document.body.append(target);
+    const { container } = render(<MobileNav links={links} />);
+    const details = container.querySelector("details")!;
+
+    await user.click(screen.getByLabelText("Open menu"));
+    await user.click(screen.getByRole("link", { name: "RSVP" }));
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+    expect(window.location.hash).toBe("#rsvp");
+    expect(document.activeElement).toBe(target);
+    expect(details.open).toBe(false);
   });
 
   it("closes on an outside tap", async () => {

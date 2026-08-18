@@ -209,7 +209,7 @@ describe("GET /", () => {
     expect(html).not.toContain('href="/#create"');
     expect(html).not.toContain(TRIP_NAME);
     expect(html).not.toContain(DATE_LABEL);
-    expect(html).not.toContain("/qa-tester-e2e#schedule");
+    expect(html).not.toContain('href="#schedule"');
     expect(html).not.toContain("/qa-tester-e2e#activities");
   });
 
@@ -255,7 +255,7 @@ describe("GET /{slug} chrome", () => {
     expect(html).toContain(TRIP_NAME);
     expect(html).not.toContain("The Big Send");
     expect(html).toContain(DATE_LABEL);
-    expect(html).toContain("/qa-tester-e2e#rsvp");
+    expect(html).toContain('href="#rsvp"');
     expect(html).toContain("RSVP");
     expect(html).toContain("TRIP_BODY");
     expect(html).toContain("data-trip-chrome");
@@ -287,7 +287,7 @@ describe("GET /{slug} chrome", () => {
     expect(html).not.toContain(TRIP_NAME);
     expect(html).not.toContain(DATE_LABEL);
     expect(html).not.toContain("data-trip-chrome");
-    expect(html).not.toContain("/qa-tester-e2e#schedule");
+    expect(html).not.toContain('href="#schedule"');
     expect(html).not.toContain("/qa-tester-e2e#activities");
     expect(html).not.toContain("/qa-host-create#schedule");
   });
@@ -309,7 +309,7 @@ describe("GET /{slug} chrome", () => {
     expect(html).toContain('id="site-nav-marketing"');
     expect(html).toContain("The Big Send");
     expect(html).not.toContain(TRIP_NAME);
-    expect(html).not.toContain("/qa-tester-e2e#schedule");
+    expect(html).not.toContain('href="#schedule"');
     expect(html).not.toContain("data-trip-chrome");
   });
 
@@ -330,15 +330,15 @@ describe("GET /{slug} chrome", () => {
     expect(html).toContain("Alpine Weekend");
     expect(html).not.toContain("The Big Send");
     expect(html).toContain("data-trip-chrome");
-    expect(html).toContain("/demo#rsvp");
+    expect(html).toContain('href="#rsvp"');
     expect(html).toContain("RSVP");
-    expect(html).toContain("/demo#do-your-part");
+    expect(html).toContain('href="#do-your-part"');
     expect(html).toContain("Do your part");
-    expect(html).toContain("/demo#glance");
-    expect(html).toContain("/demo#lodge");
+    expect(html).toContain('href="#glance"');
+    expect(html).toContain('href="#lodge"');
     expect(html).not.toContain("#basecamp");
     expect(html).toContain("Lodge");
-    expect(html).toContain("/demo#pack");
+    expect(html).toContain('href="#pack"');
     expect(html).toContain("Pack");
     expect(html).not.toContain("Your Info");
     expect(html).not.toContain("Create a trip");
