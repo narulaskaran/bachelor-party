@@ -56,18 +56,18 @@ export function HashFocusLink({
 
     event.preventDefault();
     history.pushState(null, "", href);
-    if (scroll) {
-      (section ?? target)?.scrollIntoView({
-        behavior: prefersReducedMotion() ? "auto" : "smooth",
-        block: "start",
-      });
-    }
     const destination = target ?? section;
-    if (destination) {
-      const focus = () => focusDestination(destination);
-      if (deferFocus) queueMicrotask(focus);
-      else focus();
-    }
+    const navigate = () => {
+      if (destination) focusDestination(destination);
+      if (scroll) {
+        (section ?? target)?.scrollIntoView({
+          behavior: prefersReducedMotion() ? "auto" : "smooth",
+          block: "start",
+        });
+      }
+    };
+    if (deferFocus) queueMicrotask(navigate);
+    else navigate();
   }
 
   return <a href={href} onClick={handleClick} {...props} />;

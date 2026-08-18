@@ -57,18 +57,22 @@ describe("MobileNav", () => {
     expect(screen.getByLabelText("Open menu")).toBeTruthy();
   });
 
-  it("smooth-scrolls to the selected section", async () => {
+  it("closes the menu before focusing, then scrolls to the selected section", async () => {
     const user = userEvent.setup();
+    const order: string[] = [];
     const target = document.createElement("section");
     target.id = "rsvp";
+    target.addEventListener("focus", () => order.push("focus"));
     document.body.append(target);
     const { container } = render(<MobileNav links={links} />);
     const details = container.querySelector("details")!;
+    target.addEventListener("focus", () => order.push(`menu:${details.open}`));
+    scrollIntoView.mockImplementation(() => order.push("scroll"));
 
     await user.click(screen.getByLabelText("Open menu"));
     await user.click(screen.getByRole("link", { name: "RSVP" }));
 
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+    expect(order).toEqual(["focus", "menu:false", "scroll"]);
     expect(window.location.hash).toBe("#rsvp");
     expect(document.activeElement).toBe(target);
     expect(details.open).toBe(false);
