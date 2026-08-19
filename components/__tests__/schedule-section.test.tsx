@@ -1,0 +1,90 @@
+/** @vitest-environment jsdom */
+
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { ScheduleSection } from "@/components/sections/schedule";
+import { HostScheduleView } from "@/components/host-schedule-view";
+import type { ScheduleDay } from "@/lib/party-types";
+
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    ...props
+  }: {
+    href: string;
+    children?: React.ReactNode;
+    [key: string]: unknown;
+  }) => createElement("a", { href, ...props }, children),
+}));
+
+const friday: ScheduleDay = {
+  key: "friday",
+  date: "2030-08-30",
+  weekday: "Friday",
+  label: "Arrival day",
+  timed: true,
+  entries: [
+    { time: "11:00 AM", title: "Arrivals window" },
+    { time: "3:00 PM", title: "Check in at the lodge", marquee: true },
+    { time: "7:00 PM", title: "Group dinner", marquee: true },
+  ],
+};
+
+describe("ScheduleSection", () => {
+  it("labels key events and paints time, title, and dot with the primary color", () => {
+    const html = renderToStaticMarkup(createElement(ScheduleSection, { schedule: [friday] }));
+    expect(html).toContain("Key");
+    expect(html).toContain("Check in at the lodge");
+    expect(html).toContain("text-primary");
+    expect(html).toContain("bg-primary");
+    expect(html).toContain("11:00 AM");
+  });
+});
+
+describe("HostScheduleView", () => {
+  beforeEach(() => {
+    cleanup();
+  });
+
+  it("lets a host mark and unmark key events", async () => {
+    const user = userEvent.setup();
+    render(
+      <HostScheduleView
+        slug="demo"
+        sample
+        schedule={[
+          {
+            ...friday,
+            entries: [
+              { time: "11:00 AM", title: "Arrivals window" },
+              { time: "3:00 PM", title: "Check in at the lodge" },
+              { time: "7:00 PM", title: "Group dinner", marquee: true },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText(/1 key event$/i)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /mark arrivals window as a key event/i }));
+    await user.click(
+      screen.getByRole("button", { name: /mark check in at the lodge as a key event/i }),
+    );
+    expect(screen.getByText(/3 key events/i)).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: /unmark group dinner as a key event/i }));
+    expect(screen.getByText(/2 key events/i)).toBeTruthy();
+  });
+
+  it("explains an empty schedule instead of showing a blank picker", () => {
+    render(<HostScheduleView slug="cabin" schedule={[]} />);
+    expect(screen.getByText(/no schedule yet/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /view trip/i }).getAttribute("href")).toBe(
+      "/cabin",
+    );
+  });
+});

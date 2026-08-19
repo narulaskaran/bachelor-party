@@ -102,4 +102,24 @@ describe("bigsend MCP tools", () => {
     ]);
     expect(argvForTool("delete", { slug: "cabin" })).toEqual(["delete", "cabin"]);
   });
+
+  it("schedule_add maps keyEvent onto --key-event", () => {
+    expect(
+      argvForTool("schedule_add", {
+        slug: "cabin",
+        day: "2026-09-05",
+        title: "Dinner",
+        keyEvent: true,
+      }),
+    ).toEqual([
+      "schedule",
+      "add",
+      "cabin",
+      "--day",
+      "2026-09-05",
+      "--title",
+      "Dinner",
+      "--key-event",
+    ]);
+  });
 });

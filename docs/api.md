@@ -39,7 +39,7 @@ curl https://your-deploy.vercel.app/api/admin/trips/jackson-hole-26 \
   -X PATCH \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"content":{"schedule":[{"key":"saturday","date":"2026-09-05","weekday":"Saturday","label":"Dinner","timed":true,"entries":[{"title":"Dinner","time":"7:00 PM"}]}]}}'
+  -d '{"content":{"schedule":[{"key":"saturday","date":"2026-09-05","weekday":"Saturday","label":"Dinner","timed":true,"entries":[{"title":"Dinner","time":"7:00 PM","marquee":true}]}]}}'
 
 # Packing list (guest check-off is local to each browser)
 curl https://your-deploy.vercel.app/api/admin/trips/jackson-hole-26 \
@@ -54,6 +54,12 @@ Content shape: `lib/party-types.ts`, validated by `lib/party-schema.ts`. Demo:
 even when a database is configured, and even if a leftover `slug=demo` row
 exists — so the guest site can be evaluated without creating a trip. New
 creates cannot use the reserved `demo` slug.
+
+Schedule entries may set `marquee: true` to mark a **key event**. They render
+in the primary color on the guest timeline. Hosts pick them at `/:slug/host`
+with the packet host key (the sample picker is `/demo/host`, not saved).
+CLI: `schedule add --key-event` (`--marquee` still works). MCP: `schedule_add`
+with `keyEvent: true`.
 
 Optional `content.packing` is `{ title, note? }[]` — a host packing list.
 Guests check items off in their own browser (`localStorage` keyed by trip
@@ -87,7 +93,7 @@ commands if the config file is not in play.
 export BIGSEND_API_URL=https://your-deploy.vercel.app
 
 npm run bigsend -- create --name "E2E Smoke"
-npm run bigsend -- schedule add e2e-smoke --day 2026-09-05 --title "Dinner"
+npm run bigsend -- schedule add e2e-smoke --day 2026-09-05 --title "Dinner" --key-event
 npm run bigsend -- get e2e-smoke
 npm run bigsend -- guests e2e-smoke
 npm run bigsend -- delete e2e-smoke --yes

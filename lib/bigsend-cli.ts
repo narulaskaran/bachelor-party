@@ -26,7 +26,7 @@ Create needs no token. The 201 organizer packet's adminToken is stored in
   bigsend get <slug>
   bigsend set <slug> --patch '{"trip":{"airport":"JAC"}}'
   bigsend lodging <slug> --name "Cabin"
-  bigsend schedule add <slug> --day 2026-09-05 --title "Dinner"
+  bigsend schedule add <slug> --day 2026-09-05 --title "Dinner" --key-event
   bigsend activities add <slug> --name "Hike"
   bigsend guests <slug>
   bigsend password <slug> --set new-password
@@ -149,6 +149,7 @@ export async function runBigsend(argv: string[], io: RunIO): Promise<number> {
         description: { type: "string" },
         set: { type: "string" },
         marquee: { type: "boolean" },
+        "key-event": { type: "boolean" },
       },
     });
   } catch (err) {
@@ -321,16 +322,18 @@ async function cmdScheduleAdd(
   const entry: Record<string, unknown> = { title };
   if (typeof flags.time === "string") entry.time = flags.time;
   if (typeof flags.note === "string") entry.note = flags.note;
-  if (flags.marquee === true) entry.marquee = true;
+  const keyEvent = flags["key-event"] === true || flags.marquee === true;
 
   const existing = schedule.findIndex((d) => d.key === key || d.date === day);
   if (existing >= 0) {
     const dayRow = { ...schedule[existing] };
     const entries = Array.isArray(dayRow.entries) ? [...dayRow.entries] : [];
+    if (keyEvent) entry.marquee = true;
     entries.push(entry);
     dayRow.entries = entries;
     schedule[existing] = dayRow;
   } else {
+    if (keyEvent) entry.marquee = true;
     schedule.push({
       key,
       date: day,

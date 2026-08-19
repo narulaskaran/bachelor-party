@@ -44,7 +44,10 @@ const scheduleEntrySchema = z.object({
   time: z.string().optional(),
   title: z.string().min(1),
   note: z.string().optional(),
-  marquee: z.boolean().optional(),
+  marquee: z
+    .boolean()
+    .optional()
+    .describe("Key event. Emphasized on the guest timeline."),
 });
 
 const scheduleDaySchema = z.object({

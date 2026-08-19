@@ -29,6 +29,13 @@ vi.mock("@/lib/guest-access", () => ({
   openAsGuest: (...args: unknown[]) => openTrip(...args),
 }));
 
+const { openHost } = vi.hoisted(() => ({ openHost: vi.fn() }));
+
+vi.mock("@/lib/host-access", () => ({
+  openAsHost: (...args: unknown[]) => openHost(...args),
+  setScheduleKeyEvent: vi.fn(),
+}));
+
 const PACKET: OrganizerPacket = {
   url: "https://preview.example/cabin-weekend",
   slug: "cabin-weekend",
@@ -91,6 +98,7 @@ describe("CreateTripForm", () => {
     expect(screen.getByText(PACKET.adminToken)).toBeTruthy();
     expect(screen.getAllByText(/will not be shown again/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /open as guest/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /pick key events/i })).toBeTruthy();
     expect(screen.queryByRole("link", { name: /open the trip/i })).toBeNull();
     expect(screen.getByRole("button", { name: /text these to the group/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /copy invite url/i })).toBeTruthy();
@@ -167,6 +175,7 @@ describe("OrganizerPacketView", () => {
   beforeEach(() => {
     cleanup();
     openTrip.mockReset();
+    openHost.mockReset();
   });
 
   it("shows invite URL, guest password, host key, and copy controls", () => {
@@ -183,13 +192,15 @@ describe("OrganizerPacketView", () => {
     expect(screen.getAllByText(/will not be shown again/i).length).toBeGreaterThan(0);
     expect(container.innerHTML).toMatch(/host key/i);
     expect(container.innerHTML).toContain(
-      "Keep this to yourself. It's how you change the trip via the API. We can't show it again.",
+      "Keep this to yourself. You'll need it to pick key events and to change the trip via the API. We can't show it again.",
     );
     expect(container.innerHTML).not.toContain("Authorizes API edits for this trip only");
     expect(container.innerHTML).not.toContain("Not a site-wide secret");
     expect(container.innerHTML).not.toMatch(/admin token/i);
     expect(container.innerHTML).not.toMatch(/only way to edit/i);
     expect(container.innerHTML).toMatch(/add dates, lodge, and a schedule/i);
+    expect(container.innerHTML).toMatch(/pick key events/i);
+    expect(screen.getByRole("button", { name: /pick key events/i })).toBeTruthy();
     expect(container.innerHTML).toMatch(
       /Text the invite URL and guest password to the group/,
     );
@@ -205,5 +216,16 @@ describe("OrganizerPacketView", () => {
     await user.click(screen.getByRole("button", { name: /open as guest/i }));
 
     expect(openTrip).toHaveBeenCalledWith("cabin-weekend", "guest-pw");
+  });
+
+  it("Pick key events submits slug and host key so host tools unlock", async () => {
+    const user = userEvent.setup();
+    render(
+      <OrganizerPacketView packet={PACKET} openTrip={openTrip} openHost={openHost} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /pick key events/i }));
+
+    expect(openHost).toHaveBeenCalledWith("cabin-weekend", "party-tok");
   });
 });

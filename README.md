@@ -10,7 +10,8 @@ Live: [party.narula.xyz](https://party.narula.xyz)
 
 Open the [site](https://party.narula.xyz), hit **I'm hosting**,
 and save the organizer packet — invite URL, guest password, host key. The
-host key is shown once. Keep it for the API; there isn't an in-product editor yet.
+host key is shown once. Use it to pick key events on the trip, or to change
+the trip via the API.
 
 ## Guest
 
@@ -19,7 +20,8 @@ Open the invite (or **I have an invite** on the homepage), enter the password, R
 ## Try it
 
 [/demo](https://party.narula.xyz/demo) is Alpine Weekend. No
-password.
+password. [/demo/host](https://party.narula.xyz/demo/host) is the
+key-event picker (sample; not saved).
 
 ## Agents and the API
 

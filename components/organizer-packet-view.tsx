@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type { OrganizerPacket } from "@/lib/create-trip";
 import { openAsGuest } from "@/lib/guest-access";
+import { openAsHost } from "@/lib/host-access";
 import { groupInviteText } from "@/lib/organizer-packet";
 import { kickerClass, sectionTitleClass } from "@/lib/type";
 
@@ -82,13 +83,19 @@ export function OrganizerPacketView({
   packet,
   onCreateAnother,
   openTrip = openAsGuest,
+  openHost = openAsHost,
 }: {
   packet: OrganizerPacket;
   onCreateAnother?: () => void;
   openTrip?: (slug: string, password: string) => Promise<unknown>;
+  openHost?: (slug: string, adminToken: string) => Promise<unknown>;
 }) {
   async function openGuestTrip() {
     await openTrip(packet.slug, packet.password);
+  }
+
+  async function openHostTools() {
+    await openHost(packet.slug, packet.adminToken);
   }
 
   return (
@@ -100,7 +107,8 @@ export function OrganizerPacketView({
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
           Copy the invite link, guest password, and host key now. The host key
           will not be shown again. The trip page is just the name and RSVP until
-          you add dates, lodge, and a schedule.
+          you add dates, lodge, and a schedule. Then pick key events so the crew
+          can scan the headlines.
         </p>
       </div>
 
@@ -127,7 +135,7 @@ export function OrganizerPacketView({
         <CopyField
           label="Host key"
           value={packet.adminToken}
-          hint="Keep this to yourself. It's how you change the trip via the API. We can't show it again."
+          hint="Keep this to yourself. You'll need it to pick key events and to change the trip via the API. We can't show it again."
         />
       </div>
 
@@ -135,6 +143,11 @@ export function OrganizerPacketView({
         <CopyGroupButton packet={packet} />
         <form action={openGuestTrip}>
           <Button type="submit">Open as guest</Button>
+        </form>
+        <form action={openHostTools}>
+          <Button type="submit" variant="outline">
+            Pick key events
+          </Button>
         </form>
         {onCreateAnother ? (
           <Button type="button" variant="outline" onClick={onCreateAnother}>
