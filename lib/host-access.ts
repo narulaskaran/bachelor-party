@@ -9,7 +9,7 @@ import { DEMO_PARTY } from "@/lib/demo-party";
 import { draftForParty } from "@/lib/draft-publish";
 import { cookieAuthenticatesHost, HOST_COOKIE, hostCookieValue } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
-import { partyContentSchema } from "@/lib/party-schema";
+import { parsePartyContentForExisting } from "@/lib/party-schema";
 import {
   organizerVisibleRoster,
   type OrganizerVisibleRosterEntry,
@@ -142,10 +142,11 @@ async function authenticatedHostParty(slug: string) {
 
 export async function saveHostDraft(slug: string, content: import("@/lib/party-types").PartyContent) {
   if (slug === "demo") return { ok: false as const, error: "The sample trip does not save drafts." };
-  const parsed = partyContentSchema.safeParse(content);
-  if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Fix the highlighted fields." };
   const auth = await authenticatedHostParty(slug);
   if (!auth.ok) return auth;
+  const previous = draftForParty(auth.loaded.party);
+  const parsed = parsePartyContentForExisting(content, previous);
+  if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Fix the highlighted fields." };
   try {
     const next = { ...parsed.data, kind: "trip" as const };
     await auth.loaded.db
@@ -166,7 +167,7 @@ export async function publishHostDraft(slug: string) {
   const auth = await authenticatedHostParty(slug);
   if (!auth.ok) return auth;
   const next = draftForParty(auth.loaded.party);
-  const parsed = partyContentSchema.safeParse(next);
+  const parsed = parsePartyContentForExisting(next, next);
   if (!parsed.success) return { ok: false as const, error: "Fix the draft before publishing." };
   try {
     const published = { ...parsed.data, kind: "trip" as const };
@@ -244,10 +245,10 @@ export async function setScheduleKeyEvent(
   const next = setDayKeyEvent(schedule, dayKey, entryIndex, key);
   if (!next.ok) return { ok: false, error: next.error };
 
-  const parsed = partyContentSchema.safeParse({
+  const parsed = parsePartyContentForExisting({
     ...editable,
     schedule: next.schedule,
-  });
+  }, editable);
   if (!parsed.success) {
     return { ok: false, error: "Couldn't save those key events." };
   }

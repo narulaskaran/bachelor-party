@@ -165,6 +165,40 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     });
   });
 
+  it("keeps an unchanged legacy HTTP URL while saving another host edit", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      id: 9,
+      slug: "legacy-links",
+      adminToken: "host-tok",
+      content: {
+        kind: "trip",
+        trip: { siteName: "Legacy Links" },
+        lodging: { name: "Cabin", url: "http://legacy.example/cabin" },
+      },
+      draftContent: {
+        kind: "trip",
+        trip: { siteName: "Legacy Links" },
+        lodging: { name: "Cabin", url: "http://legacy.example/cabin" },
+      },
+      published: true,
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
+
+    const result = await saveHostDraft("legacy-links", {
+      kind: "trip",
+      trip: { siteName: "Updated Legacy Links" },
+      lodging: { name: "Cabin", url: "http://legacy.example/cabin" },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(mem.parties[0].draftContent).toMatchObject({
+      trip: { siteName: "Updated Legacy Links" },
+      lodging: { url: "http://legacy.example/cabin" },
+    });
+  });
+
   it("publishes the current draft as the new guest snapshot", async () => {
     const mem = createMemoryDb();
     mem.seedParty({

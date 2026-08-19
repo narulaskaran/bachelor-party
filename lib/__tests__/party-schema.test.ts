@@ -153,6 +153,33 @@ describe("partyContentSchema", () => {
       }).success,
     ).toBe(true);
   });
+
+  it.each(["2026-02-30", "2026-13-01", "2026-00-10", "2026-1-10"])(
+    "rejects impossible calendar date %s",
+    (date) => {
+      const parsed = partyContentSchema.safeParse({
+        trip: { siteName: "Cabin", startDate: date },
+      });
+      expect(parsed.success).toBe(false);
+    },
+  );
+
+  it("rejects impossible schedule calendar dates", () => {
+    const parsed = partyContentSchema.safeParse({
+      trip: { siteName: "Cabin" },
+      schedule: [
+        {
+          key: "sunday",
+          date: "2026-02-30",
+          weekday: "Sunday",
+          label: "Impossible",
+          timed: false,
+          entries: [{ title: "Nope" }],
+        },
+      ],
+    });
+    expect(parsed.success).toBe(false);
+  });
 });
 
 describe("updatePartySchema", () => {

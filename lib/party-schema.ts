@@ -1,8 +1,18 @@
 import { z } from "zod";
-import { END_BEFORE_START_MESSAGE, isInvertedDateRange } from "@/lib/trip-dates";
+import {
+  END_BEFORE_START_MESSAGE,
+  INVALID_CALENDAR_DATE_MESSAGE,
+  isInvertedDateRange,
+  isValidCalendarDate,
+} from "@/lib/trip-dates";
 import { isReservedSlug, RESERVED_SLUG_MESSAGE, RESERVED_SLUGS } from "@/lib/slug";
 
-export { END_BEFORE_START_MESSAGE, isInvertedDateRange };
+export {
+  END_BEFORE_START_MESSAGE,
+  INVALID_CALENDAR_DATE_MESSAGE,
+  isInvertedDateRange,
+  isValidCalendarDate,
+};
 
 // Mirrors lib/party-types.ts, used to validate content posted to the
 // admin API (agents send arbitrary JSON — this is the actual gate).
@@ -10,12 +20,14 @@ export { END_BEFORE_START_MESSAGE, isInvertedDateRange };
 // fields except siteName are optional so a site can exist before lodging
 // and flights are booked.
 
+const calendarDateSchema = z.string().refine(isValidCalendarDate, INVALID_CALENDAR_DATE_MESSAGE);
+
 const tripSchema = z
   .object({
     siteName: z.string().min(1),
     tagline: z.string().min(1).optional(),
-    startDate: z.string().min(1).optional(),
-    endDate: z.string().min(1).optional(),
+    startDate: calendarDateSchema.optional(),
+    endDate: calendarDateSchema.optional(),
     dateLabel: z.string().min(1).optional(),
     location: z.string().min(1).optional(),
     coordinates: z.string().min(1).optional(),
@@ -57,7 +69,7 @@ const scheduleEntrySchema = z.object({
 
 const scheduleDaySchema = z.object({
   key: z.string().min(1),
-  date: z.string().min(1),
+  date: calendarDateSchema,
   weekday: z.string().min(1),
   label: z.string().min(1),
   timed: z.boolean(),
@@ -105,6 +117,90 @@ export const partyContentSchema = z.object({
   packing: z.array(packingItemSchema).optional(),
   rsvp: rsvpSchema.optional(),
 });
+
+const legacyUrl = z
+  .string()
+  .url("Enter a complete HTTP or HTTPS URL")
+  .refine((value) => {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  }, "URL must use HTTP or HTTPS");
+
+const legacyLodgingSchema = lodgingSchema.extend({
+  url: legacyUrl.optional(),
+  mapsUrl: legacyUrl.optional(),
+});
+const legacyActivitySchema = activitySchema.extend({
+  options: z
+    .array(z.object({ label: z.string().min(1), url: legacyUrl.optional() }))
+    .optional(),
+});
+
+const legacyPartyContentSchema = partyContentSchema.extend({
+  lodging: legacyLodgingSchema.optional(),
+  activities: z
+    .object({
+      core: z.array(legacyActivitySchema).optional(),
+      ifTimeAllows: z.array(legacyActivitySchema).optional(),
+      backups: z.array(legacyActivitySchema).optional(),
+    })
+    .optional(),
+});
+
+function legacyHttpUrls(value: unknown): Map<string, string> {
+  const urls = new Map<string, string>();
+  const isHttpUrl = (candidate: unknown): candidate is string => {
+    if (typeof candidate !== "string") return false;
+    try {
+      return new URL(candidate).protocol === "http:";
+    } catch {
+      return false;
+    }
+  };
+  if (!value || typeof value !== "object") return urls;
+  const content = value as Record<string, unknown>;
+  const lodging = content.lodging;
+  if (lodging && typeof lodging === "object") {
+    const row = lodging as Record<string, unknown>;
+    for (const key of ["url", "mapsUrl"]) {
+      if (isHttpUrl(row[key])) {
+        urls.set(`lodging.${key}`, row[key]);
+      }
+    }
+  }
+  const activities = content.activities;
+  if (!activities || typeof activities !== "object") return urls;
+  for (const section of ["core", "ifTimeAllows", "backups"]) {
+    const items = (activities as Record<string, unknown>)[section];
+    if (!Array.isArray(items)) continue;
+    items.forEach((item, itemIndex) => {
+      if (!item || typeof item !== "object") return;
+      const options = (item as Record<string, unknown>).options;
+      if (!Array.isArray(options)) return;
+      options.forEach((option, optionIndex) => {
+        if (!option || typeof option !== "object") return;
+        const url = (option as Record<string, unknown>).url;
+        if (isHttpUrl(url)) {
+          urls.set(`activities.${section}.${itemIndex}.options.${optionIndex}.url`, url);
+        }
+      });
+    });
+  }
+  return urls;
+}
+
+/** Validate new content strictly, while allowing unchanged HTTP URLs in legacy rows. */
+export function parsePartyContentForExisting(value: unknown, previous: unknown) {
+  const strict = partyContentSchema.safeParse(value);
+  if (strict.success) return strict;
+  const legacy = legacyPartyContentSchema.safeParse(value);
+  if (!legacy.success) return strict;
+  const before = legacyHttpUrls(previous);
+  for (const [path, url] of legacyHttpUrls(value)) {
+    if (before.get(path) !== url) return strict;
+  }
+  return legacy;
+}
 
 const slugSchema = z
   .string()

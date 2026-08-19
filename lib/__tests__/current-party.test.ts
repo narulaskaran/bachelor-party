@@ -57,4 +57,19 @@ describe("getCurrentParty", () => {
       content,
     });
   });
+
+  it("rejects a guest cookie for a trip that was unpublished", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      id: 8,
+      slug: "unpublished-trip",
+      password: "crew-secret",
+      published: false,
+      content: { kind: "trip", trip: { siteName: "Private trip" } },
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieStore.value = await authCookieValue(8, "crew-secret");
+
+    expect(await getCurrentParty()).toBeNull();
+  });
 });

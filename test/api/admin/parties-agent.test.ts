@@ -93,6 +93,70 @@ describe("agent API (create / patch / guests)", () => {
     expect(body.trip.content.trip.tagline).toBe("Let's go");
   });
 
+  it("keeps admin PATCH content and the host draft on one canonical snapshot", async () => {
+    const mem = createMemoryDb();
+    const published = {
+      kind: "trip" as const,
+      trip: { siteName: "Cabin Weekend" },
+    };
+    mem.seedParty({
+      slug: "cabin",
+      adminToken: "cabin-tok",
+      content: published,
+      draftContent: published,
+      published: true,
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const patched = await PATCH(
+      makeRequest("cabin-tok", {
+        method: "PATCH",
+        body: { content: { trip: { tagline: "Let's go" } } },
+      }),
+      ctx("cabin"),
+    );
+
+    expect(patched.status).toBe(200);
+    expect(mem.parties[0].content).toMatchObject({
+      trip: { siteName: "Cabin Weekend", tagline: "Let's go" },
+    });
+    expect(mem.parties[0].draftContent).toEqual(mem.parties[0].content);
+  });
+
+  it("preserves legacy HTTP URLs for unrelated edits but rejects HTTP URL edits", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      slug: "legacy-links",
+      adminToken: "legacy-links-tok",
+      content: {
+        kind: "trip",
+        trip: { siteName: "Legacy Links" },
+        lodging: { name: "Cabin", url: "HTTP://legacy.example/cabin" },
+      },
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const unrelated = await PATCH(
+      makeRequest("legacy-links-tok", {
+        method: "PATCH",
+        body: { content: { trip: { tagline: "Updated" } } },
+      }),
+      ctx("legacy-links"),
+    );
+    expect(unrelated.status).toBe(200);
+    const preserved = await unrelated.json();
+    expect(preserved.party.content.lodging.url).toBe("HTTP://legacy.example/cabin");
+
+    const edited = await PATCH(
+      makeRequest("legacy-links-tok", {
+        method: "PATCH",
+        body: { content: { lodging: { url: "http://new.example/cabin" } } },
+      }),
+      ctx("legacy-links"),
+    );
+    expect(edited.status).toBe(400);
+  });
+
   it("packet adminToken cannot mutate another trip", async () => {
     const mem = createMemoryDb();
     mem.seedParty({ slug: "alpha", adminToken: "alpha-tok" });

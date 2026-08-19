@@ -4,7 +4,7 @@ import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
 import { authorizePartyBySlug } from "@/lib/authorize-party";
 import { schema } from "@/lib/db";
 import { mergePatch } from "@/lib/merge-patch";
-import { partyContentSchema, updatePartySchema } from "@/lib/party-schema";
+import { parsePartyContentForExisting, updatePartySchema } from "@/lib/party-schema";
 import type { PartyContent } from "@/lib/party-types";
 
 export const dynamic = "force-dynamic";
@@ -45,8 +45,9 @@ export async function PATCH(request: Request, { params }: Params) {
 
   let nextContent: PartyContent | undefined;
   if (parsed.data.content) {
-    const merged = mergePatch(party.content, parsed.data.content);
-    const contentParsed = partyContentSchema.safeParse(merged);
+    const baseContent = party.draftContent ?? party.content;
+    const merged = mergePatch(baseContent, parsed.data.content);
+    const contentParsed = parsePartyContentForExisting(merged, baseContent);
     if (!contentParsed.success) {
       return NextResponse.json(
         { error: "Invalid merged content", issues: issuesFromZod(contentParsed.error) },
@@ -75,7 +76,7 @@ export async function PATCH(request: Request, { params }: Params) {
       .update(schema.parties)
       .set({
         ...(parsed.data.password ? { password: parsed.data.password } : {}),
-        ...(nextContent ? { content: nextContent } : {}),
+        ...(nextContent ? { content: nextContent, draftContent: nextContent } : {}),
         updatedAt: new Date(),
       })
       .where(eq(schema.parties.slug, slug))

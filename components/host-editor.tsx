@@ -83,14 +83,16 @@ export function HostEditor({
     };
     const lodgingName = String(form.get("lodgingName") ?? "").trim();
     if (lodgingName) {
-      const url = httpsOrUndefined(String(form.get("lodgingUrl") ?? ""));
-      const mapsUrl = httpsOrUndefined(String(form.get("mapsUrl") ?? ""));
-      if (String(form.get("lodgingUrl") ?? "").trim() && !url) {
+      const lodgingUrlValue = String(form.get("lodgingUrl") ?? "").trim();
+      const mapsUrlValue = String(form.get("mapsUrl") ?? "").trim();
+      const url = urlForSave(lodgingUrlValue, content.lodging?.url);
+      const mapsUrl = urlForSave(mapsUrlValue, content.lodging?.mapsUrl);
+      if (lodgingUrlValue && !url) {
         setError("Lodging URL must use HTTPS.");
         setNotice(null);
         return;
       }
-      if (String(form.get("mapsUrl") ?? "").trim() && !mapsUrl) {
+      if (mapsUrlValue && !mapsUrl) {
         setError("Maps URL must use HTTPS.");
         setNotice(null);
         return;
@@ -232,6 +234,19 @@ function Field({
       <Input id={name} name={name} type={type} value={value} defaultValue={defaultValue} required={required} onChange={onChange ? (event) => onChange(event.target.value) : undefined} />
     </div>
   );
+}
+
+function urlForSave(value: string, previous?: string): string | undefined {
+  if (!value) return undefined;
+  if (value === previous) {
+    try {
+      const protocol = new URL(value).protocol;
+      if (protocol === "http:") return value;
+    } catch {
+      return undefined;
+    }
+  }
+  return httpsOrUndefined(value);
 }
 
 function httpsOrUndefined(value: string): string | undefined {

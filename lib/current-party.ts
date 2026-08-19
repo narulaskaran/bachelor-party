@@ -43,6 +43,7 @@ export async function getCurrentParty(): Promise<CurrentParty | null> {
       .where(eq(schema.parties.id, id))
       .limit(1);
     if (!party) return null;
+    if (party.published === false) return null;
     // Guest `/demo` is always the Alpine Weekend fixture. Ignore leftover
     // `slug=demo` rows so an old cookie cannot brand `/demo` or `/`.
     if (party.slug === "demo") return null;
