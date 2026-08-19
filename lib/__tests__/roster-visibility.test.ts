@@ -7,6 +7,9 @@ import {
 const guest = {
   id: 7,
   name: "Mina",
+  attendanceStatus: "attending" as const,
+  partySize: 2,
+  plusOneName: "Taylor",
   phone: "555-0100",
   arrivalFlight: "UA 1523",
   arrivalTime: "Fri 10:45 AM",
@@ -27,6 +30,9 @@ describe("roster visibility", () => {
       {
         id: 7,
         name: "Mina",
+        attendanceStatus: "attending",
+        partySize: 2,
+        plusOneName: "Taylor",
         arrivalFlight: "UA 1523",
         arrivalTime: "Fri 10:45 AM",
         departureFlight: "UA 887",

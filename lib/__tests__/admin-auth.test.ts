@@ -89,6 +89,12 @@ describe("readBearerToken", () => {
     expect(readBearerToken(makeRequest("abc"))).toBe("abc");
   });
 
+  it("rejects a Bearer header containing extra credential material", () => {
+    const headers = new Headers();
+    headers.set("authorization", "Bearer abc trailing");
+    expect(readBearerToken(new Request("http://localhost", { headers }))).toBeNull();
+  });
+
   it("returns null without a Bearer token", () => {
     expect(readBearerToken(makeRequest(null))).toBeNull();
   });

@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { submitGuestInfo, submitSampleGuestInfo } from "@/lib/rsvp-actions";
 import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { rsvpFieldDefaults, type RsvpPrefill } from "@/lib/merge-guest";
-import type { Activity } from "@/lib/party-types";
+import type { Activity, RsvpConfig } from "@/lib/party-types";
 import { VoteActivityGroup } from "@/components/vote-activity-group";
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
@@ -36,11 +36,13 @@ export function RsvpForm({
   pollActivities,
   airport,
   existing,
+  rsvpConfig = {},
   sample = false,
 }: {
   pollActivities: Activity[];
   airport?: string;
   existing?: RsvpPrefill | null;
+  rsvpConfig?: RsvpConfig;
   sample?: boolean;
 }) {
   const [state, formAction, isPending] = useActionState(
@@ -49,6 +51,9 @@ export function RsvpForm({
   );
   const router = useRouter();
   const defaults = rsvpFieldDefaults(existing);
+  const plusOneAllowed =
+    rsvpConfig.plusOnePolicy !== "not-allowed" &&
+    (rsvpConfig.plusOnePolicy === "allowed" || rsvpConfig.allowPlusOne === true);
 
   useEffect(() => {
     if (state?.ok) {
@@ -97,6 +102,58 @@ export function RsvpForm({
             defaultValue={defaults.phone}
           />
         </div>
+      </section>
+
+      <section className="space-y-4 border-t border-border pt-8">
+        <Eyebrow>Attendance</Eyebrow>
+        <fieldset role="group" aria-label="Attendance" className="space-y-3">
+          <legend className="sr-only">Attendance</legend>
+          {[
+            ["attending", "Attending"],
+            ["maybe", "Maybe"],
+            ["not-attending", "Not attending"],
+          ].map(([value, label]) => (
+            <label key={value} className="flex min-h-11 items-center gap-3 rounded-md border border-border px-3 py-2 text-sm">
+              <input
+                type="radio"
+                name="attendance"
+                value={value}
+                defaultChecked={defaults.attendanceStatus === value}
+                required={!sample}
+              />
+              {label}
+            </label>
+          ))}
+        </fieldset>
+        <div className="space-y-2">
+          <Label htmlFor="partySize">Party size</Label>
+          <Input
+            id="partySize"
+            name="partySize"
+            type="number"
+            min={0}
+            max={Math.max(1, Math.min(20, rsvpConfig.maxPartySize ?? 10))}
+            defaultValue={defaults.partySize}
+            required={!sample}
+          />
+          <p className="text-xs text-muted-foreground">
+            {plusOneAllowed
+              ? "Include yourself and any plus-one."
+              : "This trip does not allow plus-ones."}
+          </p>
+        </div>
+        {plusOneAllowed ? (
+          <div className="space-y-2">
+            <Label htmlFor="plusOneName">Plus-one name</Label>
+            <HadField name="plusOneName" value={existing?.plusOneName} />
+            <Input
+              id="plusOneName"
+              name="plusOneName"
+              placeholder="Optional"
+              defaultValue={defaults.plusOneName}
+            />
+          </div>
+        ) : null}
       </section>
 
       {airport ? (

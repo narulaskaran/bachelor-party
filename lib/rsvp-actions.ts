@@ -10,6 +10,10 @@ import { getCurrentParty } from "@/lib/current-party";
 import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { pollActivities } from "@/lib/party-types";
 import {
+  parseRsvpSubmission,
+  type RsvpAttendance,
+} from "@/lib/rsvp-contract";
+import {
   RSVP_COOKIE,
   explicitClearsFromFormData,
   mergeGuestRow,
@@ -30,6 +34,9 @@ function toGuestPatch(row: {
   partyId: number;
   name: string;
   nameKey: string;
+  attendanceStatus: RsvpAttendance;
+  partySize: number;
+  plusOneName: string | null;
   phone: string | null;
   arrivalFlight: string | null;
   arrivalTime: string | null;
@@ -43,6 +50,9 @@ function toGuestPatch(row: {
     partyId: row.partyId,
     name: row.name,
     nameKey: row.nameKey,
+    attendanceStatus: row.attendanceStatus,
+    partySize: row.partySize,
+    plusOneName: row.plusOneName,
     phone: row.phone,
     arrivalFlight: row.arrivalFlight,
     arrivalTime: row.arrivalTime,
@@ -56,6 +66,9 @@ function toGuestPatch(row: {
 
 const guestSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80),
+  attendance: z.string().optional(),
+  partySize: z.string().optional(),
+  plusOneName: z.string().trim().max(80).optional(),
   phone: z.string().trim().max(40).optional(),
   arrivalFlight: z.string().trim().max(40).optional(),
   arrivalTime: z.string().trim().max(80).optional(),
@@ -95,6 +108,9 @@ export async function submitGuestInfo(
 
   const parsed = guestSchema.safeParse({
     name: formData.get("name") ?? undefined,
+    attendance: formData.get("attendance") ?? undefined,
+    partySize: formData.get("partySize") ?? undefined,
+    plusOneName: formData.get("plusOneName") || undefined,
     phone: formData.get("phone") || undefined,
     arrivalFlight: formData.get("arrivalFlight") || undefined,
     arrivalTime: formData.get("arrivalTime") || undefined,
@@ -106,6 +122,16 @@ export async function submitGuestInfo(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
+
+  const rsvp = parseRsvpSubmission(
+    {
+      attendance: parsed.data.attendance,
+      partySize: parsed.data.partySize,
+      plusOneName: parsed.data.plusOneName,
+    },
+    current.content.rsvp,
+  );
+  if (!rsvp.ok) return rsvp;
 
   const activityPrefs: Record<string, string> = {};
   for (const activity of pollActivities(current.content)) {
@@ -120,6 +146,9 @@ export async function submitGuestInfo(
     partyId: current.partyId,
     name: data.name,
     nameKey: data.name.toLowerCase(),
+    attendanceStatus: rsvp.value.attendanceStatus,
+    partySize: rsvp.value.partySize,
+    plusOneName: rsvp.value.plusOneName,
     phone: data.phone ?? null,
     arrivalFlight: data.arrivalFlight ?? null,
     arrivalTime: data.arrivalTime ?? null,
@@ -228,6 +257,9 @@ export async function getRsvpPrefill(
     return {
       name: guest.name,
       nameKey: guest.nameKey,
+      attendanceStatus: guest.attendanceStatus,
+      partySize: guest.partySize,
+      plusOneName: guest.plusOneName,
       phone: guest.phone,
       arrivalFlight: guest.arrivalFlight,
       arrivalTime: guest.arrivalTime,

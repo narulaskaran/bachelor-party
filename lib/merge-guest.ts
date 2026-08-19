@@ -22,6 +22,9 @@ export type RsvpPrefill = {
   dietary: string | null;
   notes: string | null;
   activityPrefs: Record<string, string> | null;
+  attendanceStatus?: "attending" | "maybe" | "not-attending";
+  partySize?: number;
+  plusOneName?: string | null;
   /** Present on prefill rows so the form remounts after a save. */
   updatedAt?: Date | string | null;
 };
@@ -68,6 +71,9 @@ export function rsvpFieldDefaults(existing: RsvpPrefill | null | undefined) {
     dietary: existing?.dietary ?? "",
     notes: existing?.notes ?? "",
     activityPrefs: existing?.activityPrefs ?? {},
+    attendanceStatus: existing?.attendanceStatus ?? "attending",
+    partySize: existing?.partySize ?? 1,
+    plusOneName: existing?.plusOneName ?? "",
   };
 }
 
@@ -109,6 +115,8 @@ export function mergeGuestRow(
     if (next != null && next !== "") continue;
     merged[field] = explicitClears.has(field) ? null : (existing[field] ?? null);
   }
+
+  if (incoming.plusOneName !== undefined) merged.plusOneName = incoming.plusOneName;
 
   return merged;
 }

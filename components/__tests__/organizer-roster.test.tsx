@@ -26,4 +26,24 @@ describe("OrganizerRoster", () => {
     expect(html).toContain("Departure · UA 887 · Mon 3:15 PM");
     expect(html).toContain("Vegetarian, no nuts");
   });
+
+  it("renders private RSVP counts, statuses, party size, and plus-one details", () => {
+    const html = renderToStaticMarkup(
+      <OrganizerRoster
+        guests={[
+          { id: 1, name: "Mina", attendanceStatus: "attending", partySize: 2, plusOneName: "Taylor" },
+          { id: 2, name: "Sam", attendanceStatus: "maybe", partySize: 1 },
+          { id: 3, name: "Lee", attendanceStatus: "not-attending", partySize: 0 },
+        ]}
+      />,
+    );
+
+    expect(html).toContain("Responses: 3");
+    expect(html).toContain("Attending: 1");
+    expect(html).toContain("Maybe: 1");
+    expect(html).toContain("Not attending: 1");
+    expect(html).toContain("Expected people: 3");
+    expect(html).toContain("attending · 2 people");
+    expect(html).toContain("Plus-one: Taylor");
+  });
 });

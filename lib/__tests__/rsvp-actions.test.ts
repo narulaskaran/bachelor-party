@@ -36,23 +36,26 @@ function form(fields: Record<string, string>) {
   return formData;
 }
 
-function mockParty(mem: ReturnType<typeof createMemoryDb>, partyId = 1) {
+function mockParty(
+  mem: ReturnType<typeof createMemoryDb>,
+  partyId = 1,
+  rsvp?: { plusOnePolicy: "allowed" | "not-allowed" },
+) {
+  const content = {
+    trip: { siteName: "QA", airport: "JAC" },
+    activities: { ifTimeAllows: [{ slug: "rafting", name: "Rafting" }] },
+    ...(rsvp ? { rsvp } : {}),
+  };
   const party = mem.seedParty({
     id: partyId,
     slug: "qa-tester-e2e",
-    content: {
-      trip: { siteName: "QA", airport: "JAC" },
-      activities: { ifTimeAllows: [{ slug: "rafting", name: "Rafting" }] },
-    },
+    content,
   });
   vi.mocked(getDb).mockReturnValue(mem.db as never);
   vi.mocked(getCurrentParty).mockResolvedValue({
     partyId: party.id as number,
     slug: "qa-tester-e2e",
-    content: {
-      trip: { siteName: "QA", airport: "JAC" },
-      activities: { ifTimeAllows: [{ slug: "rafting", name: "Rafting" }] },
-    },
+    content,
   });
   return party;
 }
@@ -310,6 +313,30 @@ describe("submitGuestInfo merge upsert", () => {
       guestToken: TOKEN_SAM,
       notes: "impostor",
     });
+  });
+
+  it("clears a previously saved plus-one when the response no longer includes one", async () => {
+    const { submitGuestInfo } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    const party = mockParty(mem, 1, { plusOnePolicy: "allowed" });
+    mem.seedGuest({
+      partyId: party.id,
+      guestToken: TOKEN_ALEX,
+      name: "Alex",
+      plusOneName: "Taylor",
+      partySize: 2,
+    });
+    cookieStore.get.mockReturnValue({ value: TOKEN_ALEX });
+
+    const result = await submitGuestInfo(null, form({
+      name: "Alex",
+      attendance: "attending",
+      partySize: "1",
+    }));
+
+    expect(result).toEqual({ ok: true });
+    expect(mem.guests[0].plusOneName).toBeNull();
+    expect(mem.guests[0].partySize).toBe(1);
   });
 
   it("ignores a leftover name-string cookie and inserts instead of clobbering", async () => {

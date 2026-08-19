@@ -96,14 +96,18 @@ const packingItemSchema = z.object({
   note: z.string().optional(),
 });
 
-const rsvpSchema = z.object({
+const rsvpConfigSchema = z.object({
   heading: z.string().min(1).optional(),
   description: z.string().min(1).optional(),
+  plusOnePolicy: z.enum(["not-allowed", "allowed"]).optional(),
+  allowPlusOne: z.boolean().optional(),
+  maxPartySize: z.number().int().min(1).max(20).optional(),
 });
 
 export const partyContentSchema = z.object({
   kind: z.literal("trip").optional(),
   trip: tripSchema,
+  rsvp: rsvpConfigSchema.optional(),
   lodging: lodgingSchema.optional(),
   schedule: z.array(scheduleDaySchema).optional(),
   activities: z
@@ -115,7 +119,6 @@ export const partyContentSchema = z.object({
     .optional(),
   actionItems: z.array(actionItemSchema).optional(),
   packing: z.array(packingItemSchema).optional(),
-  rsvp: rsvpSchema.optional(),
 });
 
 const legacyUrl = z

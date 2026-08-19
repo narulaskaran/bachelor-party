@@ -1,6 +1,9 @@
 export type RosterGuest = {
   id: number;
   name: string;
+  attendanceStatus?: "attending" | "maybe" | "not-attending";
+  partySize?: number;
+  plusOneName?: string | null;
   phone?: string | null;
   arrivalFlight?: string | null;
   arrivalTime?: string | null;
@@ -17,6 +20,9 @@ export type OrganizerVisibleRosterEntry = Pick<
   RosterGuest,
   | "id"
   | "name"
+  | "attendanceStatus"
+  | "partySize"
+  | "plusOneName"
   | "arrivalFlight"
   | "arrivalTime"
   | "departureFlight"
@@ -39,6 +45,9 @@ export function organizerVisibleRoster(
     ({
       id,
       name,
+      attendanceStatus,
+      partySize,
+      plusOneName,
       arrivalFlight,
       arrivalTime,
       departureFlight,
@@ -47,6 +56,9 @@ export function organizerVisibleRoster(
     }) => ({
       id,
       name,
+      ...(attendanceStatus === undefined ? {} : { attendanceStatus }),
+      ...(partySize === undefined ? {} : { partySize }),
+      ...(plusOneName === undefined ? {} : { plusOneName }),
       arrivalFlight,
       arrivalTime,
       departureFlight,

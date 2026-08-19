@@ -9,6 +9,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import type { PartyContent } from "@/lib/party-types";
+import type { RsvpAttendance } from "@/lib/rsvp-contract";
 
 // One row per trip. The password doubles as the invite: whoever
 // has it lands in this trip's site. Passwords are plaintext by design
@@ -38,6 +39,9 @@ export const guests = pgTable(
     guestToken: text("guest_token").notNull(),
     name: text("name").notNull(),
     nameKey: text("name_key").notNull(), // lowercased display name; not unique
+    attendanceStatus: text("attendance_status").$type<RsvpAttendance>().notNull().default("attending"),
+    partySize: integer("party_size").notNull().default(1),
+    plusOneName: text("plus_one_name"),
     phone: text("phone"),
     arrivalFlight: text("arrival_flight"),
     arrivalTime: text("arrival_time"),

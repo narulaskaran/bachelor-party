@@ -29,6 +29,13 @@
       "when": 1787166844799,
       "tag": "0003_unique_zaran",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787167356258,
+      "tag": "0004_rsvp_readiness",
+      "breakpoints": true
     }
   ]
 }

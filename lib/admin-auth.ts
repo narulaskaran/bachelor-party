@@ -6,10 +6,9 @@ import { NextResponse } from "next/server";
 // deploy-wide superadmin secret — ADMIN_API_TOKEN is unused.
 
 export function readBearerToken(request: Request): string | null {
-  const header = request.headers.get("authorization") ?? "";
-  const [scheme, token] = header.split(" ");
-  if (scheme !== "Bearer" || !token) return null;
-  return token;
+  const header = request.headers.get("authorization")?.trim() ?? "";
+  const match = /^Bearer ([^\s]+)$/.exec(header);
+  return match?.[1] ?? null;
 }
 
 export function requireAdmin(

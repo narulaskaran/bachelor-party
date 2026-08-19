@@ -88,4 +88,35 @@ describe("RsvpForm", () => {
     expect((save as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByRole("link", { name: /create your own trip to collect RSVPs/i })).toBeNull();
   });
+
+  it("shows explicit attendance and plus-one controls without exposing other guest details", () => {
+    render(
+      <RsvpForm
+        pollActivities={[]}
+        rsvpConfig={{ plusOnePolicy: "allowed", maxPartySize: 4 }}
+        existing={{
+          name: "Alex",
+          nameKey: "alex",
+          phone: null,
+          arrivalFlight: null,
+          arrivalTime: null,
+          departureFlight: null,
+          departureTime: null,
+          dietary: null,
+          notes: null,
+          activityPrefs: {},
+          attendanceStatus: "maybe",
+          partySize: 2,
+          plusOneName: "Taylor",
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("group", { name: /attendance/i })).toBeTruthy();
+    expect(screen.getByLabelText("Attending")).toBeTruthy();
+    expect(screen.getByLabelText("Maybe")).toBeTruthy();
+    expect(screen.getByLabelText("Not attending")).toBeTruthy();
+    expect((screen.getByLabelText(/party size/i) as HTMLInputElement).value).toBe("2");
+    expect((screen.getByLabelText(/plus-one name/i) as HTMLInputElement).value).toBe("Taylor");
+  });
 });

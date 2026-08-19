@@ -1,18 +1,20 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { RsvpForm } from "@/components/rsvp-form";
 import { getGuests, getRsvpPrefill } from "@/lib/rsvp-actions";
-import type { Activity } from "@/lib/party-types";
+import type { Activity, RsvpConfig } from "@/lib/party-types";
 import { sectionTitleClass } from "@/lib/type";
 
 export async function RsvpSection({
   pollActivities,
   airport,
+  rsvpConfig = {},
   sample = false,
   heading,
   description,
 }: {
   pollActivities: Activity[];
   airport?: string;
+  rsvpConfig?: RsvpConfig;
   sample?: boolean;
   heading?: string;
   description?: string;
@@ -40,6 +42,7 @@ export async function RsvpSection({
           sample={sample}
           pollActivities={pollActivities}
           airport={airport}
+          rsvpConfig={rsvpConfig}
           existing={prefill}
         />
       </div>

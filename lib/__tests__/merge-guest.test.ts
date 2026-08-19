@@ -125,6 +125,9 @@ describe("form prefills existing data", () => {
       }),
     ).toEqual({
       name: "Alex",
+      attendanceStatus: "attending",
+      partySize: 1,
+      plusOneName: "",
       phone: "555-0100",
       arrivalFlight: "UA 1523",
       arrivalTime: "Fri, 10:45 AM",

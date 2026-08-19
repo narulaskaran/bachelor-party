@@ -58,6 +58,7 @@ export function PartyView({
         airport={showFlightFields(content) ? content.trip.airport : undefined}
         heading={content.rsvp?.heading}
         description={content.rsvp?.description}
+        rsvpConfig={content.rsvp}
       />
 
       {footerBits.length > 0 ? (
