@@ -8,6 +8,7 @@ type Db = NonNullable<ReturnType<typeof getDb>>;
 export type ResolvedSlugParty =
   | { status: "missing" }
   | { status: "open"; content: PartyContent }
+  | { status: "unpublished" }
   | {
       status: "gated";
       id: number | "demo";
@@ -54,11 +55,13 @@ export async function resolvePartyBySlug(
           id: schema.parties.id,
           password: schema.parties.password,
           content: schema.parties.content,
+          published: schema.parties.published,
         })
         .from(schema.parties)
         .where(eq(schema.parties.slug, slug))
         .limit(1);
       if (row) {
+        if (row.published === false) return { status: "unpublished" };
         return {
           status: "gated",
           id: row.id,

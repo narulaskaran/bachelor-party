@@ -43,6 +43,20 @@ describe("resolvePartyBySlug", () => {
     expect(resolved).toEqual({ status: "missing" });
   });
 
+  it("does not expose an unpublished trip row", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      slug: "draft-trip",
+      password: "crew-secret",
+      published: false,
+      content: { kind: "trip", trip: { siteName: "Draft only" } },
+      draftContent: { kind: "trip", trip: { siteName: "Private details" } },
+    });
+    await expect(resolvePartyBySlug("draft-trip", dbOf(mem))).resolves.toEqual({
+      status: "unpublished",
+    });
+  });
+
   it("does not replace a real trip with the demo fixture", async () => {
     const mem = createMemoryDb();
     const content = { kind: "trip" as const, trip: { siteName: "Jackson Hole '26" } };

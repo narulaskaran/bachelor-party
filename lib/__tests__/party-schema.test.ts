@@ -103,6 +103,24 @@ describe("partyContentSchema", () => {
     expect(parsed.success).toBe(true);
   });
 
+  it("rejects non-HTTPS lodging links", () => {
+    const parsed = partyContentSchema.safeParse({
+      trip: { siteName: "Cabin" },
+      lodging: { name: "Pine Lodge", url: "http://example.com" },
+    });
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    expect(parsed.error.issues.some((issue) => /HTTPS/i.test(issue.message))).toBe(true);
+  });
+
+  it("accepts editable RSVP copy", () => {
+    const parsed = partyContentSchema.safeParse({
+      trip: { siteName: "Cabin" },
+      rsvp: { heading: "Tell us you're in", description: "Share flights and food." },
+    });
+    expect(parsed.success).toBe(true);
+  });
+
   it("rejects an inverted start/end range", () => {
     const parsed = partyContentSchema.safeParse({
       trip: { siteName: "Cabin", startDate: "2026-12-20", endDate: "2026-12-10" },

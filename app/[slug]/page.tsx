@@ -19,6 +19,19 @@ export default async function Page({ params }: Params) {
   // Fallback if proxy didn't rewrite this missing slug first.
   if (resolved.status === "missing") notFound();
 
+  if (resolved.status === "unpublished") {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-2xl items-center justify-center px-4 py-16 text-center">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">This trip is not published yet</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            The organizer is still getting the details together. Check back soon.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (resolved.status === "open") {
     return <PartyView content={resolved.content} sample slug={slug} />;
   }

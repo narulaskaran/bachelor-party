@@ -148,7 +148,14 @@ export async function POST(request: Request) {
   try {
     const [party] = await db
       .insert(schema.parties)
-      .values({ slug, password, content, adminToken: rawAdminToken })
+      .values({
+        slug,
+        password,
+        content,
+        draftContent: content,
+        published: false,
+        adminToken: rawAdminToken,
+      })
       .returning();
     return NextResponse.json(
       {

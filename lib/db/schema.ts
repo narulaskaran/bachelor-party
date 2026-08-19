@@ -3,6 +3,7 @@ import {
   serial,
   text,
   jsonb,
+  boolean,
   timestamp,
   integer,
   uniqueIndex,
@@ -19,6 +20,8 @@ export const parties = pgTable("parties", {
   password: text("password").notNull().unique(),
   adminToken: text("admin_token").unique(), // optional per-party admin API token
   content: jsonb("content").$type<PartyContent>().notNull(),
+  draftContent: jsonb("draft_content").$type<PartyContent>(),
+  published: boolean("published").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

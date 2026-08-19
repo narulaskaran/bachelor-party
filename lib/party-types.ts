@@ -70,6 +70,11 @@ export type Activities = {
   backups?: Activity[];
 };
 
+export type RsvpContent = {
+  heading?: string;
+  description?: string;
+};
+
 export type PartyContent = {
   kind?: TripKind;
   trip: Trip;
@@ -78,6 +83,7 @@ export type PartyContent = {
   activities?: Activities;
   actionItems?: ActionItem[];
   packing?: PackingItem[];
+  rsvp?: RsvpContent;
 };
 
 // The maybes the guests vote on in the RSVP form (core are locked in).

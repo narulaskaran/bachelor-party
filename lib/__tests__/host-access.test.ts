@@ -31,6 +31,8 @@ vi.mock("@/lib/db", async (importOriginal) => {
 import {
   getHostGuests,
   openAsHost,
+  publishHostDraft,
+  saveHostDraft,
   setScheduleKeyEvent,
   unlockHostTrip,
 } from "@/lib/host-access";
@@ -135,6 +137,54 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     expect(mem.parties[0].content).toMatchObject({
       schedule: [{ entries: [{}, { marquee: true }, { marquee: true }] }],
     });
+  });
+
+  it("saves edits to the draft without changing the published snapshot", async () => {
+    const mem = createMemoryDb();
+    const published = { kind: "trip" as const, trip: { siteName: "Published trip" } };
+    mem.seedParty({
+      id: 9,
+      slug: "cabin-weekend",
+      adminToken: "host-tok",
+      content: published,
+      draftContent: published,
+      published: true,
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
+
+    const result = await saveHostDraft("cabin-weekend", {
+      kind: "trip",
+      trip: { siteName: "Private draft" },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(mem.parties[0].content).toEqual(published);
+    expect(mem.parties[0].draftContent).toMatchObject({
+      trip: { siteName: "Private draft" },
+    });
+  });
+
+  it("publishes the current draft as the new guest snapshot", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      id: 9,
+      slug: "cabin-weekend",
+      adminToken: "host-tok",
+      content: { kind: "trip", trip: { siteName: "Old guest version" } },
+      draftContent: { kind: "trip", trip: { siteName: "Ready to publish" } },
+      published: true,
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
+
+    const result = await publishHostDraft("cabin-weekend");
+
+    expect(result).toEqual({ ok: true });
+    expect(mem.parties[0].content).toMatchObject({
+      trip: { siteName: "Ready to publish" },
+    });
+    expect(mem.parties[0].published).toBe(true);
   });
 
   it("returns full roster details only with the organizer cookie", async () => {

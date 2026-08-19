@@ -27,11 +27,16 @@ const tripSchema = z
     path: ["endDate"],
   });
 
+const httpsUrl = z
+  .string()
+  .url("Enter a complete HTTPS URL")
+  .refine((value) => new URL(value).protocol === "https:", "URL must use HTTPS");
+
 const lodgingSchema = z.object({
   name: z.string().min(1),
-  url: z.string().min(1).optional(),
+  url: httpsUrl.optional(),
   address: z.string().min(1).optional(),
-  mapsUrl: z.string().min(1).optional(),
+  mapsUrl: httpsUrl.optional(),
   bedrooms: z.number().optional(),
   beds: z.number().optional(),
   bathrooms: z.number().optional(),
@@ -64,7 +69,7 @@ const activitySchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   options: z
-    .array(z.object({ label: z.string().min(1), url: z.string().optional() }))
+    .array(z.object({ label: z.string().min(1), url: httpsUrl.optional() }))
     .optional(),
 });
 
@@ -77,6 +82,11 @@ const actionItemSchema = z.object({
 const packingItemSchema = z.object({
   title: z.string().min(1),
   note: z.string().optional(),
+});
+
+const rsvpSchema = z.object({
+  heading: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
 });
 
 export const partyContentSchema = z.object({
@@ -93,6 +103,7 @@ export const partyContentSchema = z.object({
     .optional(),
   actionItems: z.array(actionItemSchema).optional(),
   packing: z.array(packingItemSchema).optional(),
+  rsvp: rsvpSchema.optional(),
 });
 
 const slugSchema = z

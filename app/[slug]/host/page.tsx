@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { OrganizerRoster } from "@/components/organizer-roster";
+import { PartyView } from "@/components/party-view";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { HostEditor } from "@/components/host-editor";
 import { HostScheduleView } from "@/components/host-schedule-view";
-import { getHostGuests, hostSessionForSlug } from "@/lib/host-access";
+import { getHostGuests, getHostEditorState, hostSessionForSlug, publishHostDraft, saveHostDraft } from "@/lib/host-access";
 import { resolvePartyBySlug } from "@/lib/resolve-party";
 import { login } from "./actions";
 import { HostLoginForm } from "./host-login-form";
@@ -16,9 +18,7 @@ export default async function HostPage({ params }: Params) {
   const resolved = await resolvePartyBySlug(slug);
   if (resolved.status === "missing") notFound();
 
-  const content = resolved.content;
   const authed = await hostSessionForSlug(slug);
-
   if (!authed) {
     const loginWithSlug = login.bind(null, slug);
     return (
@@ -27,7 +27,7 @@ export default async function HostPage({ params }: Params) {
           <CardHeader className="items-center text-center">
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">Host tools</h1>
             <p className="text-sm text-muted-foreground">
-              Enter the host key from the organizer packet to pick key events.
+              Enter the host key from the organizer packet to edit the trip and pick key events.
             </p>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
@@ -38,14 +38,40 @@ export default async function HostPage({ params }: Params) {
     );
   }
 
+  const editor = await getHostEditorState(slug);
+  if (!editor.ok) notFound();
   const guests = await getHostGuests(slug);
 
   return (
     <>
+      <main className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Private host workspace</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Build the trip your crew will trust</h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Edit the details in plain language, save a private draft, preview the guest page, then publish when it is ready.
+          </p>
+        </div>
+        <HostEditor
+          slug={slug}
+          initial={editor.content}
+          published={editor.published}
+          sample={editor.sample}
+          save={saveHostDraft}
+          publish={publishHostDraft}
+        />
+        <section aria-labelledby="preview-heading" className="rounded-xl border border-border bg-muted/20 p-4 sm:p-6">
+          <div className="mb-2">
+            <h2 id="preview-heading" className="text-xl font-semibold tracking-tight">Guest preview</h2>
+            <p className="text-sm text-muted-foreground">This is the saved draft rendered in the same guest components. It never changes the published page until you press publish.</p>
+          </div>
+          <PartyView content={editor.content} sample slug={slug} />
+        </section>
+      </main>
       <HostScheduleView
         slug={slug}
-        schedule={content.schedule ?? []}
-        sample={slug === "demo"}
+        schedule={editor.content.schedule ?? []}
+        sample={editor.sample}
       />
       <OrganizerRoster guests={guests} />
     </>

@@ -56,6 +56,8 @@ export function PartyView({
         sample={sample}
         pollActivities={pollActivities(content)}
         airport={showFlightFields(content) ? content.trip.airport : undefined}
+        heading={content.rsvp?.heading}
+        description={content.rsvp?.description}
       />
 
       {footerBits.length > 0 ? (
