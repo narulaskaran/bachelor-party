@@ -1,3 +1,5 @@
+import { sha256hex } from "@/lib/cookie-hash";
+
 export const AUTH_COOKIE = "bp_access";
 
 // Cookie format: "<partyId>.<token>" where token binds the party id to its
@@ -7,11 +9,7 @@ export async function partyToken(
   partyId: string,
   password: string
 ): Promise<string> {
-  const data = new TextEncoder().encode(`bp-v2:${partyId}:${password}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  return sha256hex(`bp-v2:${partyId}:${password}`);
 }
 
 export async function authCookieValue(
