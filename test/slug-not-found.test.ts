@@ -132,6 +132,27 @@ describe("unknown guest slug 404", () => {
     expect(html).toBeUndefined();
   });
 
+  it("treats an unpublished slug as private and responds 404", async () => {
+    vi.mocked(getDb).mockReturnValue(
+      fakeDb([
+        {
+          id: 1,
+          password: "crew-secret",
+          published: false,
+          content: { kind: "trip", trip: { siteName: "Private draft" } },
+        },
+      ]) as never,
+    );
+
+    const { status, html } = await pageHttpStatus("private-draft");
+    expect(status).toBe(404);
+    expect(html).toBeUndefined();
+
+    const res = await proxy(new NextRequest("http://localhost/private-draft"));
+    const rewritten = new URL(res.headers.get("x-middleware-rewrite") ?? "");
+    expect(rewritten.pathname).toBe(MISSING_GUEST_REWRITE);
+  });
+
   it("/demo stays 200 with trip content and is not rewritten", async () => {
     vi.mocked(getDb).mockReturnValue(null);
 

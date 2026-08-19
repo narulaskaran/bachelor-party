@@ -49,7 +49,7 @@ export function OrganizerRoster({
                     {guest.attendanceStatus?.replace("-", " ") ?? "attending"} · {guest.partySize ?? 1} {guest.partySize === 1 ? "person" : "people"}
                   </p>
                   {guest.plusOneName ? (
-                    <p className="text-xs text-muted-foreground">Plus-one: {guest.plusOneName}</p>
+                    <p className="break-words text-xs text-muted-foreground">Plus-one: {guest.plusOneName}</p>
                   ) : null}
                   {rosterTravelLines(guest).map((line) => (
                     <p

@@ -4,6 +4,9 @@ import {
   initialDraftState,
   publishedForGuests,
   parseScheduleText,
+  preserveScheduleKeyEvents,
+  scheduleToText,
+  rsvpForDraft,
   type DraftPartyState,
 } from "@/lib/draft-publish";
 import type { PartyContent } from "@/lib/party-types";
@@ -75,5 +78,58 @@ describe("plain-language schedule editor", () => {
 
   it("returns an accessible field error for malformed lines", () => {
     expect(() => parseScheduleText("Saturday | Dinner")).toThrow(/schedule line/i);
+  });
+
+  it("preserves key-event flags through the editor text round trip", () => {
+    const schedule = [
+      {
+        key: "2026-09-04",
+        date: "2026-09-04",
+        weekday: "Friday",
+        label: "Arrival day",
+        timed: true,
+        entries: [
+          { time: "5:00 PM", title: "Airport pickup" },
+          { time: "7:00 PM", title: "Group dinner", marquee: true },
+        ],
+      },
+    ];
+    expect(parseScheduleText(scheduleToText(schedule))).toEqual(schedule);
+  });
+
+  it("preserves RSVP policy while applying edited copy", () => {
+    expect(
+      rsvpForDraft(
+        { plusOnePolicy: "allowed", allowPlusOne: true, maxPartySize: 6 },
+        "  RSVP now  ",
+        "  Bring a friend  ",
+      ),
+    ).toEqual({
+      plusOnePolicy: "allowed",
+      allowPlusOne: true,
+      maxPartySize: 6,
+      heading: "RSVP now",
+      description: "Bring a friend",
+    });
+  });
+
+  it("preserves picker key events when an editor save has a stale schedule copy", () => {
+    const previous = parseScheduleText(
+      "2026-09-04 | Friday | Arrival day | 7:00 PM | [key] Group dinner",
+    );
+    const staleEditor = parseScheduleText(
+      "2026-09-04 | Friday | Arrival day | 7:00 PM | Group dinner",
+    );
+    expect(preserveScheduleKeyEvents(previous, staleEditor)).toEqual(previous);
+  });
+
+  it("does not restore a key event when the editor intentionally changed the event", () => {
+    const previous = parseScheduleText(
+      "2026-09-04 | Friday | Arrival day | 7:00 PM | [key] Group dinner",
+    );
+    const edited = parseScheduleText(
+      "2026-09-04 | Friday | Arrival day | 7:00 PM | New dinner plan",
+    );
+    expect(preserveScheduleKeyEvents(previous, edited)).toEqual(edited);
   });
 });

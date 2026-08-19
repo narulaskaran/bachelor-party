@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { END_BEFORE_START_MESSAGE, isInvertedDateRange } from "@/lib/trip-dates";
-import { parseScheduleText, scheduleToText } from "@/lib/draft-publish";
+import { parseScheduleText, rsvpForDraft, scheduleToText } from "@/lib/draft-publish";
 import type { PartyContent } from "@/lib/party-types";
 
 export type HostEditorAction =
-  (slug: string, content: PartyContent) => Promise<{ ok: boolean; error?: string }>;
+  (slug: string, content: PartyContent, preserveScheduleKeyEvents?: boolean) => Promise<{ ok: boolean; error?: string }>;
 
 export function HostEditor({
   slug,
@@ -53,6 +53,7 @@ export function HostEditor({
     }
 
     let schedule = content.schedule;
+    const initialScheduleText = scheduleToText(content.schedule).trim();
     try {
       const rawSchedule = String(form.get("schedule") ?? "").trim();
       schedule = rawSchedule ? parseScheduleText(rawSchedule) : undefined;
@@ -76,10 +77,11 @@ export function HostEditor({
         airport: String(form.get("airport") ?? "").trim() || undefined,
       },
       schedule,
-      rsvp: {
-        heading: String(form.get("rsvpHeading") ?? "").trim() || undefined,
-        description: String(form.get("rsvpDescription") ?? "").trim() || undefined,
-      },
+      rsvp: rsvpForDraft(
+        content.rsvp,
+        String(form.get("rsvpHeading") ?? ""),
+        String(form.get("rsvpDescription") ?? ""),
+      ),
     };
     const lodgingName = String(form.get("lodgingName") ?? "").trim();
     if (lodgingName) {
@@ -111,7 +113,8 @@ export function HostEditor({
     startTransition(async () => {
       setError(null);
       setNotice(null);
-      const result = await save(slug, next);
+      const rawSchedule = String(form.get("schedule") ?? "").trim();
+      const result = await save(slug, next, rawSchedule === initialScheduleText);
       if (!result.ok) {
         setError(result.error ?? "Couldn't save the draft.");
         return;
@@ -202,7 +205,7 @@ export function HostEditor({
           {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
           {notice ? <p role="status" className="text-sm text-emerald-700">{notice}</p> : null}
           <div className="flex flex-wrap gap-3">
-            <Button type="submit" disabled={sample}>{isPending ? "Saving…" : "Save draft"}</Button>
+            <Button type="submit" disabled={sample || isPending}>{isPending ? "Saving…" : "Save draft"}</Button>
             <Button type="button" variant="outline" onClick={publishNow} disabled={sample || isPending}>{isPending ? "Working…" : published ? "Publish latest draft" : "Publish for guests"}</Button>
           </div>
         </form>

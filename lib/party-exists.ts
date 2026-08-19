@@ -20,5 +20,7 @@ export function guestSlugFromPathname(pathname: string): string | null {
 /** True when `/:slug` should serve a trip (login or content), not the branded 404. */
 export async function partyExists(slug: string): Promise<boolean> {
   const resolved = await resolvePartyBySlug(slug);
-  return resolved.status !== "missing";
+  // An unpublished row is private draft state, not a public route. Treat it
+  // like a missing trip so the proxy cannot leak its existence.
+  return resolved.status === "open" || resolved.status === "gated";
 }

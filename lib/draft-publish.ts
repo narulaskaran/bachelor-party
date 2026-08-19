@@ -1,4 +1,4 @@
-import type { PartyContent, ScheduleDay, ScheduleEntry } from "@/lib/party-types";
+import type { PartyContent, RsvpConfig, ScheduleDay, ScheduleEntry } from "@/lib/party-types";
 
 export type DraftPartyState = {
   content: PartyContent;
@@ -41,10 +41,13 @@ export function parseScheduleText(value: string): ScheduleDay[] {
     }
     const timed = fields.length >= 5;
     const time = timed ? fields[3] : undefined;
-    const title = timed ? fields[4] : fields[3];
+    const rawTitle = timed ? fields[4] : fields[3];
+    const marquee = rawTitle.startsWith("[key] ");
+    const title = marquee ? rawTitle.slice("[key] ".length).trim() : rawTitle;
     const note = fields.length === 6 ? fields[5] : undefined;
     const existing = days.get(date);
     const entry: ScheduleEntry = { title };
+    if (marquee) entry.marquee = true;
     if (time) entry.time = time;
     if (note) entry.note = note;
     if (existing) {
@@ -68,8 +71,62 @@ export function scheduleToText(schedule: ScheduleDay[] = []): string {
   return schedule
     .flatMap((day) =>
       day.entries.map((entry) =>
-        [day.date, day.weekday, day.label, ...(day.timed ? [entry.time ?? ""] : []), entry.title, ...(entry.note ? [entry.note] : [])].join(" | "),
+        [
+          day.date,
+          day.weekday,
+          day.label,
+          ...(day.timed ? [entry.time ?? ""] : []),
+          `${entry.marquee ? "[key] " : ""}${entry.title}`,
+          ...(entry.note ? [entry.note] : []),
+        ].join(" | "),
       ),
     )
     .join("\n");
+}
+
+/**
+ * Keep key-event picks made in the separate host picker when an editor save
+ * was based on an older schedule snapshot. The editor passes an explicit
+ * "schedule unchanged" signal, so removing a `[key]` marker in the editor
+ * still remains an intentional edit.
+ */
+export function preserveScheduleKeyEvents(
+  previous: ScheduleDay[] | undefined,
+  next: ScheduleDay[] | undefined,
+): ScheduleDay[] | undefined {
+  if (!previous || !next) return next;
+  const previousByDate = new Map(previous.map((day) => [day.date, day]));
+  return next.map((day) => {
+    const oldDay = previousByDate.get(day.date);
+    if (!oldDay) return day;
+    return {
+      ...day,
+      entries: day.entries.map((entry, index) => {
+        const oldEntry = oldDay.entries[index];
+        if (
+          !oldEntry ||
+          oldEntry.title !== entry.title ||
+          oldEntry.time !== entry.time ||
+          oldEntry.note !== entry.note
+        ) {
+          return entry;
+        }
+        return oldEntry.marquee === true && entry.marquee !== true
+          ? { ...entry, marquee: true }
+          : entry;
+      }),
+    };
+  });
+}
+
+export function rsvpForDraft(
+  existing: RsvpConfig | undefined,
+  heading: string,
+  description: string,
+): RsvpConfig {
+  return {
+    ...existing,
+    heading: heading.trim() || undefined,
+    description: description.trim() || undefined,
+  };
 }

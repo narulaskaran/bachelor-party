@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { DEMO_PARTY } from "@/lib/demo-party";
-import { draftForParty } from "@/lib/draft-publish";
+import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
 import { cookieAuthenticatesHost, HOST_COOKIE, hostCookieValue } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
 import { parsePartyContentForExisting } from "@/lib/party-schema";
@@ -140,12 +140,25 @@ async function authenticatedHostParty(slug: string) {
   return { ok: true as const, loaded };
 }
 
-export async function saveHostDraft(slug: string, content: import("@/lib/party-types").PartyContent) {
+export async function saveHostDraft(
+  slug: string,
+  content: import("@/lib/party-types").PartyContent,
+  preserveExistingKeyEvents = true,
+) {
   if (slug === "demo") return { ok: false as const, error: "The sample trip does not save drafts." };
   const auth = await authenticatedHostParty(slug);
   if (!auth.ok) return auth;
   const previous = draftForParty(auth.loaded.party);
-  const parsed = parsePartyContentForExisting(content, previous);
+  const contentToSave = {
+    ...content,
+    rsvp: previous.rsvp || content.rsvp
+      ? { ...previous.rsvp, ...content.rsvp }
+      : undefined,
+    schedule: preserveExistingKeyEvents
+      ? preserveScheduleKeyEvents(previous.schedule, content.schedule)
+      : content.schedule,
+  };
+  const parsed = parsePartyContentForExisting(contentToSave, previous);
   if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Fix the highlighted fields." };
   try {
     const next = { ...parsed.data, kind: "trip" as const };

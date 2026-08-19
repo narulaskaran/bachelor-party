@@ -165,6 +165,113 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     });
   });
 
+  it("preserves RSVP policy and picker key events during a stale editor save", async () => {
+    const mem = createMemoryDb();
+    const published = {
+      kind: "trip" as const,
+      trip: { siteName: "Published trip" },
+      rsvp: { plusOnePolicy: "allowed" as const, allowPlusOne: true, maxPartySize: 6 },
+      schedule: [
+        {
+          key: "friday",
+          date: "2030-08-30",
+          weekday: "Friday",
+          label: "Arrival",
+          timed: true,
+          entries: [{ time: "7:00 PM", title: "Dinner", marquee: true }],
+        },
+      ],
+    };
+    mem.seedParty({
+      id: 9,
+      slug: "cabin-weekend",
+      adminToken: "host-tok",
+      content: published,
+      draftContent: published,
+      published: true,
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
+
+    const result = await saveHostDraft("cabin-weekend", {
+      kind: "trip",
+      trip: { siteName: "Updated trip" },
+      rsvp: { heading: "RSVP now", description: "Bring a friend" },
+      schedule: [
+        {
+          key: "2030-08-30",
+          date: "2030-08-30",
+          weekday: "Friday",
+          label: "Arrival",
+          timed: true,
+          entries: [{ time: "7:00 PM", title: "Dinner" }],
+        },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(mem.parties[0].draftContent).toMatchObject({
+      trip: { siteName: "Updated trip" },
+      rsvp: {
+        plusOnePolicy: "allowed",
+        allowPlusOne: true,
+        maxPartySize: 6,
+        heading: "RSVP now",
+        description: "Bring a friend",
+      },
+      schedule: [{ entries: [{ marquee: true }] }],
+    });
+  });
+
+  it("allows an explicit editor schedule change to remove a key event", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      id: 9,
+      slug: "cabin-weekend",
+      adminToken: "host-tok",
+      content: { kind: "trip", trip: { siteName: "Trip" } },
+      draftContent: {
+        kind: "trip",
+        trip: { siteName: "Trip" },
+        schedule: [{
+          key: "friday",
+          date: "2030-08-30",
+          weekday: "Friday",
+          label: "Arrival",
+          timed: true,
+          entries: [{ time: "7:00 PM", title: "Dinner", marquee: true }],
+        }],
+      },
+      published: true,
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
+
+    const result = await saveHostDraft(
+      "cabin-weekend",
+      {
+        kind: "trip",
+        trip: { siteName: "Trip" },
+        schedule: [{
+          key: "2030-08-30",
+          date: "2030-08-30",
+          weekday: "Friday",
+          label: "Arrival",
+          timed: true,
+          entries: [{ time: "7:00 PM", title: "Dinner" }],
+        }],
+      },
+      false,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(mem.parties[0].draftContent).toMatchObject({
+      schedule: [{ entries: [{ title: "Dinner" }] }],
+    });
+    const saved = mem.parties[0].draftContent as { schedule: [{ entries: [{ marquee?: boolean }] }] };
+    expect(saved.schedule[0].entries[0].marquee).toBeUndefined();
+  });
+
   it("keeps an unchanged legacy HTTP URL while saving another host edit", async () => {
     const mem = createMemoryDb();
     mem.seedParty({

@@ -65,7 +65,8 @@ export default async function HostPage({ params }: Params) {
             <h2 id="preview-heading" className="text-xl font-semibold tracking-tight">Guest preview</h2>
             <p className="text-sm text-muted-foreground">This is the saved draft rendered in the same guest components. It never changes the published page until you press publish.</p>
           </div>
-          <PartyView content={editor.content} sample slug={slug} />
+          {/* Preview is deliberately inert: never read or mutate a stale guest cookie. */}
+          <PartyView content={editor.content} sample={true} slug={slug} />
         </section>
       </main>
       <HostScheduleView
