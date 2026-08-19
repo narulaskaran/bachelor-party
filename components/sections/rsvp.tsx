@@ -1,9 +1,7 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { RsvpForm } from "@/components/rsvp-form";
 import { getGuests, getRsvpPrefill } from "@/lib/rsvp-actions";
 import type { Activity } from "@/lib/party-types";
-import { rosterTravelLines } from "@/lib/roster-travel";
 import { sectionTitleClass } from "@/lib/type";
 
 export async function RsvpSection({
@@ -60,23 +58,6 @@ export async function RsvpSection({
                     {guest.name}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1.5">
-                  {airport
-                    ? rosterTravelLines(guest).map((line) => (
-                        <p
-                          key={line}
-                          className="break-words text-xs text-muted-foreground"
-                        >
-                          {line}
-                        </p>
-                      ))
-                    : null}
-                  {guest.dietary ? (
-                    <Badge variant="outline" className="mt-2 h-auto px-2 py-1 text-xs">
-                      {guest.dietary}
-                    </Badge>
-                  ) : null}
-                </CardContent>
               </Card>
             ))}
           </div>

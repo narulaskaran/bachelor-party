@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
+import { OrganizerRoster } from "@/components/organizer-roster";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { HostScheduleView } from "@/components/host-schedule-view";
-import { hostSessionForSlug } from "@/lib/host-access";
+import { getHostGuests, hostSessionForSlug } from "@/lib/host-access";
 import { resolvePartyBySlug } from "@/lib/resolve-party";
 import { login } from "./actions";
 import { HostLoginForm } from "./host-login-form";
@@ -37,11 +38,16 @@ export default async function HostPage({ params }: Params) {
     );
   }
 
+  const guests = await getHostGuests(slug);
+
   return (
-    <HostScheduleView
-      slug={slug}
-      schedule={content.schedule ?? []}
-      sample={slug === "demo"}
-    />
+    <>
+      <HostScheduleView
+        slug={slug}
+        schedule={content.schedule ?? []}
+        sample={slug === "demo"}
+      />
+      <OrganizerRoster guests={guests} />
+    </>
   );
 }

@@ -12,7 +12,6 @@ import { pollActivities } from "@/lib/party-types";
 import {
   RSVP_COOKIE,
   explicitClearsFromFormData,
-  matchPrefillGuest,
   mergeGuestRow,
   readGuestToken,
   type GuestPatch,
@@ -189,11 +188,12 @@ export async function getGuests() {
   const db = getDb();
   if (!current || !db || current.partyId === "demo") return [];
   try {
-    return await db
-      .select()
+    const guests = await db
+      .select({ id: schema.guests.id, name: schema.guests.name })
       .from(schema.guests)
       .where(and(eq(schema.guests.partyId, current.partyId)))
       .orderBy(schema.guests.name);
+    return guests.map(({ id, name }) => ({ id, name }));
   } catch (err) {
     console.error("getGuests failed", err);
     return [];
@@ -202,22 +202,44 @@ export async function getGuests() {
 
 /** The guest this browser last saved, if they're on the roster. */
 export async function getRsvpPrefill(
-  guests: Awaited<ReturnType<typeof getGuests>>,
+  _guests: Awaited<ReturnType<typeof getGuests>>,
 ): Promise<RsvpPrefill | null> {
+  void _guests;
+  const current = await getCurrentParty();
+  const db = getDb();
+  if (!current || !db || current.partyId === "demo") return null;
+
   const raw = (await cookies()).get(RSVP_COOKIE)?.value;
-  const guest = matchPrefillGuest(guests, raw);
-  if (!guest) return null;
-  return {
-    name: guest.name,
-    nameKey: guest.nameKey,
-    phone: guest.phone,
-    arrivalFlight: guest.arrivalFlight,
-    arrivalTime: guest.arrivalTime,
-    departureFlight: guest.departureFlight,
-    departureTime: guest.departureTime,
-    dietary: guest.dietary,
-    notes: guest.notes,
-    activityPrefs: guest.activityPrefs,
-    updatedAt: guest.updatedAt,
-  };
+  const token = readGuestToken(raw);
+  if (!token) return null;
+
+  try {
+    const [guest] = await db
+      .select()
+      .from(schema.guests)
+      .where(
+        and(
+          eq(schema.guests.partyId, current.partyId),
+          eq(schema.guests.guestToken, token),
+        ),
+      )
+      .limit(1);
+    if (!guest) return null;
+    return {
+      name: guest.name,
+      nameKey: guest.nameKey,
+      phone: guest.phone,
+      arrivalFlight: guest.arrivalFlight,
+      arrivalTime: guest.arrivalTime,
+      departureFlight: guest.departureFlight,
+      departureTime: guest.departureTime,
+      dietary: guest.dietary,
+      notes: guest.notes,
+      activityPrefs: guest.activityPrefs,
+      updatedAt: guest.updatedAt,
+    };
+  } catch (err) {
+    console.error("getRsvpPrefill failed", err);
+    return null;
+  }
 }

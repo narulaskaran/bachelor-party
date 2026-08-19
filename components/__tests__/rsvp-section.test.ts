@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { RsvpSection } from "@/components/sections/rsvp";
+import { getGuests } from "@/lib/rsvp-actions";
 
 vi.mock("@/components/rsvp-form", () => ({
   RsvpForm: () => createElement("div", { "data-rsvp-form": "mock" }),
@@ -35,5 +36,43 @@ describe("RsvpSection sample copy", () => {
     expect(html).not.toMatch(/preview of the guest RSVP form/i);
     expect(html).toMatch(/>RSVP</);
     expect(html).toContain("No one&#x27;s on the list yet. Add yours above.");
+  });
+
+  it("shows guest roster names without private RSVP details", async () => {
+    vi.mocked(getGuests).mockResolvedValueOnce([
+      {
+        id: 7,
+        name: "Mina",
+        arrivalFlight: "UA 1523",
+        arrivalTime: "Fri 10:45 AM",
+        departureFlight: "UA 887",
+        departureTime: "Mon 3:15 PM",
+        dietary: "Vegetarian, no nuts",
+      } as never,
+    ]);
+    const html = renderToStaticMarkup(
+      await RsvpSection({ sample: false, pollActivities: [], airport: "JAC" }),
+    );
+    expect(html).toContain("Mina");
+    expect(html).not.toContain("UA 1523");
+    expect(html).not.toContain("UA 887");
+    expect(html).not.toContain("Vegetarian, no nuts");
+  });
+
+  it("keeps private roster details out of the public sample", async () => {
+    vi.mocked(getGuests).mockResolvedValueOnce([
+      {
+        id: 7,
+        name: "Mina",
+        arrivalFlight: "UA 1523",
+        dietary: "Vegetarian, no nuts",
+      } as never,
+    ]);
+    const html = renderToStaticMarkup(
+      await RsvpSection({ sample: true, pollActivities: [], airport: "JAC" }),
+    );
+    expect(html).not.toContain("Mina");
+    expect(html).not.toContain("UA 1523");
+    expect(html).not.toContain("Vegetarian, no nuts");
   });
 });

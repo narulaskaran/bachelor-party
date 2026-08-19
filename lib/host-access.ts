@@ -8,6 +8,10 @@ import { getDb, schema } from "@/lib/db";
 import { cookieAuthenticatesHost, HOST_COOKIE, hostCookieValue } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
 import { partyContentSchema } from "@/lib/party-schema";
+import {
+  organizerVisibleRoster,
+  type OrganizerVisibleRosterEntry,
+} from "@/lib/roster-visibility";
 import type { ScheduleDay } from "@/lib/party-types";
 
 const NINETY_DAYS = 60 * 60 * 24 * 90;
@@ -105,6 +109,31 @@ export async function hostSessionForSlug(slug: string): Promise<boolean> {
   if (loaded.status !== "ok" || !loaded.party.adminToken) return false;
   const raw = (await cookies()).get(HOST_COOKIE)?.value;
   return cookieAuthenticatesHost(raw, loaded.party.id, loaded.party.adminToken);
+}
+
+/** Read the organizer-only roster after verifying the host cookie. */
+export async function getHostGuests(
+  slug: string,
+): Promise<OrganizerVisibleRosterEntry[]> {
+  const loaded = await loadHostParty(slug);
+  if (loaded.status !== "ok" || !loaded.party.adminToken) return [];
+
+  const raw = (await cookies()).get(HOST_COOKIE)?.value;
+  if (!(await cookieAuthenticatesHost(raw, loaded.party.id, loaded.party.adminToken))) {
+    return [];
+  }
+
+  try {
+    const guests = await loaded.db
+      .select()
+      .from(schema.guests)
+      .where(eq(schema.guests.partyId, loaded.party.id))
+      .orderBy(schema.guests.name);
+    return organizerVisibleRoster(guests);
+  } catch (err) {
+    console.error("getHostGuests failed", err);
+    return [];
+  }
 }
 
 export async function setScheduleKeyEvent(

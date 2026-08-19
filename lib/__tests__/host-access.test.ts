@@ -28,7 +28,12 @@ vi.mock("@/lib/db", async (importOriginal) => {
   return { ...actual, getDb: vi.fn() };
 });
 
-import { openAsHost, setScheduleKeyEvent, unlockHostTrip } from "@/lib/host-access";
+import {
+  getHostGuests,
+  openAsHost,
+  setScheduleKeyEvent,
+  unlockHostTrip,
+} from "@/lib/host-access";
 
 const fridaySchedule = [
   {
@@ -130,5 +135,32 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     expect(mem.parties[0].content).toMatchObject({
       schedule: [{ entries: [{}, { marquee: true }, { marquee: true }] }],
     });
+  });
+
+  it("returns full roster details only with the organizer cookie", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ id: 9, slug: "cabin-weekend", adminToken: "host-tok" });
+    mem.seedGuest({
+      partyId: 9,
+      name: "Mina",
+      arrivalFlight: "UA 1523",
+      arrivalTime: "Fri 10:45 AM",
+      departureFlight: "UA 887",
+      departureTime: "Mon 3:15 PM",
+      dietary: "Vegetarian, no nuts",
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
+    await expect(getHostGuests("cabin-weekend")).resolves.toEqual([
+      expect.objectContaining({
+        name: "Mina",
+        arrivalFlight: "UA 1523",
+        dietary: "Vegetarian, no nuts",
+      }),
+    ]);
+
+    cookieGet.mockReturnValue({ value: "guest-cookie" });
+    await expect(getHostGuests("cabin-weekend")).resolves.toEqual([]);
   });
 });
