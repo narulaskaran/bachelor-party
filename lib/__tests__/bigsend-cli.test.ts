@@ -162,6 +162,43 @@ describe("bigsend CLI", () => {
     expect(schedule.content.schedule.map((d) => d.key)).toEqual(["2026-09-05", "2026-09-12"]);
   });
 
+  it("schedule add --key-event marks the entry as a key event", async () => {
+    const calls: Call[] = [];
+    const { io } = ioHarness({
+      env: { BIGSEND_TOKEN: "packet-tok" },
+      fetchImpl: async (_url, init) => {
+        const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+        calls.push({ method: init?.method ?? "GET", url: String(_url), body });
+        if (init?.method === "GET") {
+          return jsonResponse(200, {
+            trip: { slug: "cabin", content: { trip: { siteName: "Cabin" } } },
+          });
+        }
+        return jsonResponse(200, { trip: { slug: "cabin", content: body.content } });
+      },
+    });
+
+    const code = await runBigsend(
+      [
+        "schedule",
+        "add",
+        "cabin",
+        "--day",
+        "2026-09-05",
+        "--title",
+        "Dinner",
+        "--key-event",
+      ],
+      io,
+    );
+    expect(code).toBe(0);
+    expect(calls[1].body).toMatchObject({
+      content: {
+        schedule: [{ entries: [{ title: "Dinner", marquee: true }] }],
+      },
+    });
+  });
+
   it("get / guests / lodging / delete map to the trips API", async () => {
     const calls: Call[] = [];
     const { io } = ioHarness({

@@ -1,4 +1,5 @@
 import { authCookieValue } from "@/lib/auth";
+import { constantTimeEqual } from "@/lib/cookie-hash";
 
 // Pure check: does this raw cookie value authenticate this specific party?
 // No DB/cookies() dependency, so it's directly unit-testable.
@@ -8,5 +9,5 @@ export async function cookieAuthenticatesParty(
   password: string
 ): Promise<boolean> {
   if (!rawCookie) return false;
-  return rawCookie === (await authCookieValue(partyId, password));
+  return constantTimeEqual(rawCookie, await authCookieValue(partyId, password));
 }

@@ -70,7 +70,8 @@ export const BIGSEND_TOOLS: ToolDef[] = [
   },
   {
     name: "schedule_add",
-    description: 'Add a schedule entry. Example: { "slug": "e2e-smoke", "day": "2026-09-05", "title": "Dinner" }',
+    description:
+      'Add a schedule entry. Pass keyEvent: true to mark it as a key event (shown in orange on the guest timeline). Example: { "slug": "e2e-smoke", "day": "2026-09-05", "title": "Dinner", "keyEvent": true }',
     inputSchema: {
       slug: z.string(),
       day: z.string().describe("ISO date YYYY-MM-DD"),
@@ -78,9 +79,13 @@ export const BIGSEND_TOOLS: ToolDef[] = [
       time: z.string().optional(),
       weekday: z.string().optional(),
       label: z.string().optional(),
-      key: z.string().optional(),
+      key: z.string().optional().describe("Day key; defaults to the ISO date"),
       note: z.string().optional(),
-      marquee: z.boolean().optional(),
+      keyEvent: z
+        .boolean()
+        .optional()
+        .describe("Mark as a key event. Emphasized on the guest timeline."),
+      marquee: z.boolean().optional().describe("Alias of keyEvent"),
     },
   },
   {
@@ -166,6 +171,7 @@ export function argvForTool(name: BigsendToolName, args: ToolArgs): string[] {
       pushFlag(argv, "label", args.label);
       pushFlag(argv, "key", args.key);
       pushFlag(argv, "note", args.note);
+      pushFlag(argv, "key-event", args.keyEvent);
       pushFlag(argv, "marquee", args.marquee);
       return argv;
     }

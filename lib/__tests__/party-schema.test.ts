@@ -82,6 +82,27 @@ describe("partyContentSchema", () => {
     expect(parsed.success).toBe(false);
   });
 
+  it("accepts any number of key events on a day", () => {
+    const parsed = partyContentSchema.safeParse({
+      trip: { siteName: "Cabin" },
+      schedule: [
+        {
+          key: "friday",
+          date: "2026-09-04",
+          weekday: "Friday",
+          label: "Arrival",
+          timed: true,
+          entries: [
+            { title: "A", marquee: true },
+            { title: "B", marquee: true },
+            { title: "C", marquee: true },
+          ],
+        },
+      ],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
   it("rejects an inverted start/end range", () => {
     const parsed = partyContentSchema.safeParse({
       trip: { siteName: "Cabin", startDate: "2026-12-20", endDate: "2026-12-10" },
