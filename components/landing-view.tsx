@@ -73,11 +73,6 @@ export function LandingView({
             </HashFocusLink>
           </Button>
         </div>
-        <p className="mt-6 text-sm text-muted-foreground">
-          <Link href="/demo" className={quietLinkClass}>
-            Try a sample
-          </Link>
-        </p>
       </section>
 
       <div className="grid">

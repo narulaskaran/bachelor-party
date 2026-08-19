@@ -136,7 +136,8 @@ describe("GET /", () => {
 
     expect(html).toContain("The Big Send");
     expect(html).toContain("Enter your trip");
-    expect(html).toContain("Try a sample");
+    expect(html).not.toContain("Try a sample");
+    expect(html).not.toContain("Try Demo");
     expect(html).toContain("Create a trip");
     expect(html).toContain("data-landing-page");
     expect(html).toContain('href="#create"');
@@ -223,6 +224,10 @@ describe("GET /", () => {
     expect(html).toContain("data-landing-page");
     expect(html).toContain('id="site-nav-marketing"');
     expect(html).toContain("data-marketing-brand");
+    expect(html).toContain("data-demo-link");
+    expect(html).toContain("Try Demo");
+    expect(html).toContain('href="/demo"');
+    expect(html).not.toContain("Try a sample");
     expect(html).toContain("I&#x27;m hosting");
     expect(html).toContain('href="#create"');
     expect(html).not.toContain('href="/#create"');
@@ -342,6 +347,7 @@ describe("GET /{slug} chrome", () => {
     expect(html).toContain("Pack");
     expect(html).not.toContain("Your Info");
     expect(html).not.toContain("Create a trip");
+    expect(html).not.toContain("Try Demo");
     expect(html).toContain("DEMO_BODY");
   });
 });

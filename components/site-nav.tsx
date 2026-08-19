@@ -2,6 +2,7 @@ import Link from "next/link";
 import { HashFocusLink } from "@/components/hash-focus-link";
 import { MobileNav } from "@/components/mobile-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import type { VisibleSections } from "@/lib/trip-sections";
 
 const allLinks: {
@@ -41,6 +42,13 @@ export function SiteNav({
       className="sticky top-0 z-50 min-w-0 border-b border-border bg-background/90 backdrop-blur"
     >
       <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-3 px-4 py-3">
+        {!siteName ? (
+          <Button asChild variant="ghost" size="sm" className="h-8">
+            <Link href="/demo" data-demo-link="">
+              Try Demo
+            </Link>
+          </Button>
+        ) : null}
         <Link
           href={homeHref}
           data-marketing-brand={siteName ? undefined : ""}

@@ -58,7 +58,7 @@ describe("homepage trip entry", () => {
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
   });
 
-  it("offers equal host and invite CTAs, and a quieter sample path", () => {
+  it("offers equal host and invite CTAs without a demo path in the hero", () => {
     const { container } = render(<LandingView />);
 
     const hosting = screen.getByRole("link", { name: /^i.m hosting$/i });
@@ -77,10 +77,8 @@ describe("homepage trip entry", () => {
     expectPanel("enter", false);
     expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();
     expect(screen.queryByRole("heading", { name: /enter your trip/i })).toBeNull();
-    expect(screen.getByRole("link", { name: /^try a sample$/i }).getAttribute("href")).toBe(
-      "/demo",
-    );
-    expect(screen.getByRole("link", { name: /^try a sample$/i }).closest("[data-slot=button]")).toBeNull();
+    expect(screen.queryByRole("link", { name: /^try a sample$/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^try demo$/i })).toBeNull();
     expect(container.innerHTML).not.toContain("ADMIN_UI_PASSWORD");
     expect(container.innerHTML).not.toContain('href="/admin"');
     expect(container.innerHTML).not.toContain("password-gated");
