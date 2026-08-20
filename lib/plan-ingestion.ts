@@ -127,8 +127,8 @@ function scheduleFromPlan(plan: string, dates: string[]): ScheduleDay[] | undefi
     const date = isoMatch ? validIso(isoMatch[0]) : undefined;
     const timeMatch = line.match(TIME_RE);
     if (!date || !timeMatch) continue;
-    const afterTime = clean(line.slice((timeMatch.index ?? 0) + timeMatch[0].length).replace(/^[:|-]\s*/, ""));
-    const title = afterTime?.replace(/^[|:-]\s*/, "").trim();
+    const afterTime = clean(line.slice((timeMatch.index ?? 0) + timeMatch[0].length).replace(/^[:|\u2013\u2014-]\s*/, ""));
+    const title = afterTime?.replace(/^[|:\u2013\u2014-]\s*/, "").trim();
     if (!title) continue;
     const existing = days.get(date);
     const weekday = new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });

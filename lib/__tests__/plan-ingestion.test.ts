@@ -22,7 +22,7 @@ describe("messy event plan ingestion", () => {
     expect(content.trip.location).toBe("Denver, CO");
     expect(content.trip.endDate).toBeUndefined();
     expect(content.lodging).toBeUndefined();
-    expect(content.schedule?.[0].entries[0].title).toContain("arrive");
+    expect(content.schedule?.[0].entries[0].title).toBe("arrive");
     expect(review.facts.find((item) => item.path === "trip.endDate")?.status).toBe("missing");
     expect(review.facts.find((item) => item.path === "lodging.name")?.status).toBe("missing");
   });
@@ -67,6 +67,25 @@ describe("messy event plan ingestion", () => {
     );
     expect(facts.find((item) => item.path === "trip.siteName")).toMatchObject({ status: "confirmed", value: "Edited title" });
     expect(facts.find((item) => item.path === "trip.location")).toMatchObject({ status: "confirmed", value: "New place" });
+  });
+
+  it("strips an em dash after the time so the schedule title is the event name", () => {
+    const { content } = ingestEventPlan(
+      "Cabin weekend\nLocation: Denver, CO\n2026-09-04 7:00 PM — group dinner\nLodging: still deciding",
+    );
+    expect(content.schedule?.[0].entries[0]).toMatchObject({ time: "7:00 PM", title: "group dinner" });
+  });
+
+  it("strips en dash and hyphen separators after the time", () => {
+    const enDash = ingestEventPlan("Cabin weekend\n2026-09-04 7:00 PM – group dinner");
+    const hyphen = ingestEventPlan("Cabin weekend\n2026-09-04 7:00 PM - group dinner");
+    expect(enDash.content.schedule?.[0].entries[0].title).toBe("group dinner");
+    expect(hyphen.content.schedule?.[0].entries[0].title).toBe("group dinner");
+  });
+
+  it("keeps schedule titles that start with a word when there is no separator", () => {
+    const { content } = ingestEventPlan("Cabin weekend\n2026-09-04 7:00 PM group dinner");
+    expect(content.schedule?.[0].entries[0]).toMatchObject({ time: "7:00 PM", title: "group dinner" });
   });
 
   it("requires explicit review before publishing and strips private review metadata", () => {
