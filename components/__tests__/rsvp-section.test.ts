@@ -1,11 +1,16 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RsvpSection } from "@/components/sections/rsvp";
 import { getGuests } from "@/lib/rsvp-actions";
 
 vi.mock("@/components/rsvp-form", () => ({
-  RsvpForm: () => createElement("div", { "data-rsvp-form": "mock" }),
+  RsvpForm: ({ sample, preview }: { sample?: boolean; preview?: boolean }) =>
+    createElement("div", {
+      "data-rsvp-form": "mock",
+      "data-sample": String(Boolean(sample)),
+      "data-preview": String(Boolean(preview)),
+    }),
 }));
 
 vi.mock("@/lib/rsvp-actions", () => ({
@@ -14,6 +19,10 @@ vi.mock("@/lib/rsvp-actions", () => ({
 }));
 
 describe("RsvpSection sample copy", () => {
+  beforeEach(() => {
+    vi.mocked(getGuests).mockClear();
+  });
+
   it("does not tell demo visitors to come back and update a saved RSVP", async () => {
     const html = renderToStaticMarkup(
       await RsvpSection({ sample: true, pollActivities: [] }),
@@ -36,6 +45,20 @@ describe("RsvpSection sample copy", () => {
     expect(html).not.toMatch(/preview of the guest RSVP form/i);
     expect(html).toMatch(/>RSVP</);
     expect(html).toContain("No one&#x27;s on the list yet. Add yours above.");
+  });
+
+  it("uses live guest copy on a host preview that is not /demo", async () => {
+    const html = renderToStaticMarkup(
+      await RsvpSection({ preview: true, pollActivities: [] }),
+    );
+    expect(html).toMatch(/come back on this browser/i);
+    expect(html).toContain("No one&#x27;s on the list yet. Add yours above.");
+    expect(html).not.toMatch(/preview of the guest RSVP form/i);
+    expect(html).not.toMatch(/sample list/i);
+    expect(html).not.toMatch(/demo mode/i);
+    expect(html).toContain('data-sample="false"');
+    expect(html).toContain('data-preview="true"');
+    expect(getGuests).not.toHaveBeenCalled();
   });
 
   it("shows guest roster names without private RSVP details", async () => {

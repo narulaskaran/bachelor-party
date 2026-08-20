@@ -9,6 +9,7 @@ export async function RsvpSection({
   airport,
   rsvpConfig = {},
   sample = false,
+  preview = false,
   heading,
   description,
   extras = { flights: Boolean(airport), food: false, votes: pollActivities.length > 0, notes: false },
@@ -17,12 +18,14 @@ export async function RsvpSection({
   airport?: string;
   rsvpConfig?: RsvpConfig;
   sample?: boolean;
+  preview?: boolean;
   heading?: string;
   description?: string;
   extras?: { flights: boolean; food: boolean; votes: boolean; notes: boolean };
 }) {
-  const guests = sample ? [] : await getGuests();
-  const prefill = sample ? null : await getRsvpPrefill();
+  const skipGuestCookie = sample || preview;
+  const guests = skipGuestCookie ? [] : await getGuests();
+  const prefill = skipGuestCookie ? null : await getRsvpPrefill();
   const formKey = prefill
     ? `self:${String(prefill.updatedAt ?? "")}`
     : "new";
@@ -40,6 +43,7 @@ export async function RsvpSection({
         <RsvpForm
           key={formKey}
           sample={sample}
+          preview={preview}
           pollActivities={pollActivities}
           airport={airport}
           rsvpConfig={rsvpConfig}

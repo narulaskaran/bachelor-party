@@ -378,7 +378,7 @@ export function HostEditor({
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                   onChange={(event) => updateTrip("timezone", event.target.value)}
                 >
-                  <option value="">Not set — times stay TBD</option>
+                  <option value="">Not set — timezone stays TBD</option>
                   {EVENT_TIMEZONES.map((zone) => (
                     <option key={zone} value={zone}>
                       {formatTimeZoneLabel(zone)}
@@ -391,7 +391,7 @@ export function HostEditor({
               Guests will see: {formatGuestWhen(trip) ?? "When TBD"}
             </p>
             <p id="date-help" className="text-xs text-muted-foreground">
-              Dates are optional. End date cannot be before start date. No timezone means guests see time TBD — we will not guess America/New_York.
+              Dates are optional. End date cannot be before start date. No timezone means guests see timezone TBD — we will not guess America/New_York.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Location" name="location" value={trip.location ?? ""} onChange={(value) => updateTrip("location", value)} />

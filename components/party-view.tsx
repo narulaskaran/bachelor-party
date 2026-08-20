@@ -17,11 +17,14 @@ import { InitialHashFocus } from "@/components/initial-hash-focus";
 export function PartyView({
   content,
   sample = false,
+  preview = false,
   slug,
 }: {
   content: PartyContent;
   /** Public /demo fixture — RSVP must not read or write a real trip. */
   sample?: boolean;
+  /** Host guest preview — same guest chrome, no cookie reads/writes. */
+  preview?: boolean;
   slug?: string;
 }) {
   const sections = visibleSections(content);
@@ -59,6 +62,7 @@ export function PartyView({
         ) : null}
         <RsvpSection
           sample={sample}
+          preview={preview}
           pollActivities={pollActivities(content)}
           airport={extras.flights ? content.trip.airport : undefined}
           heading={content.rsvp?.heading}

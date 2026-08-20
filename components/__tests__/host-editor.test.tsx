@@ -108,6 +108,9 @@ describe("HostEditor draft review safety", () => {
     fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2026-09-04" } });
     expect(preview().textContent).toMatch(/Fri, Sep 4, 7:00 PM M[DS]T/);
     expect(preview().textContent).not.toMatch(/Sep 4 –/);
+
+    fireEvent.change(screen.getByLabelText("Time zone"), { target: { value: "" } });
+    expect(preview().textContent).toBe("Guests will see: Fri, Sep 4, 7:00 PM · timezone TBD");
   });
 
   it("recomputes saved review facts from the edited canonical fields", async () => {

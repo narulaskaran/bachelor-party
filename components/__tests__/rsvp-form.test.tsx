@@ -89,6 +89,25 @@ describe("RsvpForm", () => {
     expect(screen.queryByRole("link", { name: /create your own trip to collect RSVPs/i })).toBeNull();
   });
 
+  it("host preview looks like a real RSVP and does not show demo copy", async () => {
+    const user = userEvent.setup();
+    render(<RsvpForm preview pollActivities={[]} />);
+
+    expect(screen.queryByText(DEMO_RSVP_MESSAGE)).toBeNull();
+    expect(screen.queryByRole("link", { name: /create your own trip to collect RSVPs/i })).toBeNull();
+    const save = screen.getByRole("button", { name: /^save$/i });
+    expect((save as HTMLButtonElement).disabled).toBe(false);
+
+    await user.type(screen.getByLabelText(/^name$/i), "Alex");
+    await user.click(save);
+    const form = save.closest("form");
+    expect(form).toBeTruthy();
+    fireEvent.submit(form!);
+
+    expect(submitSampleGuestInfo).not.toHaveBeenCalled();
+    expect(submitGuestInfo).not.toHaveBeenCalled();
+  });
+
   it("shows explicit attendance and plus-one controls without exposing other guest details", () => {
     render(
       <RsvpForm

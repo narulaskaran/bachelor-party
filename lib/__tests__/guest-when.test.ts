@@ -3,7 +3,7 @@ import { formatGuestWhen, formatGuestWhere } from "@/lib/guest-when";
 import { scheduleFromRows } from "@/lib/schedule-rows";
 
 describe("formatGuestWhen", () => {
-  it("formats a zoned clock time and keeps timezone-free times as TBD", () => {
+  it("formats a zoned clock time and keeps timezone-free clocks with timezone TBD", () => {
     expect(
       formatGuestWhen({
         siteName: "Dinner",
@@ -18,7 +18,14 @@ describe("formatGuestWhen", () => {
         startDate: "2026-09-04",
         startTime: "7:00 PM",
       }),
-    ).toBe("Fri, Sep 4 · time TBD");
+    ).toBe("Fri, Sep 4, 7:00 PM · timezone TBD");
+    expect(
+      formatGuestWhen({
+        siteName: "Dinner",
+        startDate: "2026-09-04",
+        startTime: "19:00",
+      }),
+    ).toBe("Fri, Sep 4, 7:00 PM · timezone TBD");
   });
 
   it("keeps the end date when a start clock and IANA zone exist", () => {
@@ -31,6 +38,14 @@ describe("formatGuestWhen", () => {
         timezone: "America/Denver",
       }),
     ).toMatch(/Fri, Sep 4 – Sun, Sep 6, 7:00 PM M[DS]T/);
+    expect(
+      formatGuestWhen({
+        siteName: "Cabin weekend",
+        startDate: "2026-09-04",
+        endDate: "2026-09-06",
+        startTime: "19:00",
+      }),
+    ).toBe("Fri, Sep 4 – Sun, Sep 6, 7:00 PM · timezone TBD");
   });
 
   it("keeps a same-day start and end as a single date plus time", () => {

@@ -39,6 +39,7 @@ export function RsvpForm({
   existing,
   rsvpConfig = {},
   sample = false,
+  preview = false,
   extras = { flights: Boolean(airport), food: false, votes: pollActivities.length > 0, notes: false },
 }: {
   pollActivities: Activity[];
@@ -46,8 +47,10 @@ export function RsvpForm({
   existing?: RsvpPrefill | null;
   rsvpConfig?: RsvpConfig;
   sample?: boolean;
+  preview?: boolean;
   extras?: { flights: boolean; food: boolean; votes: boolean; notes: boolean };
 }) {
+  const locked = sample || preview;
   const [state, formAction, isPending] = useActionState(
     sample ? submitSampleGuestInfo : submitGuestInfo,
     null,
@@ -65,14 +68,14 @@ export function RsvpForm({
   }, [state, router]);
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    if (sample) event.preventDefault();
+    if (locked) event.preventDefault();
   }
 
   return (
     <form
-      action={sample ? undefined : formAction}
+      action={locked ? undefined : formAction}
       onSubmit={onSubmit}
-      noValidate={sample}
+      noValidate={locked}
       className="mx-auto max-w-2xl space-y-10"
     >
       {sample ? (

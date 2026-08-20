@@ -32,6 +32,21 @@ describe("trip page polish", () => {
     expect(html).not.toContain("grid-cols-4");
   });
 
+  it("keeps an extracted clock on the hero When line when timezone is unset", () => {
+    const html = renderToStaticMarkup(
+      createElement(Hero, {
+        trip: {
+          siteName: "Friday drinks",
+          startDate: "2026-09-04",
+          startTime: "7:00 PM",
+          location: "The Dead Rabbit, NYC",
+        },
+      }),
+    );
+    expect(html).toContain("Fri, Sep 4, 7:00 PM · timezone TBD");
+    expect(html).not.toContain("Fri, Sep 4 · time TBD");
+  });
+
   it("shows hero Where from address or maps without inventing a place name", () => {
     const addressOnly = renderToStaticMarkup(
       createElement(Hero, {

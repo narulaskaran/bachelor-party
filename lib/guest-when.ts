@@ -36,7 +36,7 @@ export function shortTimeZoneName(timeZone: string, at = new Date()): string {
   }
 }
 
-/** Human when-line for guests. No timezone → clock time stays TBD; never guess a zone. */
+/** Human when-line for guests. Written clocks stay visible; missing timezone stays TBD. Never guess a zone. */
 export function formatGuestWhen(trip: Trip): string | undefined {
   if (!trip.startDate) return undefined;
   const start = formatWeekdayDate(trip.startDate);
@@ -48,10 +48,10 @@ export function formatGuestWhen(trip: Trip): string | undefined {
   const range = end ? `${start} – ${end}` : start;
   const zone = settledTimeZone(trip.timezone);
   const clock = trip.startTime?.trim();
-  if (clock && !zone) return `${range} · time TBD`;
   if (clock && zone) {
     return `${range}, ${formatClockTime(clock)} ${shortTimeZoneName(zone)}`;
   }
+  if (clock) return `${range}, ${formatClockTime(clock)} · timezone TBD`;
   return range;
 }
 
