@@ -10,27 +10,29 @@ const allLinks: {
   label: string;
   section: keyof VisibleSections;
 }[] = [
+  { href: "#rsvp", label: "RSVP", section: "rsvp" },
   { href: "#glance", label: "At a glance", section: "glance" },
   { href: "#do-your-part", label: "Do your part", section: "actionItems" },
   { href: "#schedule", label: "Schedule", section: "schedule" },
   { href: "#activities", label: "Activities", section: "activities" },
   { href: "#lodge", label: "Lodge", section: "lodging" },
   { href: "#pack", label: "Pack", section: "packing" },
-  { href: "#rsvp", label: "RSVP", section: "rsvp" },
 ];
 
 export function SiteNav({
   siteName,
   dateLabel,
   slug,
+  homeHref,
   sections,
 }: {
   siteName?: string;
   dateLabel?: string;
   slug?: string;
+  homeHref?: string;
   sections?: VisibleSections;
 }) {
-  const homeHref = slug ? `/${slug}` : "/";
+  const resolvedHome = homeHref ?? (slug ? `/${slug}` : "/");
   const links = (sections ? allLinks.filter((link) => sections[link.section]) : allLinks).map(
     (link) => ({ href: link.href, label: link.label, focusId: link.href.slice(1) }),
   );
@@ -50,7 +52,7 @@ export function SiteNav({
           </Button>
         ) : null}
         <Link
-          href={homeHref}
+          href={resolvedHome}
           data-marketing-brand={siteName ? undefined : ""}
           className="min-w-0 truncate text-sm font-semibold tracking-tight"
         >

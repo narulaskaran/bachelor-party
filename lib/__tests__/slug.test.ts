@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isReservedSlug, RESERVED_SLUGS, slugFromName, uniqueSlug } from "@/lib/slug";
+import { isReservedSlug, isUnguessableEventSlug, RESERVED_SLUGS, slugFromName, unguessableEventSlug, uniqueSlug } from "@/lib/slug";
 
 describe("slugFromName", () => {
   it("lowercases and kebab-cases a display name", () => {
@@ -33,6 +33,7 @@ describe("uniqueSlug", () => {
     expect(await uniqueSlug("admin", async () => false)).toBe("admin-2");
     expect(await uniqueSlug("api", async () => false)).toBe("api-2");
     expect(await uniqueSlug("demo", async () => false)).toBe("demo-2");
+    expect(await uniqueSlug("g", async () => false)).toBe("g-2");
   });
 
   it("skips reserved names and existing trips together", async () => {
@@ -52,11 +53,21 @@ describe("isReservedSlug", () => {
       "basecamp",
       "login",
       "demo",
+      "g",
     ]) {
       expect(isReservedSlug(slug)).toBe(true);
       expect(RESERVED_SLUGS).toContain(slug);
     }
     expect(isReservedSlug("jackson-hole-26")).toBe(false);
     expect(isReservedSlug("admin-2")).toBe(false);
+  });
+});
+
+describe("unguessableEventSlug", () => {
+  it("is a random guest path, not the event name", () => {
+    const slug = unguessableEventSlug();
+    expect(isUnguessableEventSlug(slug)).toBe(true);
+    expect(slug).not.toContain("cabin");
+    expect(unguessableEventSlug()).not.toBe(slug);
   });
 });

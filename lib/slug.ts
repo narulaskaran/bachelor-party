@@ -1,4 +1,7 @@
+import { randomBytes } from "node:crypto";
+
 const SLUG_MAX = 80;
+const GUEST_SLUG_BYTES = 8;
 
 /**
  * First path segments that already have handlers (or a special built-in
@@ -9,6 +12,7 @@ const SLUG_MAX = 80;
  * - rsvp, schedule, activities, basecamp — redirects to `/#…`
  * - login — historical `/login`; would collide if restored
  * - demo — built-in demo trip at `/demo`
+ * - g — guest invite URLs (`/g/:token`)
  */
 export const RESERVED_SLUGS = [
   "activities",
@@ -16,6 +20,7 @@ export const RESERVED_SLUGS = [
   "api",
   "basecamp",
   "demo",
+  "g",
   "login",
   "rsvp",
   "schedule",
@@ -29,6 +34,18 @@ export function isReservedSlug(slug: string): boolean {
 
 export const RESERVED_SLUG_MESSAGE =
   `slug is reserved (collides with an app route: ${RESERVED_SLUGS.join(", ")})`;
+
+/**
+ * Unguessable guest/host path for events created from the site.
+ * API/CLI can still pass an explicit slug; humans should not need a memorable URL.
+ */
+export function unguessableEventSlug(): string {
+  return `e${randomBytes(GUEST_SLUG_BYTES).toString("hex")}`;
+}
+
+export function isUnguessableEventSlug(slug: string): boolean {
+  return /^e[0-9a-f]{16}$/.test(slug);
+}
 
 /** Lowercase kebab-case from a display name. Empty if nothing usable remains. */
 export function slugFromName(name: string): string {

@@ -8,11 +8,22 @@ import {
 import { isInvertedDateRange } from "@/lib/trip-dates";
 
 describe("partyContentSchema", () => {
-  it("accepts siteName-only content", () => {
-    const parsed = partyContentSchema.safeParse({
-      trip: { siteName: "Jackson Hole '26" },
-    });
-    expect(parsed.success).toBe(true);
+  it("accepts IANA timezones and rejects abbreviations on new content", () => {
+    expect(
+      partyContentSchema.safeParse({ trip: { siteName: "Cabin", timezone: "America/Denver" } }).success,
+    ).toBe(true);
+    expect(
+      partyContentSchema.safeParse({ trip: { siteName: "Cabin", timezone: "ET" } }).success,
+    ).toBe(false);
+  });
+
+  it("accepts night-out and weekend presets on the same Event shape", () => {
+    expect(
+      partyContentSchema.safeParse({ preset: "night-out", trip: { siteName: "Dinner" } }).success,
+    ).toBe(true);
+    expect(
+      partyContentSchema.safeParse({ preset: "weekend", trip: { siteName: "Cabin" } }).success,
+    ).toBe(true);
   });
 
   it("defaults kind to absent (read as trip) and rejects event", () => {
@@ -46,7 +57,7 @@ describe("partyContentSchema", () => {
   });
 
   it("rejects reserved app-route slugs", () => {
-    for (const slug of ["admin", "api", "rsvp", "schedule", "activities", "basecamp", "login", "demo"]) {
+    for (const slug of ["admin", "api", "rsvp", "schedule", "activities", "basecamp", "login", "demo", "g"]) {
       const parsed = createPartySchema.safeParse({
         slug,
         content: { trip: { siteName: "Nope" } },

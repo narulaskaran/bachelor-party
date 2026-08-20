@@ -22,6 +22,7 @@ import {
   type GuestPatch,
   type RsvpPrefill,
 } from "@/lib/merge-guest";
+import { guestVisibleRoster } from "@/lib/roster-visibility";
 
 const prefValues = ["hyped", "fine", "pass"] as const;
 
@@ -83,6 +84,7 @@ const guestSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80),
   attendance: z.string().optional(),
   partySize: z.string().optional(),
+  plusOneCount: z.string().optional(),
   plusOneName: z.string().trim().max(80).optional(),
   phone: z.string().trim().max(40).optional(),
   arrivalFlight: z.string().trim().max(40).optional(),
@@ -120,6 +122,7 @@ export async function submitGuestInfo(
     name: formData.get("name") ?? undefined,
     attendance: formData.get("attendance") ?? undefined,
     partySize: formData.get("partySize") ?? undefined,
+    plusOneCount: formData.get("plusOneCount") ?? undefined,
     plusOneName: formData.get("plusOneName") || undefined,
     phone: formData.get("phone") || undefined,
     arrivalFlight: formData.get("arrivalFlight") || undefined,
@@ -137,6 +140,7 @@ export async function submitGuestInfo(
     {
       attendance: parsed.data.attendance,
       partySize: parsed.data.partySize,
+      plusOneCount: parsed.data.plusOneCount,
       plusOneName: parsed.data.plusOneName,
     },
     current.content.rsvp,
@@ -204,6 +208,7 @@ export async function submitGuestInfo(
 
   revalidatePath("/");
   revalidatePath(`/${current.slug}`);
+  if (current.guestPath) revalidatePath(current.guestPath);
   return { ok: true };
 }
 
@@ -213,11 +218,15 @@ export async function getGuests() {
   if (!current || !db || current.partyId === "demo") return [];
   try {
     const guests = await db
-      .select({ id: schema.guests.id, name: schema.guests.name })
+      .select({
+        id: schema.guests.id,
+        name: schema.guests.name,
+        attendanceStatus: schema.guests.attendanceStatus,
+      })
       .from(schema.guests)
       .where(and(eq(schema.guests.partyId, current.partyId)))
       .orderBy(schema.guests.name);
-    return guests.map(({ id, name }) => ({ id, name }));
+    return guestVisibleRoster(guests);
   } catch (err) {
     console.error("getGuests failed", err);
     return [];

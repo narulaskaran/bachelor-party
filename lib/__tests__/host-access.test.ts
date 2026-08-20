@@ -389,12 +389,47 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
 
     const result = await publishHostDraft("cabin-weekend");
 
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, guestUrl: "/cabin-weekend" });
     expect(mem.parties[0].content).toMatchObject({
       trip: { siteName: "Ready to publish" },
     });
     expect(mem.parties[0].published).toBe(true);
     expect((mem.parties[0].content as { draftReview?: unknown }).draftReview).toBeUndefined();
+  });
+
+  it("marks a critical republish as updated without resetting RSVPs", async () => {
+    const mem = createMemoryDb();
+    const first = {
+      kind: "trip" as const,
+      trip: { siteName: "Cabin Weekend", startDate: "2026-09-04", location: "Denver" },
+    };
+    mem.seedParty({
+      id: 9,
+      slug: "cabin-weekend",
+      adminToken: "host-tok",
+      content: first,
+      draftContent: {
+        ...first,
+        trip: { ...first.trip, startDate: "2026-09-05", location: "Boulder" },
+        draftReview: {
+          acknowledged: true,
+          facts: [{ path: "trip.siteName", label: "Event name", status: "confirmed", value: "Cabin Weekend" }],
+        },
+      },
+      published: true,
+    });
+    mem.seedGuest({ partyId: 9, name: "Mina", attendanceStatus: "attending", partySize: 2 });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
+
+    const result = await publishHostDraft("cabin-weekend");
+    expect(result).toEqual({ ok: true, guestUrl: "/cabin-weekend" });
+    expect(mem.parties[0].content).toMatchObject({
+      trip: { startDate: "2026-09-05", location: "Boulder" },
+      guestUpdate: { fields: ["When", "Where"] },
+    });
+    expect(mem.guests).toHaveLength(1);
+    expect(mem.guests[0]).toMatchObject({ name: "Mina", attendanceStatus: "attending", partySize: 2 });
   });
 
   it("blocks publishing when the host has not acknowledged the fact review", async () => {

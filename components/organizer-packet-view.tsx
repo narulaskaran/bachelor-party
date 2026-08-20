@@ -102,14 +102,12 @@ export function OrganizerPacketView({
     <div className="space-y-6">
       <div>
         <h2 id="create-trip-heading" tabIndex={-1} className={sectionTitleClass}>
-          Trip created
+          Event created
         </h2>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Your private draft is ready. Review the extracted facts, correct the
-          copy or presentation, preview it, and publish only when it is right.
-          Copy the invite link and credentials now; the host key will not be
-          shown again. You can add dates, lodge, and a schedule in the review
-          workspace, then pick key events so the crew can scan the headlines.
+          Your private draft is ready. Review the extracted facts, fill in what
+          you know, preview the guest page, then publish. Copy the invite now;
+          the host key will not be shown again.
         </p>
       </div>
 
@@ -136,7 +134,7 @@ export function OrganizerPacketView({
         <CopyField
           label="Host key"
           value={packet.adminToken}
-          hint="Keep this to yourself. You'll need it to pick key events and to change the trip via the API. We can't show it again."
+          hint="Keep this to yourself. Open host tools to edit and publish. We can't show it again."
         />
       </div>
 

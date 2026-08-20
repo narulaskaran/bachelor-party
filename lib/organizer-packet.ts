@@ -4,8 +4,9 @@ export function organizerPacket(
   request: Request,
   party: { slug: string; password: string; adminToken: string | null },
 ) {
+  const origin = publicOriginFromRequest(request);
   return {
-    url: `${publicOriginFromRequest(request)}/${party.slug}`,
+    url: `${origin}/${party.slug}/host`,
     slug: party.slug,
     password: party.password,
     adminToken: party.adminToken,
@@ -14,5 +15,5 @@ export function organizerPacket(
 
 /** Invite + guest password only — never the host key. */
 export function groupInviteText(packet: { url: string; password: string }): string {
-  return `Here's the trip:\n${packet.url}\nPassword: ${packet.password}`;
+  return `Here's the event:\n${packet.url}\nPassword: ${packet.password}`;
 }

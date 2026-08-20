@@ -11,6 +11,7 @@ export async function RsvpSection({
   sample = false,
   heading,
   description,
+  extras = { flights: Boolean(airport), food: false, votes: pollActivities.length > 0, notes: false },
 }: {
   pollActivities: Activity[];
   airport?: string;
@@ -18,6 +19,7 @@ export async function RsvpSection({
   sample?: boolean;
   heading?: string;
   description?: string;
+  extras?: { flights: boolean; food: boolean; votes: boolean; notes: boolean };
 }) {
   const guests = sample ? [] : await getGuests();
   const prefill = sample ? null : await getRsvpPrefill();
@@ -30,10 +32,8 @@ export async function RsvpSection({
       <h2 className={sectionTitleClass}>{heading || "RSVP"}</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         {description || (sample
-          ? "Preview of the guest RSVP form — flights, food, and votes."
-          : airport
-            ? "Flights, food, and votes — takes two minutes. Come back on this browser to update. Leave a field blank to keep what you already saved."
-            : "Name, food, and anything else — takes two minutes. Come back on this browser to update. Leave a field blank to keep what you already saved.")}
+          ? "Preview of the guest RSVP form."
+          : "Yes, maybe, or no — takes one minute. Come back on this browser to update.")}
       </p>
 
       <div className="mt-8">
@@ -44,6 +44,7 @@ export async function RsvpSection({
           airport={airport}
           rsvpConfig={rsvpConfig}
           existing={prefill}
+          extras={extras}
         />
       </div>
 
@@ -63,6 +64,9 @@ export async function RsvpSection({
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold tracking-tight">
                     {guest.name}
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">
+                      {guest.attendanceStatus === "maybe" ? "Maybe" : "Yes"}
+                    </span>
                   </CardTitle>
                 </CardHeader>
               </Card>

@@ -14,6 +14,7 @@ export type RsvpResponse = {
 export type RsvpSubmission = {
   attendance?: unknown;
   partySize?: unknown;
+  plusOneCount?: unknown;
   plusOneName?: unknown;
 };
 
@@ -38,17 +39,54 @@ export function parseRsvpSubmission(
   input: RsvpSubmission,
   config?: RsvpConfig,
 ): RsvpSubmissionResult {
-  const attendanceStatus = String(input.attendance ?? "attending").trim();
-  if (!isRsvpAttendance(attendanceStatus)) {
-    return { ok: false, error: "Choose attending, maybe, or not attending." };
+  const rawAttendance = String(input.attendance ?? "").trim();
+  if (!isRsvpAttendance(rawAttendance)) {
+    return { ok: false, error: "Choose Yes, Maybe, or No." };
+  }
+  const attendanceStatus = rawAttendance;
+
+  const rawPlusOneName = String(input.plusOneName ?? "").trim();
+  if (rawPlusOneName.length > 80) {
+    return { ok: false, error: "Plus-one name must be 80 characters or fewer." };
+  }
+  const namedPlusOne =
+    attendanceStatus === "attending" && plusOneAllowed(config) && rawPlusOneName
+      ? rawPlusOneName
+      : null;
+
+  const hasPartySizeField =
+    !(input.partySize == null || input.partySize === "") ||
+    !(input.plusOneCount == null || input.plusOneCount === "");
+
+  if (!hasPartySizeField) {
+    const partySize =
+      attendanceStatus === "not-attending" ? 0 : namedPlusOne ? 2 : 1;
+    return {
+      ok: true,
+      value: { attendanceStatus, partySize, plusOneName: namedPlusOne },
+    };
   }
 
-  const rawPartySize = input.partySize == null || input.partySize === "" ? 1 : Number(input.partySize);
-  if (!Number.isInteger(rawPartySize) || rawPartySize < 0) {
+  const rawPlusOneCount =
+    input.plusOneCount == null || input.plusOneCount === ""
+      ? undefined
+      : Number(input.plusOneCount);
+  const rawPartySize =
+    input.partySize == null || input.partySize === ""
+      ? rawPlusOneCount == null
+        ? 1
+        : Number.NaN
+      : Number(input.partySize);
+  const partySizeFromCount =
+    rawPlusOneCount != null && Number.isInteger(rawPlusOneCount) && rawPlusOneCount >= 0
+      ? (attendanceStatus === "not-attending" ? 0 : 1 + rawPlusOneCount)
+      : undefined;
+  const parsedPartySize = partySizeFromCount ?? rawPartySize;
+  if (!Number.isInteger(parsedPartySize) || parsedPartySize < 0) {
     return { ok: false, error: "Party size must be a whole number." };
   }
 
-  const partySize = attendanceStatus === "not-attending" ? 0 : rawPartySize;
+  const partySize = attendanceStatus === "not-attending" ? 0 : parsedPartySize;
   if (attendanceStatus !== "not-attending" && partySize < 1) {
     return { ok: false, error: "Attending guests must include at least one person." };
   }
@@ -61,17 +99,12 @@ export function parseRsvpSubmission(
     return { ok: false, error: "This trip does not allow plus-ones." };
   }
 
-  const rawPlusOneName = String(input.plusOneName ?? "").trim();
-  if (rawPlusOneName.length > 80) {
-    return { ok: false, error: "Plus-one name must be 80 characters or fewer." };
-  }
-
   return {
     ok: true,
     value: {
       attendanceStatus,
       partySize,
-      plusOneName: partySize >= 2 ? rawPlusOneName || null : null,
+      plusOneName: partySize >= 2 ? namedPlusOne : null,
     },
   };
 }

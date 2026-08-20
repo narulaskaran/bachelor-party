@@ -4,6 +4,12 @@ import { countdownLabel, daysUntil } from "@/lib/countdown";
 const noon = (iso: string) => new Date(`${iso}T12:00:00`);
 
 describe("countdownLabel", () => {
+  it("counts days in the event time zone", () => {
+    const now = new Date("2026-08-16T05:00:00Z");
+    expect(daysUntil("2026-08-16", now, "UTC")).toBe(0);
+    expect(daysUntil("2026-08-16", now, "America/Los_Angeles")).toBe(1);
+  });
+
   it("says N days to go for a trip a couple of weeks out", () => {
     expect(countdownLabel("2026-08-30", noon("2026-08-16"))).toBe("14 days to go");
   });

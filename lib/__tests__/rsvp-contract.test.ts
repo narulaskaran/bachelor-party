@@ -10,6 +10,21 @@ import {
 describe("RSVP readiness contract", () => {
   const plusOnesAllowed: RsvpConfig = { plusOnePolicy: "allowed", maxPartySize: 4 };
 
+  it("accepts an optional plus-one count without inventing a headcount", () => {
+    expect(parseRsvpSubmission({ attendance: "attending", plusOneCount: "0" }, plusOnesAllowed)).toEqual({
+      ok: true,
+      value: { attendanceStatus: "attending", partySize: 1, plusOneName: null },
+    });
+    expect(parseRsvpSubmission({ attendance: "attending", plusOneCount: "1", plusOneName: "Taylor" }, plusOnesAllowed)).toEqual({
+      ok: true,
+      value: { attendanceStatus: "attending", partySize: 2, plusOneName: "Taylor" },
+    });
+    expect(parseRsvpSubmission({ attendance: "attending", plusOneCount: "1" })).toEqual({
+      ok: false,
+      error: "This trip does not allow plus-ones.",
+    });
+  });
+
   it("accepts each explicit attendance state and a party size", () => {
     expect(parseRsvpSubmission({ attendance: "attending", partySize: "2" }, plusOnesAllowed)).toEqual({
       ok: true,
@@ -74,12 +89,18 @@ describe("RSVP readiness contract", () => {
   it("accepts and normalizes a named plus-one under an explicit allow policy", () => {
     expect(
       parseRsvpSubmission(
-        { attendance: "attending", partySize: "2", plusOneName: "  Taylor  " },
+        { attendance: "attending", plusOneName: "  Taylor  " },
         plusOnesAllowed,
       ),
     ).toEqual({
       ok: true,
       value: { attendanceStatus: "attending", partySize: 2, plusOneName: "Taylor" },
+    });
+    expect(
+      parseRsvpSubmission({ attendance: "maybe", plusOneName: "Taylor" }, plusOnesAllowed),
+    ).toEqual({
+      ok: true,
+      value: { attendanceStatus: "maybe", partySize: 1, plusOneName: null },
     });
   });
 

@@ -9,8 +9,8 @@
  */
 import { countdownLabel } from "@/lib/countdown";
 
-export function Countdown({ startDate }: { startDate: string }) {
-  const label = countdownLabel(startDate);
+export function Countdown({ startDate, timeZone }: { startDate: string; timeZone?: string }) {
+  const label = countdownLabel(startDate, new Date(), timeZone);
   if (!label) return null;
 
   return (

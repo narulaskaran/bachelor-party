@@ -20,6 +20,8 @@ export const parties = pgTable("parties", {
   slug: text("slug").notNull().unique(),
   password: text("password").notNull().unique(),
   adminToken: text("admin_token").unique(), // optional per-party admin API token
+  /** Unguessable guest invite token. Null on legacy password-gated rows. */
+  guestToken: text("guest_token").unique(),
   content: jsonb("content").$type<PartyContent>().notNull(),
   draftContent: jsonb("draft_content").$type<PartyContent>(),
   published: boolean("published").notNull().default(true),

@@ -4,7 +4,9 @@ import {
   isInvertedDateRange,
   optionalDate,
 } from "@/lib/trip-dates";
+import { parseEventPreset, type EventPreset } from "@/lib/event-preset";
 import { ingestEventPlan } from "@/lib/plan-ingestion";
+import { unguessableEventSlug } from "@/lib/slug";
 
 export { END_BEFORE_START_MESSAGE, formatDateLabel, isInvertedDateRange };
 
@@ -20,6 +22,9 @@ export type CreateTripFields = {
   plan?: string;
   startDate?: string;
   endDate?: string;
+  preset?: EventPreset;
+  /** When omitted, the site generates an unguessable slug. API/CLI may still pass a name slug. */
+  slug?: string;
 };
 
 export type CreateTripResult =
@@ -37,12 +42,14 @@ export function createTripRequestInit(fields: CreateTripFields): RequestInit {
   const plan = fields.plan?.trim();
   const startDate = optionalDate(fields.startDate);
   const endDate = optionalDate(fields.endDate);
+  const preset = parseEventPreset(fields.preset);
+  const slug = fields.slug?.trim() || unguessableEventSlug();
   if (plan) {
-    const ingested = ingestEventPlan(plan, { siteName, startDate, endDate });
+    const ingested = ingestEventPlan(plan, { siteName, startDate, endDate, preset });
     return {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: ingested.content }),
+      body: JSON.stringify({ slug, content: ingested.content }),
     };
   }
   const trip: {
@@ -50,7 +57,7 @@ export function createTripRequestInit(fields: CreateTripFields): RequestInit {
     startDate?: string;
     endDate?: string;
     dateLabel?: string;
-  } = { siteName };
+  } = { siteName: siteName || "Untitled event" };
   if (startDate) trip.startDate = startDate;
   if (endDate) trip.endDate = endDate;
   const dateLabel = formatDateLabel(startDate, endDate);
@@ -59,7 +66,16 @@ export function createTripRequestInit(fields: CreateTripFields): RequestInit {
   return {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content: { trip } }),
+    body: JSON.stringify({
+      slug,
+      content: {
+        kind: "trip",
+        preset,
+        presentation: { style: "clean" },
+        trip,
+        rsvp: { plusOnePolicy: "allowed" },
+      },
+    }),
   };
 }
 
@@ -110,7 +126,7 @@ export async function createTripFromUi(
 ): Promise<CreateTripResult> {
   const siteName = fields.siteName.trim();
   const plan = fields.plan?.trim();
-  if (!siteName && !plan) return { ok: false, error: "Give the trip a name." };
+  if (!siteName && !plan) return { ok: false, error: "Paste your notes." };
   if (isInvertedDateRange(fields.startDate, fields.endDate)) {
     return { ok: false, error: END_BEFORE_START_MESSAGE };
   }
@@ -119,7 +135,7 @@ export async function createTripFromUi(
   try {
     res = await fetchImpl(
       CREATE_TRIP_PATH,
-      createTripRequestInit({ ...fields, siteName, plan }),
+      createTripRequestInit({ ...fields, siteName, plan, preset: parseEventPreset(fields.preset) }),
     );
   } catch {
     return { ok: false, error: "Couldn't reach the server. Try again." };

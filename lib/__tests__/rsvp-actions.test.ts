@@ -90,7 +90,7 @@ describe("submitGuestInfo merge upsert", () => {
 
     const result = await submitGuestInfo(
       null,
-      form({ name: "Alex", dietary: "vegetarian" }),
+      form({ name: "Alex", attendance: "attending", dietary: "vegetarian" }),
     );
 
     expect(result).toEqual({ ok: true });
@@ -133,6 +133,7 @@ describe("submitGuestInfo merge upsert", () => {
       null,
       form({
         name: "Alex",
+        attendance: "attending",
         "had:phone": "1",
         phone: "",
         arrivalFlight: "UA 1523",
@@ -210,7 +211,7 @@ describe("submitGuestInfo merge upsert", () => {
 
     const result = await submitGuestInfo(
       null,
-      form({ name: "Sam", phone: "555-0199", notes: "driving" }),
+      form({ name: "Sam", attendance: "attending", phone: "555-0199", notes: "driving" }),
     );
 
     expect(result).toEqual({ ok: true });
@@ -249,6 +250,7 @@ describe("submitGuestInfo merge upsert", () => {
       null,
       form({
         name: "QA Guest",
+        attendance: "attending",
         notes: "impostor",
         arrivalFlight: "DL 1",
       }),
@@ -296,7 +298,7 @@ describe("submitGuestInfo merge upsert", () => {
 
     const result = await submitGuestInfo(
       null,
-      form({ name: "QA Guest", dietary: "vegetarian" }),
+      form({ name: "QA Guest", attendance: "attending", dietary: "vegetarian" }),
     );
 
     expect(result).toEqual({ ok: true });
@@ -353,7 +355,7 @@ describe("submitGuestInfo merge upsert", () => {
 
     const result = await submitGuestInfo(
       null,
-      form({ name: "Alex", notes: "new browser" }),
+      form({ name: "Alex", attendance: "attending", notes: "new browser" }),
     );
 
     expect(result).toEqual({ ok: true });
@@ -392,7 +394,7 @@ describe("sample trip RSVP", () => {
       content: DEMO_PARTY,
     });
 
-    const result = await submitGuestInfo(null, form({ name: "Alex" }));
+    const result = await submitGuestInfo(null, form({ name: "Alex", attendance: "attending" }));
     expect(result).toEqual({ ok: false, error: DEMO_RSVP_MESSAGE });
     expect(mem.guests).toHaveLength(0);
     expect(cookieStore.set).not.toHaveBeenCalled();

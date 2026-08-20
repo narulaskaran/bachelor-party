@@ -14,6 +14,18 @@ export type ResolvedSlugParty =
       id: number | "demo";
       password: string;
       content: PartyContent;
+      guestToken?: string | null;
+    };
+
+export type ResolvedGuestTokenParty =
+  | { status: "missing" }
+  | { status: "unpublished" }
+  | {
+      status: "published";
+      id: number;
+      slug: string;
+      guestToken: string;
+      content: PartyContent;
     };
 
 /**
@@ -56,6 +68,7 @@ export async function resolvePartyBySlug(
           password: schema.parties.password,
           content: schema.parties.content,
           published: schema.parties.published,
+          guestToken: schema.parties.guestToken,
         })
         .from(schema.parties)
         .where(eq(schema.parties.slug, slug))
@@ -67,6 +80,7 @@ export async function resolvePartyBySlug(
           id: row.id,
           password: row.password,
           content: row.content,
+          ...(row.guestToken ? { guestToken: row.guestToken } : {}),
         };
       }
     } catch (err) {
@@ -76,4 +90,37 @@ export async function resolvePartyBySlug(
   }
 
   return { status: "missing" };
+}
+
+/** Resolve a guest invite token (`/g/:token`). Never returns draft content. */
+export async function resolvePartyByGuestToken(
+  token: string,
+  db: Db | null = getDb(),
+): Promise<ResolvedGuestTokenParty> {
+  if (!db || !token) return { status: "missing" };
+  try {
+    const [row] = await db
+      .select({
+        id: schema.parties.id,
+        slug: schema.parties.slug,
+        guestToken: schema.parties.guestToken,
+        content: schema.parties.content,
+        published: schema.parties.published,
+      })
+      .from(schema.parties)
+      .where(eq(schema.parties.guestToken, token))
+      .limit(1);
+    if (!row?.guestToken) return { status: "missing" };
+    if (row.published === false) return { status: "unpublished" };
+    return {
+      status: "published",
+      id: row.id,
+      slug: row.slug,
+      guestToken: row.guestToken,
+      content: row.content,
+    };
+  } catch (err) {
+    console.error("resolvePartyByGuestToken failed", err);
+    throw err;
+  }
 }

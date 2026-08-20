@@ -11,7 +11,7 @@ describe("organizerPacket", () => {
         adminToken: "tok",
       }),
     ).toEqual({
-      url: "https://preview.example/jackson-hole-26",
+      url: "https://preview.example/jackson-hole-26/host",
       slug: "jackson-hole-26",
       password: "secret-pw",
       adminToken: "tok",
@@ -28,7 +28,7 @@ describe("organizerPacket", () => {
           adminToken: "tok",
         },
       ).url,
-    ).toBe("https://party.narula.xyz/jackson-hole-26");
+    ).toBe("https://party.narula.xyz/jackson-hole-26/host");
   });
 
   it("keeps Vercel preview origins so preview packets stay on the preview host", () => {
@@ -43,7 +43,7 @@ describe("organizerPacket", () => {
           adminToken: "tok",
         },
       ).url,
-    ).toBe("https://bachelor-party-eight-git-feat-acme.vercel.app/jackson-hole-26");
+    ).toBe("https://bachelor-party-eight-git-feat-acme.vercel.app/jackson-hole-26/host");
   });
 });
 

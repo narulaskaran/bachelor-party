@@ -1,4 +1,5 @@
 import { resolvePartyBySlug } from "@/lib/resolve-party";
+import { isGuestInviteToken } from "@/lib/guest-invite";
 
 /**
  * Unmatched two-segment path. Rewriting here lets App Router SSR
@@ -22,5 +23,17 @@ export async function partyExists(slug: string): Promise<boolean> {
   const resolved = await resolvePartyBySlug(slug);
   // An unpublished row is private draft state, not a public route. Treat it
   // like a missing trip so the proxy cannot leak its existence.
-  return resolved.status === "open" || resolved.status === "gated";
+  if (resolved.status !== "open" && resolved.status !== "gated") return false;
+  // New R1 events use `/g/:token` as the guest door. The slug is the organizer
+  // workspace (`/{slug}/host`), not a second guest URL.
+  if (resolved.status === "gated" && resolved.guestToken) return false;
+  return true;
+}
+
+/** Guest invite token from `/g/:token`, or null. */
+export function guestInviteTokenFromPathname(pathname: string): string | null {
+  const parts = pathname.slice(1).split("/");
+  if (parts.length !== 2 || parts[0] !== "g") return null;
+  const token = parts[1]?.toLowerCase() ?? "";
+  return isGuestInviteToken(token) ? token : null;
 }

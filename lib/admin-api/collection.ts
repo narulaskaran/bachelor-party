@@ -9,6 +9,7 @@ import { organizerPacket } from "@/lib/organizer-packet";
 import { createPartySchema } from "@/lib/party-schema";
 import { rateLimitCreate } from "@/lib/rate-limit";
 import { slugFromName, uniqueSlug } from "@/lib/slug";
+import { unguessableGuestToken } from "@/lib/guest-invite";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -91,6 +92,7 @@ export async function POST(request: Request) {
   const content = {
     ...parsed.data.content,
     kind: "trip" as const,
+    presentation: parsed.data.content.presentation ?? { style: "clean" as const },
   };
 
   const taken = async (candidate: string) => {
@@ -145,6 +147,18 @@ export async function POST(request: Request) {
   }
 
   const rawAdminToken = randomBytes(16).toString("hex");
+  let guestToken = unguessableGuestToken();
+  const guestTokenTaken = async (value: string) => {
+    const [row] = await db
+      .select({ id: schema.parties.id })
+      .from(schema.parties)
+      .where(eq(schema.parties.guestToken, value))
+      .limit(1);
+    return Boolean(row);
+  };
+  while (await guestTokenTaken(guestToken)) {
+    guestToken = unguessableGuestToken();
+  }
 
   try {
     const [party] = await db
@@ -156,6 +170,7 @@ export async function POST(request: Request) {
         draftContent: content,
         published: false,
         adminToken: rawAdminToken,
+        guestToken,
       })
       .returning();
     const response = NextResponse.json(

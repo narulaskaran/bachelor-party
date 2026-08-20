@@ -63,10 +63,9 @@ with `keyEvent: true`.
 
 Optional `content.packing` is `{ title, note? }[]` — a host packing list.
 Guests check items off in their own browser (`localStorage` keyed by trip
-slug). It is not a shared roster. Author it the same way as `schedule`:
-party content JSON, PATCH, or `bigsend set`. Empty or missing packing hides
-the Pack section and nav link. There is no host editor and no packing
-fields on create.
+slug). It is not a shared roster. Hosts can edit the list in the on-site
+editor; agents can still PATCH or `bigsend set`. Empty or missing packing
+hides the Pack section and nav link.
 
 | Route | Method | Does |
 | --- | --- | --- |

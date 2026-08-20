@@ -35,7 +35,8 @@ describe("messy event plan ingestion", () => {
     expect(content.schedule).toBeUndefined();
     expect(review.facts.find((item) => item.path === "trip.startDate")?.note).toMatch(/Could not use/);
     expect(review.facts.find((item) => item.path === "trip.timezone")?.status).toBe("missing");
-    expect(content.trip.location).toBe("TBD");
+    expect(content.trip.location).toBeUndefined();
+    expect(review.facts.find((item) => item.path === "trip.location")?.status).toBe("missing");
   });
 
   it("preserves explicit structured overrides over extracted values", () => {
@@ -128,5 +129,71 @@ describe("messy event plan ingestion", () => {
     const reviewed = { ...content, draftReview: { ...content.draftReview!, acknowledged: true } };
     expect(reviewComplete(reviewed.draftReview)).toBe(true);
     expect(stripDraftReview(reviewed).draftReview).toBeUndefined();
+  });
+
+  it("does not invent a time, place, address, or headcount from prose", () => {
+    const { content } = ingestEventPlan(
+      "Let's do something fun, maybe 20 people at a place downtown around 7 if we can find a table",
+    );
+    expect(content.trip.startDate).toBeUndefined();
+    expect(content.trip.location).toBeUndefined();
+    expect(content.lodging).toBeUndefined();
+    expect(content.schedule).toBeUndefined();
+    expect(content.rsvp?.maxPartySize).toBeUndefined();
+  });
+
+  it("treats lodging TBD as missing instead of a place name", () => {
+    const { content, review } = ingestEventPlan(
+      "Cabin weekend\nLodging: still deciding\nLocation: unknown",
+    );
+    expect(content.lodging).toBeUndefined();
+    expect(content.trip.location).toBeUndefined();
+    expect(review.facts.find((item) => item.path === "lodging.name")?.status).toBe("missing");
+  });
+
+  it("does not settle abbreviation timezones as logistics", () => {
+    const { content, review } = ingestEventPlan("Dinner\nTimezone: ET\n2026-09-04 7:00 PM — dinner");
+    expect(content.trip.timezone).toBeUndefined();
+    expect(review.facts.find((item) => item.path === "trip.timezone")?.note).toMatch(/IANA/);
+  });
+
+  it("extracts an IANA timezone when the host wrote one", () => {
+    const { content, review } = ingestEventPlan("Dinner\nTimezone: America/Denver");
+    expect(content.trip.timezone).toBe("America/Denver");
+    expect(review.facts.find((item) => item.path === "trip.timezone")?.status).toBe("extracted");
+  });
+
+  it("extracts an explicit pack list without inventing items", () => {
+    const { content } = ingestEventPlan("Cabin weekend\nPack: Government ID, Layers — nights drop below 40");
+    expect(content.packing).toEqual([
+      { title: "Government ID" },
+      { title: "Layers", note: "nights drop below 40" },
+    ]);
+  });
+
+  it("stores night-out and weekend as the same Event with different presets", () => {
+    const night = ingestEventPlan("Thursday dinner", { preset: "night-out" });
+    const weekend = ingestEventPlan("Cabin weekend", { preset: "weekend" });
+    expect(night.content.preset).toBe("night-out");
+    expect(weekend.content.preset).toBe("weekend");
+    expect(night.content.trip.siteName).toBe("Thursday dinner");
+    expect(weekend.content.schedule).toBeUndefined();
+    expect(weekend.content.lodging).toBeUndefined();
+  });
+
+  it("lifts night-out when/where/what onto trip and leaves weekend blocks off", () => {
+    const { content } = ingestEventPlan(
+      "Thursday dinner\nLocation: Rita's\nWhat: First round is on us\n2026-09-04 7:00 PM — drinks\nLodging: still deciding\nPack: Jacket",
+      { preset: "night-out" },
+    );
+    expect(content.preset).toBe("night-out");
+    expect(content.trip.startDate).toBe("2026-09-04");
+    expect(content.trip.startTime).toBe("7:00 PM");
+    expect(content.trip.location).toBe("Rita's");
+    expect(content.trip.tagline).toBe("First round is on us");
+    expect(content.schedule).toBeUndefined();
+    expect(content.lodging).toBeUndefined();
+    expect(content.packing).toBeUndefined();
+    expect(content.presentation?.style).toBe("clean");
   });
 });

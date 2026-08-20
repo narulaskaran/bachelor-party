@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { HostKeyBanner } from "@/components/host-key-banner";
 import { OrganizerRoster } from "@/components/organizer-roster";
 import { PartyView } from "@/components/party-view";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -27,7 +28,7 @@ export default async function HostPage({ params }: Params) {
           <CardHeader className="items-center text-center">
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">Host tools</h1>
             <p className="text-sm text-muted-foreground">
-              Enter the host key from the organizer packet to edit the trip and pick key events.
+              Enter the host key from when you created this event. This is not the guest link.
             </p>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
@@ -52,11 +53,13 @@ export default async function HostPage({ params }: Params) {
             Check every extracted fact, leave unknown logistics as TBD, make copy or presentation changes, preview the same draft, then explicitly publish.
           </p>
         </div>
+        <HostKeyBanner slug={slug} />
         <HostEditor
           slug={slug}
           initial={editor.content}
           published={editor.published}
           sample={editor.sample}
+          guestUrl={editor.guestUrl}
           save={saveHostDraft}
           publish={publishHostDraft}
         />

@@ -47,7 +47,12 @@ describe("tripPathFromInput", () => {
     expect(tripPathFromInput("jackson-hole-26")).toBe("/jackson-hole-26");
   });
 
-  it("returns null when nothing usable remains", () => {
-    expect(tripPathFromInput("")).toBeNull();
+  it("returns /g/{token} for a guest invite URL or raw token", () => {
+    expect(tripPathFromInput("https://example.com/g/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).toBe(
+      "/g/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    );
+    expect(tripPathFromInput("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")).toBe(
+      "/g/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    );
   });
 });

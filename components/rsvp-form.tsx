@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { submitGuestInfo, submitSampleGuestInfo } from "@/lib/rsvp-actions";
 import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { rsvpFieldDefaults, type RsvpPrefill } from "@/lib/merge-guest";
-import { plusOneAllowed, rsvpMaxPartySize } from "@/lib/rsvp-contract";
+import { plusOneAllowed } from "@/lib/rsvp-contract";
 import type { Activity, RsvpConfig } from "@/lib/party-types";
 import { VoteActivityGroup } from "@/components/vote-activity-group";
 
@@ -39,12 +39,14 @@ export function RsvpForm({
   existing,
   rsvpConfig = {},
   sample = false,
+  extras = { flights: Boolean(airport), food: false, votes: pollActivities.length > 0, notes: false },
 }: {
   pollActivities: Activity[];
   airport?: string;
   existing?: RsvpPrefill | null;
   rsvpConfig?: RsvpConfig;
   sample?: boolean;
+  extras?: { flights: boolean; food: boolean; votes: boolean; notes: boolean };
 }) {
   const [state, formAction, isPending] = useActionState(
     sample ? submitSampleGuestInfo : submitGuestInfo,
@@ -53,6 +55,7 @@ export function RsvpForm({
   const router = useRouter();
   const defaults = rsvpFieldDefaults(existing);
   const allowPlusOne = plusOneAllowed(rsvpConfig);
+  const [attendance, setAttendance] = useState<string>(defaults.attendanceStatus ?? "");
 
   useEffect(() => {
     if (state?.ok) {
@@ -85,12 +88,13 @@ export function RsvpForm({
             id="name"
             name="name"
             required={!sample}
-            placeholder="Full name"
+            placeholder="Your name"
             defaultValue={defaults.name}
+            className="min-h-11 h-11"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone</Label>
+          <Label htmlFor="phone">Phone (optional)</Label>
           <HadField name="phone" value={existing?.phone} />
           <Input
             id="phone"
@@ -98,6 +102,7 @@ export function RsvpForm({
             type="tel"
             placeholder="(555) 555-5555"
             defaultValue={defaults.phone}
+            className="min-h-11 h-11"
           />
         </div>
       </section>
@@ -106,11 +111,11 @@ export function RsvpForm({
         <Eyebrow>Attendance</Eyebrow>
         <fieldset role="group" aria-label="Attendance" className="space-y-3">
           <legend className="sr-only">Attendance</legend>
-          {[
-            ["attending", "Attending"],
+          {([
+            ["attending", "Yes"],
             ["maybe", "Maybe"],
-            ["not-attending", "Not attending"],
-          ].map(([value, label]) => (
+            ["not-attending", "No"],
+          ] as const).map(([value, label]) => (
             <label key={value} className="flex min-h-11 items-center gap-3 rounded-md border border-border px-3 py-2 text-sm">
               <input
                 type="radio"
@@ -118,43 +123,28 @@ export function RsvpForm({
                 value={value}
                 defaultChecked={defaults.attendanceStatus === value}
                 required={!sample}
+                onChange={() => setAttendance(value)}
               />
               {label}
             </label>
           ))}
         </fieldset>
-        <div className="space-y-2">
-          <Label htmlFor="partySize">Party size</Label>
-          <Input
-            id="partySize"
-            name="partySize"
-            type="number"
-            min={0}
-            max={rsvpMaxPartySize(rsvpConfig)}
-            defaultValue={defaults.partySize}
-            required={!sample}
-          />
-          <p className="text-xs text-muted-foreground">
-            {allowPlusOne
-              ? "Include yourself and any plus-one."
-              : "This trip does not allow plus-ones."}
-          </p>
-        </div>
-        {allowPlusOne ? (
+        {allowPlusOne && attendance === "attending" ? (
           <div className="space-y-2">
-            <Label htmlFor="plusOneName">Plus-one name</Label>
+            <Label htmlFor="plusOneName">Plus-one name (optional)</Label>
             <HadField name="plusOneName" value={existing?.plusOneName} />
             <Input
               id="plusOneName"
               name="plusOneName"
               placeholder="Optional"
               defaultValue={defaults.plusOneName}
+              className="min-h-11 h-11"
             />
           </div>
         ) : null}
       </section>
 
-      {airport ? (
+      {extras.flights && airport ? (
       <section className="space-y-4 border-t border-border pt-8">
         <Eyebrow>Flights</Eyebrow>
         <p className="text-sm text-muted-foreground">
@@ -205,6 +195,7 @@ export function RsvpForm({
       </section>
       ) : null}
 
+      {extras.food ? (
       <section className="space-y-4 border-t border-border pt-8">
         <Eyebrow>Food</Eyebrow>
         <div className="space-y-2">
@@ -218,8 +209,9 @@ export function RsvpForm({
           />
         </div>
       </section>
+      ) : null}
 
-      {pollActivities.length > 0 ? (
+      {extras.votes && pollActivities.length > 0 ? (
       <section className="space-y-2 border-t border-border pt-8">
         <Eyebrow>Votes</Eyebrow>
         <p className="text-sm text-muted-foreground">
@@ -237,6 +229,7 @@ export function RsvpForm({
       </section>
       ) : null}
 
+      {extras.notes ? (
       <section className="space-y-4 border-t border-border pt-8">
         <Eyebrow>Notes</Eyebrow>
         <div className="space-y-2">
@@ -250,6 +243,7 @@ export function RsvpForm({
           />
         </div>
       </section>
+      ) : null}
 
       {sample ? null : state?.error ? (
         <Alert variant="destructive">
@@ -269,7 +263,7 @@ export function RsvpForm({
         className={
           sample
             ? "min-h-11 w-full disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
-            : "w-full"
+            : "min-h-11 w-full"
         }
         disabled={sample || isPending}
         aria-describedby={sample ? "demo-rsvp-banner" : undefined}
