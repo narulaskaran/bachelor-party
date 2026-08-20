@@ -27,6 +27,26 @@ describe("messy event plan ingestion", () => {
     expect(review.facts.find((item) => item.path === "lodging.name")?.status).toBe("missing");
   });
 
+  it("keeps a timezone-free extracted clock explicitly unconfirmed in review facts", () => {
+    const { content, review } = ingestEventPlan("Event: Dinner\n2026-09-04 7:00 PM — dinner");
+    const initialWhen = review.facts.find((item) => item.path === "trip.startDate");
+    expect(content.trip.startTime).toBe("7:00 PM");
+    expect(initialWhen).toMatchObject({
+      status: "extracted",
+      value: "2026-09-04",
+    });
+
+    const editedFacts = draftFactsForContent(
+      { ...content, trip: { ...content.trip, startTime: "8:00 PM" } },
+      review.facts,
+    );
+    expect(editedFacts.find((item) => item.path === "trip.startDate")).toMatchObject({
+      status: "extracted",
+      value: "2026-09-04 8:00 PM",
+    });
+    expect(editedFacts.find((item) => item.path === "trip.startDate")?.note).toMatch(/timezone needed/i);
+  });
+
   it("does not turn malformed dates or timezone-free times into settled facts", () => {
     const { content, review } = ingestEventPlan(
       "Trip: Lake house\nDate: 2026-02-30\nDinner at 7:00 PM\nWhere: TBD",

@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HostEditor } from "@/components/host-editor";
 import { hostKeyStorageKey, rememberHostKey } from "@/lib/host-key-storage";
+import { ingestEventPlan } from "@/lib/plan-ingestion";
 import type { PartyContent } from "@/lib/party-types";
 
 const initial: PartyContent = {
@@ -114,6 +115,25 @@ describe("HostEditor draft review safety", () => {
     fireEvent.change(screen.getByLabelText("Time zone"), { target: { value: "" } });
     expect(preview().textContent).toBe("Guests will see: Fri, Sep 4 · time TBD");
     expect(preview().textContent).not.toMatch(/7:00 PM/);
+  });
+
+  it("marks an extracted timezone-free clock as needing timezone confirmation", () => {
+    const { content } = ingestEventPlan("Event: Dinner\n2026-09-04 7:00 PM — dinner");
+    render(
+      <HostEditor
+        slug="dinner"
+        initial={content}
+        published={false}
+        save={vi.fn(async () => ({ ok: true as const }))}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+
+    const whenFact = screen.getByText("When").closest("li");
+    expect(whenFact?.textContent).toMatch(/extracted/i);
+    expect(whenFact?.textContent).toMatch(/timezone needed/i);
+    expect(whenFact?.textContent).not.toMatch(/confirmed/i);
+    expect(screen.getByText("Guests will see: Fri, Sep 4 · time TBD")).toBeTruthy();
   });
 
   it("recomputes saved review facts from the edited canonical fields", async () => {

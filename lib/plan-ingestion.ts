@@ -100,6 +100,12 @@ export function draftFactsForContent(content: PartyContent, previousFacts: Draft
     "lodging.name": "Lodging stays TBD until you confirm it.",
     schedule: "Add dated times only when they are explicit in the plan.",
   };
+  const clock = content.trip.startTime?.trim();
+  const timezone = settledTimeZone(content.trip.timezone);
+  const timezoneNeededForClock = Boolean(clock && !timezone);
+  const clockNote = timezoneNeededForClock
+    ? `Extracted clock ${clock}; timezone needed before sharing.`
+    : undefined;
 
   const weekend = (content.preset ?? "weekend") === "weekend" || Boolean(values["lodging.name"] || values.schedule);
   const fields = weekend ? [...CORE_FACTS, ...WEEKEND_FACTS] : [...CORE_FACTS];
@@ -108,15 +114,24 @@ export function draftFactsForContent(content: PartyContent, previousFacts: Draft
     const value = values[path];
     const previous = previousByPath.get(path);
     const changed = previous !== undefined && previous.value !== value;
+    const timezonePending = path === "trip.startDate" && timezoneNeededForClock;
+    const wasTimezonePending = path === "trip.startDate" && /timezone needed/i.test(previous?.note ?? "");
     const next: DraftFact = {
       path,
       label,
-      status: value ? (changed ? "confirmed" : previous?.status ?? "confirmed") : "missing",
+      status: value
+        ? timezonePending
+          ? "extracted"
+          : changed || wasTimezonePending
+            ? "confirmed"
+            : previous?.status ?? "confirmed"
+        : "missing",
     };
     if (value) next.value = value;
     if (!changed && previous?.source) next.source = previous.source;
     if (!value) next.note = previous?.note ?? notes[path];
-    else if (!changed && previous?.note) next.note = previous.note;
+    else if (timezonePending) next.note = clockNote;
+    else if (!changed && !wasTimezonePending && previous?.note) next.note = previous.note;
     return next;
   });
 }
