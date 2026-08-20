@@ -88,6 +88,17 @@ describe("messy event plan ingestion", () => {
     expect(content.schedule?.[0].entries[0]).toMatchObject({ time: "7:00 PM", title: "group dinner" });
   });
 
+  it("uses the weekday as the day label instead of Plan for a one-day dated plan", () => {
+    const { content } = ingestEventPlan("Cabin weekend\n2026-09-04 7:00 PM — group dinner");
+    expect(content.schedule).toHaveLength(1);
+    expect(content.schedule?.[0]).toMatchObject({
+      date: "2026-09-04",
+      weekday: "Friday",
+      label: "Friday",
+    });
+    expect(content.schedule?.[0].label).not.toBe("Plan");
+  });
+
   it("requires explicit review before publishing and strips private review metadata", () => {
     const { content } = ingestEventPlan("Event: Cabin Weekend");
     expect(reviewComplete(content.draftReview)).toBe(false);

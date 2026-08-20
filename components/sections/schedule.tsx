@@ -27,6 +27,7 @@ export function ScheduleSection({
       <div className="mx-auto mt-8 flex max-w-3xl flex-col">
         {schedule.map((day, dayIndex) => {
           const marked = keyEventCount(day.entries);
+          const headingLabel = guestDayLabel(day);
           return (
             <section key={day.key} aria-labelledby={`${day.key}-heading`}>
               <div
@@ -39,7 +40,9 @@ export function ScheduleSection({
                   </span>
                   <span className="text-lg font-semibold tracking-tight">{day.weekday}</span>
                   <span className={kickerClass}>{formatDate(day.date)}</span>
-                  <span className="text-sm text-muted-foreground">{day.label}</span>
+                  {headingLabel ? (
+                    <span className="text-sm text-muted-foreground">{headingLabel}</span>
+                  ) : null}
                   {picker && marked > 0 ? (
                     <span className="text-xs text-muted-foreground">
                       {marked} key event{marked === 1 ? "" : "s"}
@@ -120,4 +123,13 @@ export function ScheduleSection({
 function formatDate(iso: string) {
   const date = new Date(`${iso}T00:00:00`);
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/** Hide placeholder or weekday-duplicate labels so guests don't see "Plan" or "Friday Friday". */
+function guestDayLabel(day: ScheduleDay): string | undefined {
+  const label = day.label.trim();
+  if (!label || /^plan$/i.test(label) || label.toLowerCase() === day.weekday.toLowerCase()) {
+    return undefined;
+  }
+  return label;
 }

@@ -43,6 +43,46 @@ describe("ScheduleSection", () => {
     expect(html).toContain("bg-primary");
     expect(html).toContain("11:00 AM");
   });
+
+  it("keeps a human day label and omits Plan or a weekday duplicate", () => {
+    const withArrival = renderToStaticMarkup(createElement(ScheduleSection, { schedule: [friday] }));
+    expect(withArrival).toContain("Arrival day");
+
+    const ingested = renderToStaticMarkup(
+      createElement(ScheduleSection, {
+        schedule: [
+          {
+            key: "2026-09-04",
+            date: "2026-09-04",
+            weekday: "Friday",
+            label: "Plan",
+            timed: true,
+            entries: [{ time: "7:00 PM", title: "group dinner" }],
+          },
+        ],
+      }),
+    );
+    expect(ingested).toContain("Friday");
+    expect(ingested).toContain("Sep 4");
+    expect(ingested).not.toContain("Plan");
+    expect((ingested.match(/Friday/g) ?? []).length).toBe(1);
+
+    const weekdayAsLabel = renderToStaticMarkup(
+      createElement(ScheduleSection, {
+        schedule: [
+          {
+            key: "2026-09-04",
+            date: "2026-09-04",
+            weekday: "Friday",
+            label: "Friday",
+            timed: true,
+            entries: [{ time: "7:00 PM", title: "group dinner" }],
+          },
+        ],
+      }),
+    );
+    expect((weekdayAsLabel.match(/Friday/g) ?? []).length).toBe(1);
+  });
 });
 
 describe("HostScheduleView", () => {

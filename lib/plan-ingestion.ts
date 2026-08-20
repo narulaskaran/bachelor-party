@@ -132,7 +132,7 @@ function scheduleFromPlan(plan: string, dates: string[]): ScheduleDay[] | undefi
     if (!title) continue;
     const existing = days.get(date);
     const weekday = new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
-    const day = existing ?? { key: date, date, weekday, label: "Plan", timed: true, entries: [] };
+    const day = existing ?? { key: date, date, weekday, label: weekday, timed: true, entries: [] };
     day.entries.push({ time: timeMatch[0].trim(), title });
     days.set(date, day);
   }
