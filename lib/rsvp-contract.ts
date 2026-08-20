@@ -14,6 +14,7 @@ export type RsvpResponse = {
 export type RsvpSubmission = {
   attendance?: unknown;
   partySize?: unknown;
+  plusOneCount?: unknown;
   plusOneName?: unknown;
 };
 
@@ -43,12 +44,26 @@ export function parseRsvpSubmission(
     return { ok: false, error: "Choose attending, maybe, or not attending." };
   }
 
-  const rawPartySize = input.partySize == null || input.partySize === "" ? 1 : Number(input.partySize);
-  if (!Number.isInteger(rawPartySize) || rawPartySize < 0) {
+  const rawPlusOneCount =
+    input.plusOneCount == null || input.plusOneCount === ""
+      ? undefined
+      : Number(input.plusOneCount);
+  const rawPartySize =
+    input.partySize == null || input.partySize === ""
+      ? rawPlusOneCount == null
+        ? 1
+        : Number.NaN
+      : Number(input.partySize);
+  const partySizeFromCount =
+    rawPlusOneCount != null && Number.isInteger(rawPlusOneCount) && rawPlusOneCount >= 0
+      ? (attendanceStatus === "not-attending" ? 0 : 1 + rawPlusOneCount)
+      : undefined;
+  const parsedPartySize = partySizeFromCount ?? rawPartySize;
+  if (!Number.isInteger(parsedPartySize) || parsedPartySize < 0) {
     return { ok: false, error: "Party size must be a whole number." };
   }
 
-  const partySize = attendanceStatus === "not-attending" ? 0 : rawPartySize;
+  const partySize = attendanceStatus === "not-attending" ? 0 : parsedPartySize;
   if (attendanceStatus !== "not-attending" && partySize < 1) {
     return { ok: false, error: "Attending guests must include at least one person." };
   }

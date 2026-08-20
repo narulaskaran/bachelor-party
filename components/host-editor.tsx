@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { END_BEFORE_START_MESSAGE, formatDateLabel, isInvertedDateRange } from "@/lib/trip-dates";
-import { parseScheduleText, rsvpForDraft, scheduleToText } from "@/lib/draft-publish";
+import { packingToText, parsePackingText, rsvpForDraft, scheduleToText, parseScheduleText } from "@/lib/draft-publish";
+import { EVENT_PRESET_LABELS, parseEventPreset, type EventPreset } from "@/lib/event-preset";
 import { draftFactsForContent } from "@/lib/plan-ingestion";
+import { EVENT_TIMEZONES, formatTimeZoneLabel, settledTimeZone } from "@/lib/timezones";
 import type { DraftFact, PartyContent } from "@/lib/party-types";
 
 export type HostEditorAction =
@@ -40,6 +42,8 @@ export function HostEditor({
   const trip = content.trip;
   const lodging = content.lodging;
   const scheduleText = scheduleToText(content.schedule);
+  const packingText = packingToText(content.packing);
+  const preset = parseEventPreset(content.preset);
 
   function updateTrip(field: keyof typeof trip, value: string) {
     setReviewAcknowledged(false);
@@ -101,6 +105,7 @@ export function HostEditor({
     const next: PartyContent = {
       ...content,
       kind: "trip",
+      preset: parseEventPreset(String(form.get("preset") ?? content.preset)),
       trip: {
         ...content.trip,
         siteName: String(form.get("siteName") ?? "").trim(),
@@ -110,13 +115,15 @@ export function HostEditor({
         dateLabel: formatDateLabel(startDate, endDate),
         location: String(form.get("location") ?? "").trim() || undefined,
         airport: String(form.get("airport") ?? "").trim() || undefined,
-        timezone: String(form.get("timezone") ?? "").trim() || undefined,
+        timezone: settledTimeZone(String(form.get("timezone") ?? "")),
       },
       schedule,
+      packing: parsePackingText(String(form.get("packing") ?? "")),
       rsvp: rsvpForDraft(
         content.rsvp,
         String(form.get("rsvpHeading") ?? ""),
         String(form.get("rsvpDescription") ?? ""),
+        form.get("plusOnes") === "allowed" ? "allowed" : "not-allowed",
       ),
       presentation: {
         style: String(form.get("presentationStyle") ?? "clean") === "editorial" ? "editorial" : "clean",
@@ -198,12 +205,12 @@ export function HostEditor({
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle>Trip editor</CardTitle>
+            <CardTitle>Event editor</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              {sample ? "Sample trip — changes stay in this tab." : published ? "Editing a private draft." : "Unpublished draft — guests cannot see these details."}
+              {sample ? "Sample event — changes stay in this tab." : published ? "Editing a private draft." : "Unpublished draft — guests cannot see these details."}
             </p>
           </div>
-          <span className="rounded-full border px-3 py-1 text-xs font-medium" aria-label={`Trip status: ${published ? "published" : "draft"}`}>
+          <span className="rounded-full border px-3 py-1 text-xs font-medium" aria-label={`Event status: ${published ? "published" : "draft"}`}>
             {published ? "Published + draft" : "Draft — not published"}
           </span>
         </div>
@@ -259,9 +266,26 @@ export function HostEditor({
         </section>
         <form className="space-y-8" onSubmit={submit} onChange={handleFormChange}>
           <fieldset disabled={isPending || sample} className="space-y-6">
-            <legend className="text-lg font-semibold">Trip basics</legend>
+            <legend className="text-lg font-semibold">Event basics</legend>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">Preset</legend>
+              <p className="text-xs text-muted-foreground">Same event, different optional blocks. Empty sections stay hidden for guests.</p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {(["night-out", "weekend"] as EventPreset[]).map((value) => (
+                  <label key={value} className="flex min-h-11 items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                    <input
+                      type="radio"
+                      name="preset"
+                      value={value}
+                      defaultChecked={preset === value}
+                    />
+                    {EVENT_PRESET_LABELS[value]}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Trip title" name="siteName" value={trip.siteName} required onChange={(value) => updateTrip("siteName", value)} />
+              <Field label="Event title" name="siteName" value={trip.siteName} required onChange={(value) => updateTrip("siteName", value)} />
               <Field label="Tagline" name="tagline" value={trip.tagline ?? ""} onChange={(value) => updateTrip("tagline", value)} />
               <div>
                 <Label htmlFor="startDate">Start date</Label>
@@ -276,7 +300,22 @@ export function HostEditor({
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Location" name="location" value={trip.location ?? ""} onChange={(value) => updateTrip("location", value)} />
               <Field label="Airport" name="airport" value={trip.airport ?? ""} onChange={(value) => updateTrip("airport", value)} />
-              <Field label="Time zone" name="timezone" value={trip.timezone ?? ""} onChange={(value) => updateTrip("timezone", value)} placeholder="e.g. America/Denver" />
+              <div>
+                <Label htmlFor="timezone">Time zone</Label>
+                <select
+                  id="timezone"
+                  name="timezone"
+                  defaultValue={settledTimeZone(trip.timezone) ?? ""}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">Not set — times stay TBD</option>
+                  {EVENT_TIMEZONES.map((zone) => (
+                    <option key={zone} value={zone}>
+                      {formatTimeZoneLabel(zone)}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </fieldset>
 
@@ -307,10 +346,18 @@ export function HostEditor({
 
           <fieldset disabled={isPending || sample} className="space-y-3">
             <legend className="text-lg font-semibold">Schedule</legend>
-            <p className="text-sm text-muted-foreground">One event per line: date | weekday | day label | time | event title | optional note. Leave time out for a loose plan.</p>
+            <p className="text-sm text-muted-foreground">One event per line: date | weekday | day label | time | event title | optional note. Leave time out for a loose plan. Hidden for guests when empty.</p>
             <Label htmlFor="schedule-input">Schedule events</Label>
             <Textarea id="schedule-input" name="schedule" defaultValue={scheduleText} rows={8} aria-describedby="schedule-help" />
             <p id="schedule-help" className="text-xs text-muted-foreground">Example: 2026-09-04 | Friday | Arrival | 7:00 PM | Group dinner</p>
+          </fieldset>
+
+          <fieldset disabled={isPending || sample} className="space-y-3">
+            <legend className="text-lg font-semibold">Pack list</legend>
+            <p className="text-sm text-muted-foreground">Host-authored list. Guests check items off in their own browser — not a shared roster. Hidden when empty.</p>
+            <Label htmlFor="packing-input">Pack items</Label>
+            <Textarea id="packing-input" name="packing" defaultValue={packingText} rows={5} aria-describedby="packing-help" />
+            <p id="packing-help" className="text-xs text-muted-foreground">One item per line. Optional note after a pipe: Layers | Nights drop below 40</p>
           </fieldset>
 
           <fieldset disabled={isPending || sample} className="space-y-4">
@@ -320,6 +367,16 @@ export function HostEditor({
               <Label htmlFor="rsvpDescription">RSVP instructions</Label>
               <Textarea id="rsvpDescription" name="rsvpDescription" defaultValue={content.rsvp?.description ?? ""} rows={3} />
             </div>
+            <label className="flex min-h-11 items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                name="plusOnes"
+                value="allowed"
+                defaultChecked={content.rsvp?.plusOnePolicy === "allowed" || content.rsvp?.allowPlusOne === true}
+                className="mt-0.5 size-4 accent-primary"
+              />
+              <span>Allow plus-ones. Guests can add an optional count; this never invents a headcount.</span>
+            </label>
           </fieldset>
 
           {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}

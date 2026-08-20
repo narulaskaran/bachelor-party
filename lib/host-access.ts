@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
+import { guestUpdateForPublish } from "@/lib/guest-update";
 import { reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
 import { cookieAuthenticatesHost, HOST_COOKIE, hostSessionCookie } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
@@ -182,7 +183,14 @@ export async function publishHostDraft(slug: string) {
   if (!parsed.success) return { ok: false as const, error: "Fix the draft before publishing." };
   try {
     const reviewedDraft = { ...parsed.data, kind: "trip" as const };
-    const published = stripDraftReview(reviewedDraft);
+    const published = {
+      ...stripDraftReview(reviewedDraft),
+      guestUpdate: guestUpdateForPublish(
+        auth.loaded.party.content,
+        reviewedDraft,
+        auth.loaded.party.published !== false,
+      ),
+    };
     await auth.loaded.db
       .update(schema.parties)
       .set({ content: published, draftContent: reviewedDraft, published: true, updatedAt: new Date() })

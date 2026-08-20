@@ -116,7 +116,7 @@ describe("RsvpForm", () => {
     expect(screen.getByLabelText("Attending")).toBeTruthy();
     expect(screen.getByLabelText("Maybe")).toBeTruthy();
     expect(screen.getByLabelText("Not attending")).toBeTruthy();
-    expect((screen.getByLabelText(/party size/i) as HTMLInputElement).value).toBe("2");
+    expect((screen.getByLabelText(/^plus-ones$/i) as HTMLInputElement).value).toBe("1");
     expect((screen.getByLabelText(/plus-one name/i) as HTMLInputElement).value).toBe("Taylor");
   });
 });

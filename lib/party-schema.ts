@@ -6,6 +6,7 @@ import {
   isValidCalendarDate,
 } from "@/lib/trip-dates";
 import { isReservedSlug, RESERVED_SLUG_MESSAGE, RESERVED_SLUGS } from "@/lib/slug";
+import { isIanaTimeZone } from "@/lib/timezones";
 
 export {
   END_BEFORE_START_MESSAGE,
@@ -30,7 +31,11 @@ const tripSchema = z
     endDate: calendarDateSchema.optional(),
     dateLabel: z.string().min(1).optional(),
     location: z.string().min(1).optional(),
-    timezone: z.string().min(1).optional(),
+    timezone: z
+      .string()
+      .min(1)
+      .refine(isIanaTimeZone, "Pick a real time zone (for example America/Denver)")
+      .optional(),
     coordinates: z.string().min(1).optional(),
     elevation: z.string().min(1).optional(),
     airport: z.string().min(1).optional(),
@@ -120,11 +125,18 @@ const draftReviewSchema = z.object({
   facts: z.array(draftFactSchema),
 });
 
+const guestUpdateSchema = z.object({
+  at: z.string().min(1),
+  fields: z.array(z.string().min(1)),
+});
+
 export const partyContentSchema = z.object({
   kind: z.literal("trip").optional(),
+  preset: z.enum(["night-out", "weekend"]).optional(),
   trip: tripSchema,
   presentation: z.object({ style: z.enum(["clean", "editorial"]) }).optional(),
   draftReview: draftReviewSchema.optional(),
+  guestUpdate: guestUpdateSchema.optional(),
   rsvp: rsvpConfigSchema.optional(),
   lodging: lodgingSchema.optional(),
   schedule: z.array(scheduleDaySchema).optional(),
@@ -158,6 +170,9 @@ const legacyActivitySchema = activitySchema.extend({
 });
 
 const legacyPartyContentSchema = partyContentSchema.extend({
+  trip: tripSchema.safeExtend({
+    timezone: z.string().min(1).optional(),
+  }),
   lodging: legacyLodgingSchema.optional(),
   activities: z
     .object({

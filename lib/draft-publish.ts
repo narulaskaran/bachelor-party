@@ -1,4 +1,4 @@
-import type { PartyContent, RsvpConfig, ScheduleDay, ScheduleEntry } from "@/lib/party-types";
+import type { PackingItem, PartyContent, RsvpConfig, ScheduleDay, ScheduleEntry } from "@/lib/party-types";
 
 export type DraftPartyState = {
   content: PartyContent;
@@ -123,10 +123,36 @@ export function rsvpForDraft(
   existing: RsvpConfig | undefined,
   heading: string,
   description: string,
+  plusOnePolicy?: "allowed" | "not-allowed",
 ): RsvpConfig {
+  const policy = plusOnePolicy ?? existing?.plusOnePolicy;
   return {
     ...existing,
     heading: heading.trim() || undefined,
     description: description.trim() || undefined,
+    plusOnePolicy: policy,
+    allowPlusOne: policy === "allowed" ? true : policy === "not-allowed" ? false : existing?.allowPlusOne,
   };
+}
+
+export function parsePackingText(value: string): PackingItem[] | undefined {
+  const items = value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [title, note] = line.split("|").map((part) => part.trim());
+      const item: PackingItem = { title };
+      if (note) item.note = note;
+      return item;
+    })
+    .filter((item) => item.title.length > 0);
+  return items.length ? items : undefined;
+}
+
+export function packingToText(packing: PackingItem[] = []): string {
+  return packing
+    .filter((item) => item.title.trim())
+    .map((item) => (item.note ? `${item.title} | ${item.note}` : item.title))
+    .join("\n");
 }

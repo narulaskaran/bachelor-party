@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isReservedSlug, RESERVED_SLUGS, slugFromName, uniqueSlug } from "@/lib/slug";
+import { isReservedSlug, isUnguessableEventSlug, RESERVED_SLUGS, slugFromName, unguessableEventSlug, uniqueSlug } from "@/lib/slug";
 
 describe("slugFromName", () => {
   it("lowercases and kebab-cases a display name", () => {
@@ -58,5 +58,14 @@ describe("isReservedSlug", () => {
     }
     expect(isReservedSlug("jackson-hole-26")).toBe(false);
     expect(isReservedSlug("admin-2")).toBe(false);
+  });
+});
+
+describe("unguessableEventSlug", () => {
+  it("is a random guest path, not the event name", () => {
+    const slug = unguessableEventSlug();
+    expect(isUnguessableEventSlug(slug)).toBe(true);
+    expect(slug).not.toContain("cabin");
+    expect(unguessableEventSlug()).not.toBe(slug);
   });
 });

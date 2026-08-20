@@ -47,7 +47,7 @@ const initial: PartyContent = {
 };
 
 const editableFields = [
-  ["Trip title", "Updated title"],
+  ["Event title", "Updated title"],
   ["Tagline", "Updated tagline"],
   ["Start date", "2026-09-05"],
   ["End date", "2026-09-08"],
@@ -62,6 +62,7 @@ const editableFields = [
   ["Schedule events", "2026-09-04 | Friday | Arrival | 8:00 PM | Dinner"],
   ["RSVP heading", "Reply now"],
   ["RSVP instructions", "Reply by Friday."],
+  ["Pack items", "Government ID | Wallet"],
 ] as const;
 
 describe("HostEditor draft review safety", () => {
@@ -100,7 +101,7 @@ describe("HostEditor draft review safety", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("Trip title"), { target: { value: "Updated title" } });
+    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Updated title" } });
     fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2026-09-05" } });
     fireEvent.change(screen.getByLabelText("Lodging name"), { target: { value: "New cabin" } });
     fireEvent.change(screen.getByLabelText("Schedule events"), {

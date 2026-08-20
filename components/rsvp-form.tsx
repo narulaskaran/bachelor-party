@@ -124,21 +124,22 @@ export function RsvpForm({
           ))}
         </fieldset>
         <div className="space-y-2">
-          <Label htmlFor="partySize">Party size</Label>
-          <Input
-            id="partySize"
-            name="partySize"
-            type="number"
-            min={0}
-            max={rsvpMaxPartySize(rsvpConfig)}
-            defaultValue={defaults.partySize}
-            required={!sample}
-          />
-          <p className="text-xs text-muted-foreground">
-            {allowPlusOne
-              ? "Include yourself and any plus-one."
-              : "This trip does not allow plus-ones."}
-          </p>
+          {allowPlusOne ? (
+            <>
+              <Label htmlFor="plusOneCount">Plus-ones</Label>
+              <Input
+                id="plusOneCount"
+                name="plusOneCount"
+                type="number"
+                min={0}
+                max={Math.max(0, rsvpMaxPartySize(rsvpConfig) - 1)}
+                defaultValue={Math.max(0, (defaults.partySize ?? 1) - 1)}
+              />
+              <p className="text-xs text-muted-foreground">Optional. Leave 0 if you&apos;re coming solo.</p>
+            </>
+          ) : (
+            <input type="hidden" name="partySize" value="1" />
+          )}
         </div>
         {allowPlusOne ? (
           <div className="space-y-2">

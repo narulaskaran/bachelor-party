@@ -138,7 +138,7 @@ describe("GET /", () => {
     expect(html).toContain("Enter your trip");
     expect(html).not.toContain("Try a sample");
     expect(html).not.toContain("Try Demo");
-    expect(html).toContain("Create a trip");
+    expect(html).toContain("Create an event");
     expect(html).toContain("data-landing-page");
     expect(html).toContain('href="#create"');
     expect(html).toContain('href="#enter"');

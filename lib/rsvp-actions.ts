@@ -83,6 +83,7 @@ const guestSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80),
   attendance: z.string().optional(),
   partySize: z.string().optional(),
+  plusOneCount: z.string().optional(),
   plusOneName: z.string().trim().max(80).optional(),
   phone: z.string().trim().max(40).optional(),
   arrivalFlight: z.string().trim().max(40).optional(),
@@ -120,6 +121,7 @@ export async function submitGuestInfo(
     name: formData.get("name") ?? undefined,
     attendance: formData.get("attendance") ?? undefined,
     partySize: formData.get("partySize") ?? undefined,
+    plusOneCount: formData.get("plusOneCount") ?? undefined,
     plusOneName: formData.get("plusOneName") || undefined,
     phone: formData.get("phone") || undefined,
     arrivalFlight: formData.get("arrivalFlight") || undefined,
@@ -137,6 +139,7 @@ export async function submitGuestInfo(
     {
       attendance: parsed.data.attendance,
       partySize: parsed.data.partySize,
+      plusOneCount: parsed.data.plusOneCount,
       plusOneName: parsed.data.plusOneName,
     },
     current.content.rsvp,

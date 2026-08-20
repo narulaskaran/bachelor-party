@@ -75,7 +75,7 @@ describe("homepage trip entry", () => {
     expect(panelEl("enter")).toBeTruthy();
     expectPanel("create", false);
     expectPanel("enter", false);
-    expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();
+    expect(screen.queryByRole("heading", { name: /^create an event$/i })).toBeNull();
     expect(screen.queryByRole("heading", { name: /enter your trip/i })).toBeNull();
     expect(screen.queryByRole("link", { name: /^try a sample$/i })).toBeNull();
     expect(screen.queryByRole("link", { name: /^try demo$/i })).toBeNull();
@@ -99,7 +99,7 @@ describe("homepage trip entry", () => {
     expect(html).not.toContain("Trip Logistics, Handled");
     expect(html).not.toContain("One Password");
     expect(html).not.toContain("Every Trip Detail");
-    expect(html).toContain("One private page for the trip");
+    expect(html).toContain("Paste a messy plan");
   });
 
   it("renders a trip-entry form on every legacy hash the old pages 307 to", () => {
@@ -113,7 +113,7 @@ describe("homepage trip entry", () => {
     expect(screen.getByRole("button", { name: /open trip/i, hidden: true }).className).toMatch(
       /min-h-11/,
     );
-    expect(screen.getByRole("button", { name: /^create a trip$/i, hidden: true }).className).toMatch(
+    expect(screen.getByRole("button", { name: /^create a draft$/i, hidden: true }).className).toMatch(
       /min-h-11/,
     );
     expect(screen.getByText(/party\.narula\.xyz/i)).toBeTruthy();
@@ -169,7 +169,7 @@ describe("homepage trip entry", () => {
     expect(push).toHaveBeenCalledWith("/cabin-weekend");
   });
 
-  it("reveals and focuses the trip name field after I'm hosting", async () => {
+  it("reveals and focuses the notes field after I'm hosting", async () => {
     const user = userEvent.setup();
     render(<LandingView />);
 
@@ -181,8 +181,8 @@ describe("homepage trip entry", () => {
     expect(screen.getByRole("link", { name: /^i.m hosting$/i }).getAttribute("aria-expanded")).toBe(
       "true",
     );
-    expect(screen.getByRole("heading", { name: /^create a trip$/i })).toBeTruthy();
-    expect(document.activeElement).toBe(screen.getByLabelText(/^trip name$/i));
+    expect(screen.getByRole("heading", { name: /^create an event$/i })).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByLabelText(/^your event notes$/i));
   });
 
   it("reveals and focuses the invite field after I have an invite", async () => {
@@ -209,7 +209,7 @@ describe("homepage trip entry", () => {
 
     expectPanel("create", false);
     expectPanel("enter", true);
-    expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();
+    expect(screen.queryByRole("heading", { name: /^create an event$/i })).toBeNull();
     expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
     expect(screen.getByRole("link", { name: /^i.m hosting$/i }).closest("[data-slot=button]")?.getAttribute("data-variant")).toBe(
       "outline",
@@ -224,7 +224,7 @@ describe("homepage trip entry", () => {
     render(<LandingView />);
 
     expectPanel("create", true);
-    expect(screen.getByRole("heading", { name: /^create a trip$/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /^create an event$/i })).toBeTruthy();
   });
 
   it("opens the invite form from a legacy page hash", () => {
@@ -248,7 +248,7 @@ describe("homepage trip entry", () => {
     });
 
     expectPanel("create", false);
-    expect(screen.queryByRole("heading", { name: /^create a trip$/i })).toBeNull();
+    expect(screen.queryByRole("heading", { name: /^create an event$/i })).toBeNull();
   });
 
   it("keeps the hero still and animates the panel open", async () => {

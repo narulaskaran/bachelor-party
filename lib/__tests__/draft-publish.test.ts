@@ -133,3 +133,15 @@ describe("plain-language schedule editor", () => {
     expect(preserveScheduleKeyEvents(previous, edited)).toEqual(edited);
   });
 });
+
+describe("pack list editor", () => {
+  it("parses host-authored items without inventing extras", async () => {
+    const { parsePackingText, packingToText } = await import("@/lib/draft-publish");
+    expect(parsePackingText("Government ID\nLayers | Nights drop below 40\n")).toEqual([
+      { title: "Government ID" },
+      { title: "Layers", note: "Nights drop below 40" },
+    ]);
+    expect(parsePackingText("   \n")).toBeUndefined();
+    expect(packingToText([{ title: "ID", note: "Wallet" }])).toBe("ID | Wallet");
+  });
+});

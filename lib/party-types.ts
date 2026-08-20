@@ -1,9 +1,17 @@
-// Shapes for trip content stored in the database (parties.content jsonb).
-// The repo ships no real trip data — hosts create trips from the site
-// (README); agents seed via the API/CLI in docs/api.md.
+// Shapes for Event content stored in the database (parties.content jsonb).
+// The human-facing aggregate is Event. The stored `trip` key and `kind: "trip"`
+// stay for existing rows, the admin API, and CLI — do not treat those as a
+// second product. Hosts create events from the site (README); agents can still
+// seed via the API/CLI in docs/api.md.
 // Legacy rows may still contain `groomName`; it is ignored on read.
 
 export type TripKind = "trip";
+export type EventPreset = "night-out" | "weekend";
+
+export type GuestUpdate = {
+  at: string;
+  fields: string[];
+};
 
 export type DraftFactStatus = "confirmed" | "extracted" | "inferred" | "missing" | "stale";
 
@@ -99,9 +107,13 @@ export type RsvpConfig = {
 
 export type PartyContent = {
   kind?: TripKind;
+  /** Night out (details + RSVP) or weekend (optional schedule/lodge/activities/pack). */
+  preset?: EventPreset;
   trip: Trip;
   presentation?: { style: "clean" | "editorial" };
   draftReview?: DraftReview;
+  /** Set when a published event's guest-visible logistics change. Does not reset RSVPs. */
+  guestUpdate?: GuestUpdate;
   rsvp?: RsvpConfig;
   lodging?: Lodging;
   schedule?: ScheduleDay[];

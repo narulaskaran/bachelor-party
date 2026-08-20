@@ -46,14 +46,14 @@ export function LandingView({
       <section className="flex flex-col items-center py-16 text-center sm:py-24">
         <h1 className={pageTitleClass}>The Big Send</h1>
         <p className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
-          One private page for the trip — schedule, cabin, and who&apos;s coming.
+          Paste a messy plan. Review it on the site. Send a private guest page.
         </p>
 
         <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <Button asChild variant={panel === "enter" ? "outline" : "default"}>
             <HashFocusLink
               href={landingPanelHash("create")}
-              focusId={["siteName", "create-trip-heading"]}
+              focusId={["plan", "create-trip-heading"]}
               aria-expanded={panel === "create"}
               aria-controls="create"
               onClick={() => reveal("create")}

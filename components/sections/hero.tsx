@@ -17,7 +17,7 @@ export function Hero({ trip, meta }: { trip: Trip; meta: string[] }) {
 
       {trip.startDate ? (
         <div className="mt-4">
-          <Countdown startDate={trip.startDate} />
+          <Countdown startDate={trip.startDate} timeZone={trip.timezone} />
         </div>
       ) : null}
     </section>

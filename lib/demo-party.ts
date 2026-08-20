@@ -18,6 +18,7 @@ export const DEMO_PARTY: PartyContent = {
     coordinates: "39.0000° N, 106.0000° W",
     elevation: "9,000 ft",
     airport: "Denver International (DEN)",
+    timezone: "America/Denver",
   },
   lodging: {
     name: "Pinewood Lodge",

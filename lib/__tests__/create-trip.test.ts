@@ -48,8 +48,14 @@ describe("create-from-UI helper", () => {
     const headers = new Headers(init.headers);
     expect(headers.get("authorization")).toBeNull();
     expect(headers.get("content-type")).toBe("application/json");
-    expect(JSON.parse(String(init.body))).toEqual({
-      content: { trip: { siteName: "Jackson Hole '26" } },
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      slug: expect.stringMatching(/^e[0-9a-f]{16}$/),
+      content: {
+        kind: "trip",
+        preset: "weekend",
+        trip: { siteName: "Jackson Hole '26" },
+        rsvp: { plusOnePolicy: "allowed" },
+      },
     });
   });
 
@@ -59,8 +65,10 @@ describe("create-from-UI helper", () => {
       startDate: "2026-09-04",
       endDate: "2026-09-07",
     });
-    expect(JSON.parse(String(init.body))).toEqual({
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      slug: expect.stringMatching(/^e[0-9a-f]{16}$/),
       content: {
+        preset: "weekend",
         trip: {
           siteName: "Cabin Weekend",
           startDate: "2026-09-04",
@@ -92,7 +100,9 @@ describe("create-from-UI helper", () => {
       endDate: "2026-10-12",
     });
     expect(JSON.parse(String(init.body))).toMatchObject({
+      slug: expect.stringMatching(/^e[0-9a-f]{16}$/),
       content: {
+        preset: "weekend",
         trip: {
           siteName: "Structured title",
           startDate: "2026-10-10",
@@ -151,7 +161,7 @@ describe("create-from-UI helper", () => {
     const fetchImpl = vi.fn();
     const result = await createTripFromUi({ siteName: " " }, fetchImpl);
     expect(fetchImpl).not.toHaveBeenCalled();
-    expect(result).toEqual({ ok: false, error: "Give the trip a name." });
+    expect(result).toEqual({ ok: false, error: "Paste your notes or give the event a name." });
   });
 
   it("rejects an inverted date range before calling the API", async () => {
@@ -219,8 +229,8 @@ describe("create-from-UI helper", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.packet.slug).toBe("jackson-hole-26");
-    expect(result.packet.url).toBe("http://localhost/jackson-hole-26");
+    expect(result.packet.slug).toMatch(/^e[0-9a-f]{16}$/);
+    expect(result.packet.url).toBe(`http://localhost/${result.packet.slug}`);
     expect(result.packet.password.length).toBeGreaterThanOrEqual(8);
     expect(result.packet.adminToken.length).toBeGreaterThanOrEqual(16);
     expect(mem.parties).toHaveLength(1);

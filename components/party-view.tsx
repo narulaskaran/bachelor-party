@@ -1,5 +1,6 @@
 import type { PartyContent } from "@/lib/party-types";
 import { pollActivities } from "@/lib/party-types";
+import { guestUpdateLabel } from "@/lib/guest-update";
 import {
   heroMeta,
   showFlightFields,
@@ -40,6 +41,12 @@ export function PartyView({
         data-presentation={content.presentation?.style ?? "clean"}
       >
         <Hero trip={content.trip} meta={heroMeta(content.trip)} />
+        {content.guestUpdate?.fields.length ? (
+          <aside className="mb-6 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm" aria-label="Event updated">
+            <p className="font-medium">{guestUpdateLabel(content.guestUpdate)}</p>
+            <p className="mt-1 text-muted-foreground">Your RSVP is still saved. Check the details in case something moved.</p>
+          </aside>
+        ) : null}
         {missing.length > 0 ? (
           <aside className="mb-6 rounded-lg border border-amber-300/70 bg-amber-50/70 px-4 py-3 text-sm text-amber-950 dark:bg-amber-950/20 dark:text-amber-100" aria-label="Details to be confirmed">
             <p className="font-medium">A few details are still being confirmed</p>
@@ -86,10 +93,11 @@ export function PartyView({
 }
 
 function missingGuestFacts(content: PartyContent): string[] {
+  const weekend = (content.preset ?? "weekend") === "weekend";
   return [
     !content.trip.startDate && "Date TBD",
     !content.trip.location && "Location TBD",
-    !content.lodging?.name && "Lodging TBD",
+    weekend && !content.lodging?.name && "Lodging TBD",
     content.schedule?.some((day) => day.timed) && !content.trip.timezone && "Time zone TBD",
   ].filter((value): value is string => Boolean(value));
 }

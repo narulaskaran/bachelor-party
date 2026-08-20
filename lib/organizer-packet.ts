@@ -14,5 +14,5 @@ export function organizerPacket(
 
 /** Invite + guest password only — never the host key. */
 export function groupInviteText(packet: { url: string; password: string }): string {
-  return `Here's the trip:\n${packet.url}\nPassword: ${packet.password}`;
+  return `Here's the event:\n${packet.url}\nPassword: ${packet.password}`;
 }

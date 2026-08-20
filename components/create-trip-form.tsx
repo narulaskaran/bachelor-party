@@ -13,6 +13,7 @@ import {
   type CreateTripResult,
   type OrganizerPacket,
 } from "@/lib/create-trip";
+import { EVENT_PRESET_LABELS, parseEventPreset, type EventPreset } from "@/lib/event-preset";
 import { sectionTitleClass } from "@/lib/type";
 
 export function CreateTripForm({
@@ -45,6 +46,7 @@ export function CreateTripForm({
     const plan = String(form.get("plan") ?? "").trim();
     const startDate = String(form.get("startDate") ?? "").trim();
     const endDate = String(form.get("endDate") ?? "").trim();
+    const preset = parseEventPreset(form.get("preset"));
     if (isInvertedDateRange(startDate, endDate)) {
       setError(END_BEFORE_START_MESSAGE);
       return;
@@ -54,6 +56,7 @@ export function CreateTripForm({
     try {
       const result = await create({
         siteName,
+        preset,
         ...(plan ? { plan } : {}),
         ...(startDate ? { startDate } : {}),
         ...(endDate ? { endDate } : {}),
@@ -71,28 +74,46 @@ export function CreateTripForm({
   return (
     <>
       <h2 id="create-trip-heading" tabIndex={-1} className={sectionTitleClass}>
-        Create a trip
+        Create an event
       </h2>
       <p id="create-trip-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
-        Paste the rough notes you already have. We&apos;ll turn them into a private
-        draft for you to review. No JSON, API, CLI, or account required. You&apos;ll get a host key after creation.
+        Paste the messy plan. We&apos;ll turn what you wrote into a private draft.
+        Times, places, addresses, and headcount stay blank unless they&apos;re in the notes.
+        No JSON, CLI, or account. You&apos;ll get a host key after creation.
+        Review on the next page before anything is published.
       </p>
-      <form onSubmit={onSubmit} className="mt-6 flex max-w-md flex-col gap-4">
+      <form onSubmit={onSubmit} className="mt-6 flex max-w-xl flex-col gap-4">
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium">What kind of event?</legend>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {(["night-out", "weekend"] as EventPreset[]).map((value) => (
+              <label key={value} className="flex min-h-11 flex-1 items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                <input type="radio" name="preset" value={value} defaultChecked={value === "weekend"} />
+                <span>
+                  {EVENT_PRESET_LABELS[value]}
+                  <span className="block text-xs text-muted-foreground">
+                    {value === "night-out" ? "Details + RSVP" : "Adds optional schedule, lodge, activities, pack"}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div className="flex flex-col gap-2">
           <Label htmlFor="plan">Your event notes</Label>
           <textarea
             id="plan"
             name="plan"
-            rows={7}
-            placeholder={`Cabin weekend\nLocation: Denver, CO\n2026-09-04 7:00 PM — group dinner\nLodging: still deciding`}
+            rows={10}
+            placeholder={`Cabin weekend\nLocation: Denver, CO\nTimezone: America/Denver\n2026-09-04 7:00 PM — group dinner\nLodging: still deciding\nPack: Government ID, Layers — nights drop below 40`}
             aria-describedby="create-trip-hint"
             disabled={pending}
-            className="min-h-36 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-48 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
           />
-          <p className="text-xs text-muted-foreground">Include only facts you know. Missing details stay marked TBD.</p>
+          <p className="text-xs text-muted-foreground">Include only facts you know. Missing details stay marked TBD — never guessed.</p>
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="siteName">Trip name</Label>
+          <Label htmlFor="siteName">Event name</Label>
           <p className="text-xs text-muted-foreground">Optional when your notes include the event name.</p>
           <Input
             id="siteName"
@@ -132,14 +153,14 @@ export function CreateTripForm({
             />
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">Dates are optional.</p>
+        <p className="text-xs text-muted-foreground">Dates are optional overrides. We will not invent them.</p>
         {error ? (
           <p id="create-trip-error" className="text-sm text-destructive" role="alert">
             {error}
           </p>
         ) : null}
         <Button type="submit" disabled={pending}>
-          {pending ? "Creating…" : "Create a trip"}
+          {pending ? "Creating…" : "Create a draft"}
         </Button>
       </form>
     </>
