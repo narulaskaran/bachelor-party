@@ -213,4 +213,38 @@ describe("messy event plan ingestion", () => {
     expect(content.packing).toBeUndefined();
     expect(content.presentation?.style).toBe("clean");
   });
+
+  it("uses the stated range end and a Lodge: name, not a guessed middle day", () => {
+    const { content, review } = ingestEventPlan(
+      [
+        "Moab weekend",
+        "2026-10-02 to 2026-10-04",
+        "Lodge: Red Cliffs Lodge",
+        "2026-10-02 3:00 PM — check in",
+        "2026-10-03 9:00 AM — hike",
+      ].join("\n"),
+      { preset: "weekend" },
+    );
+    expect(content.trip.startDate).toBe("2026-10-02");
+    expect(content.trip.endDate).toBe("2026-10-04");
+    expect(content.trip.dateLabel).toMatch(/Oct 2[\s\S]*Oct 4/);
+    expect(content.lodging?.name).toBe("Red Cliffs Lodge");
+    expect(review.facts.find((item) => item.path === "trip.endDate")).toMatchObject({
+      status: "extracted",
+      value: "2026-10-04",
+    });
+    expect(review.facts.find((item) => item.path === "lodging.name")).toMatchObject({
+      status: "extracted",
+      value: "Red Cliffs Lodge",
+    });
+  });
+
+  it("leaves the end date TBD when extra dates are listed without a range", () => {
+    const { content, review } = ingestEventPlan(
+      "Cabin weekend\n2026-10-02 3:00 PM — arrive\n2026-10-03 9:00 AM — hike\n2026-10-04 10:00 AM — depart",
+    );
+    expect(content.trip.startDate).toBe("2026-10-02");
+    expect(content.trip.endDate).toBeUndefined();
+    expect(review.facts.find((item) => item.path === "trip.endDate")?.status).toBe("missing");
+  });
 });

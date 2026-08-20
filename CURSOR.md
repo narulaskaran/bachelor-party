@@ -10,8 +10,11 @@ Landing dump → host editor at `/{slug}/host` → inert PartyView preview on
 that same page → publish → guest page at `/g/{token}`. Two presets, one
 Event: Night out (hero + RSVP) and Weekend trip (optional glance, schedule,
 lodge, activities, pack). Empty blocks stay hidden. Pack checkoff is local
-per browser. Unpublished `/g/{token}` shows that the event isn't public yet.
-Legacy events without a guest token still use `/{slug}` plus a password.
+per browser. RSVP identity is stored per event, never a leftover name from
+another trip. Host Guest view opens the minted `/g/{token}` (unpublished
+`/{slug}` 404 stays correct). Unpublished `/g/{token}` shows that the event
+isn't public yet. Legacy events without a guest token still use `/{slug}`
+plus a password.
 
 ## Stored shape
 

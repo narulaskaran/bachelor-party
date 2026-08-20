@@ -147,6 +147,33 @@ function explicitDates(plan: string): { dates: string[]; malformed: string[]; so
   return { dates: [...new Set(dates)].sort(), malformed, source: dates.length || malformed.length ? plan : undefined };
 }
 
+/** Inclusive `YYYY-MM-DD to YYYY-MM-DD` (or dash/through). Never invent a middle day. */
+const ISO_RANGE_RE =
+  /\b(\d{4}-\d{1,2}-\d{1,2})\s*(?:to|through|until|–|—|-)\s*(\d{4}-\d{1,2}-\d{1,2})\b/gi;
+
+function explicitIsoRanges(plan: string): { start: string; end: string }[] {
+  const ranges: { start: string; end: string }[] = [];
+  for (const match of plan.matchAll(ISO_RANGE_RE)) {
+    const start = validIso(match[1]);
+    const end = validIso(match[2]);
+    if (!start || !end || end < start) continue;
+    ranges.push({ start, end });
+  }
+  return ranges;
+}
+
+function spanFromPlan(plan: string): { start?: string; end?: string } {
+  const dates = explicitDates(plan).dates;
+  const ranges = explicitIsoRanges(plan);
+  const unique = [...new Map(ranges.map((range) => [`${range.start}:${range.end}`, range])).values()];
+  if (unique.length === 1) return unique[0];
+  if (unique.length > 1) return { start: dates[0] };
+  if (dates.length === 1) return { start: dates[0] };
+  if (dates.length === 2) return { start: dates[0], end: dates[1] };
+  if (dates.length > 2) return { start: dates[0] };
+  return {};
+}
+
 function labeled(plan: string, labels: string[]): { value?: string; source?: string } {
   const expression = new RegExp(`(?:^|\\n)\\s*(?:${labels.join("|")})\\s*[:=-]\\s*(.+)`, "im");
   const match = expression.exec(plan);
@@ -154,7 +181,7 @@ function labeled(plan: string, labels: string[]): { value?: string; source?: str
 }
 
 const LABELED_FACT_LINE_RE =
-  /^(event|trip|title|name|where|location|when|date|end date|lodging|hotel|cabin|stay|rsvp|timezone|time zone|what|tagline|description|address|maps|pack|packing|bring|schedule)\s*[:=-]/i;
+  /^(event|trip|title|name|where|location|when|date|end date|lodging|lodge|hotel|cabin|stay|rsvp|timezone|time zone|what|tagline|description|address|maps|pack|packing|bring|schedule)\s*[:=-]/i;
 
 function isLabeledFactLine(line: string): boolean {
   return LABELED_FACT_LINE_RE.test(line);
@@ -219,10 +246,11 @@ export function ingestEventPlan(planInput: string, overrides: IngestionOverrides
   const titled = titleFromPlan(plan);
   const title = clean(overrides.siteName) ?? titled.value;
   const dates = explicitDates(plan);
-  const startDate = clean(overrides.startDate) ?? dates.dates[0];
-  const endDate = clean(overrides.endDate) ?? dates.dates[1];
+  const span = spanFromPlan(plan);
+  const startDate = clean(overrides.startDate) ?? span.start;
+  const endDate = clean(overrides.endDate) ?? span.end;
   const labeledLocation = labeled(plan, ["location", "where"]);
-  const labeledLodging = labeled(plan, ["lodging", "hotel", "cabin", "stay"]);
+  const labeledLodging = labeled(plan, ["lodging", "lodge", "hotel", "cabin", "stay"]);
   const locationValue = settledText(labeledLocation.value);
   const lodgingValue = settledText(labeledLodging.value);
   const labeledTimezone = labeled(plan, ["timezone", "time zone"]);
@@ -256,7 +284,7 @@ export function ingestEventPlan(planInput: string, overrides: IngestionOverrides
   const facts: DraftFact[] = [
     fact("trip.siteName", "Event name", titleStatus, title, title ? undefined : "Add a name before sharing.", titled.source),
     fact("trip.startDate", "When", startDateStatus, whenValue, dateNote, dates.source),
-    fact("trip.endDate", "End date", endDateStatus, endDate, dates.dates.length < 2 ? "A second date is not confirmed." : undefined, dates.source),
+    fact("trip.endDate", "End date", endDateStatus, endDate, endDate ? undefined : "A second date is not confirmed.", dates.source),
     fact("trip.tagline", "What", tagline ? "extracted" : "missing", tagline, "Add a one-line description when you know it.", labeledWhat.source),
     fact("trip.location", "Where", locationStatus, [locationValue, address].filter(Boolean).join(" · ") || undefined, "Location stays TBD until you confirm it.", labeledLocation.source),
     fact("trip.timezone", "Timezone", timezoneStatus, timezone, timezoneNote, labeledTimezone.source ?? rawTimezone),

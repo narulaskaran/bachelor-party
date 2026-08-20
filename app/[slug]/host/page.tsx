@@ -85,6 +85,7 @@ export default async function HostPage({ params }: Params) {
           slug={slug}
           schedule={editor.content.schedule ?? []}
           sample={editor.sample}
+          guestHref={editor.guestUrl}
         />
       ) : null}
       <OrganizerRoster guests={guests} />

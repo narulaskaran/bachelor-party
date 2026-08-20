@@ -40,6 +40,7 @@ export function RsvpForm({
   rsvpConfig = {},
   sample = false,
   preview = false,
+  inviteToken,
   extras = { flights: Boolean(airport), food: false, votes: pollActivities.length > 0, notes: false },
 }: {
   pollActivities: Activity[];
@@ -48,6 +49,7 @@ export function RsvpForm({
   rsvpConfig?: RsvpConfig;
   sample?: boolean;
   preview?: boolean;
+  inviteToken?: string;
   extras?: { flights: boolean; food: boolean; votes: boolean; notes: boolean };
 }) {
   const locked = sample || preview;
@@ -79,6 +81,7 @@ export function RsvpForm({
       noValidate={locked}
       className="mx-auto max-w-2xl space-y-10"
     >
+      {inviteToken ? <input type="hidden" name="invite" value={inviteToken} /> : null}
       {sample ? (
         <Alert id="demo-rsvp-banner">
           <AlertDescription>{DEMO_RSVP_MESSAGE}</AlertDescription>

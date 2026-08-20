@@ -72,4 +72,18 @@ describe("SiteNav", () => {
     expect(brand.textContent).toMatch(/Friday drinks\s+·\s+Sep 4, 2026/);
     expect(brand.textContent).not.toMatch(/drinksSep/);
   });
+
+  it("uses the minted guest path for the brand home link", () => {
+    const { container } = render(
+      <SiteNav
+        siteName="Friday drinks"
+        slug="cabin-weekend"
+        homeHref={`/g/${"f".repeat(32)}`}
+        sections={allVisible}
+      />,
+    );
+    const brand = container.querySelector("a.truncate");
+    expect(brand?.getAttribute("href")).toBe(`/g/${"f".repeat(32)}`);
+    expect(brand?.getAttribute("href")).not.toBe("/cabin-weekend");
+  });
 });

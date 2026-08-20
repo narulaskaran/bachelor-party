@@ -19,6 +19,7 @@ export function PartyView({
   sample = false,
   preview = false,
   slug,
+  inviteToken,
 }: {
   content: PartyContent;
   /** Public /demo fixture — RSVP must not read or write a real trip. */
@@ -26,6 +27,8 @@ export function PartyView({
   /** Host guest preview — same guest chrome, no cookie reads/writes. */
   preview?: boolean;
   slug?: string;
+  /** Published `/g/{token}` identity. Never log it. */
+  inviteToken?: string;
 }) {
   const sections = visibleSections(content);
   const extras = guestRsvpExtras(content);
@@ -63,6 +66,7 @@ export function PartyView({
         <RsvpSection
           sample={sample}
           preview={preview}
+          inviteToken={preview || sample ? undefined : inviteToken}
           pollActivities={pollActivities(content)}
           airport={extras.flights ? content.trip.airport : undefined}
           heading={content.rsvp?.heading}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -678,6 +679,9 @@ export function HostEditor({
                 onClick={() => navigator.clipboard.writeText(absoluteGuestUrl(publishedUrl))}
               >
                 Copy guest link
+              </Button>
+              <Button asChild variant="outline" className="mt-2 ml-2">
+                <Link href={publishedUrl}>Open guest page</Link>
               </Button>
             </div>
           ) : null}

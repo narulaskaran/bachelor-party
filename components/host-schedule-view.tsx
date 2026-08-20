@@ -13,11 +13,13 @@ export function HostScheduleView({
   slug,
   schedule: initial,
   sample = false,
+  guestHref,
   save = setScheduleKeyEvent,
 }: {
   slug: string;
   schedule: ScheduleDay[];
   sample?: boolean;
+  guestHref?: string;
   save?: typeof setScheduleKeyEvent;
 }) {
   const [schedule, setSchedule] = useState(initial);
@@ -56,9 +58,13 @@ export function HostScheduleView({
       <div className="flex flex-wrap items-baseline justify-between gap-3 pt-8">
         <p className="text-sm text-muted-foreground">
           {sample ? "Sample trip — changes stay in this tab." : "Saved on this trip."}{" "}
-          <Link href={`/${slug}`} className="underline-offset-4 hover:text-primary hover:underline">
-            Guest view
-          </Link>
+          {guestHref ? (
+            <Link href={guestHref} className="underline-offset-4 hover:text-primary hover:underline">
+              Guest view
+            </Link>
+          ) : (
+            "Copy the guest link after you publish."
+          )}
         </p>
       </div>
       {sample ? (

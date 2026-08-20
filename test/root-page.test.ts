@@ -268,6 +268,27 @@ describe("GET /{slug} chrome", () => {
     expect(html).not.toContain("Your Info");
   });
 
+  it("points trip chrome home at the minted guest path, not /{slug}", async () => {
+    const guestToken = "f".repeat(32);
+    const cookie = await authCookieValue(42, PASSWORD);
+    vi.mocked(cookies).mockResolvedValue({
+      get: (name: string) =>
+        name === AUTH_COOKIE ? { name: AUTH_COOKIE, value: cookie } : undefined,
+      set: vi.fn(),
+    } as never);
+    vi.mocked(getDb).mockReturnValue(fakeDb([{ ...partyRow, guestToken }]) as never);
+
+    const html = renderToStaticMarkup(
+      await TripLayout({
+        children: createElement("p", null, "TRIP_BODY"),
+        params: Promise.resolve({ slug: "qa-tester-e2e" }),
+      }),
+    );
+
+    expect(html).toContain(`href="/g/${guestToken}"`);
+    expect(html).not.toContain('href="/qa-tester-e2e"');
+  });
+
   it("does not brand another trip's login gate with leftover cookie chrome", async () => {
     const cookie = await authCookieValue(42, PASSWORD);
     vi.mocked(cookies).mockResolvedValue({

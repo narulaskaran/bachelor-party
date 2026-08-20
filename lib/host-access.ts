@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
-import { guestInvitePath } from "@/lib/guest-invite";
+import { publishedGuestPath } from "@/lib/guest-invite";
 import { guestUpdateForPublish } from "@/lib/guest-update";
 import { reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
 import { cookieAuthenticatesHost, HOST_COOKIE, WRONG_HOST_KEY, hostSessionCookie } from "@/lib/host-auth";
@@ -123,7 +123,9 @@ export type HostEditorState =
   | { ok: false; error: string };
 
 export async function getHostEditorState(slug: string): Promise<HostEditorState> {
-  if (slug === "demo") return { ok: true, content: DEMO_PARTY, published: true, sample: true };
+  if (slug === "demo") {
+    return { ok: true, content: DEMO_PARTY, published: true, sample: true, guestUrl: "/demo" };
+  }
   const loaded = await loadHostParty(slug);
   if (loaded.status === "unavailable") return { ok: false, error: "Database unavailable." };
   if (loaded.status !== "ok" || !loaded.party.adminToken) return { ok: false, error: "Trip not found." };
@@ -138,9 +140,7 @@ export async function getHostEditorState(slug: string): Promise<HostEditorState>
     sample: false,
     ...(published
       ? {
-          guestUrl: loaded.party.guestToken
-            ? guestInvitePath(loaded.party.guestToken)
-            : `/${loaded.party.slug}`,
+          guestUrl: publishedGuestPath(loaded.party),
         }
       : {}),
   };
@@ -230,9 +230,10 @@ export async function publishHostDraft(slug: string, hostKey?: string) {
       .where(eq(schema.parties.slug, slug));
     revalidatePath(`/${slug}`);
     revalidatePath(`/${slug}/host`);
-    const guestUrl = auth.loaded.party.guestToken
-      ? guestInvitePath(auth.loaded.party.guestToken)
-      : `/${slug}`;
+    const guestUrl = publishedGuestPath({
+      guestToken: auth.loaded.party.guestToken,
+      slug,
+    });
     return { ok: true as const, guestUrl };
   } catch (err) {
     console.error("publishHostDraft failed", err);
@@ -256,7 +257,18 @@ export async function getHostGuests(
 
   try {
     const guests = await auth.loaded.db
-      .select()
+      .select({
+        id: schema.guests.id,
+        name: schema.guests.name,
+        attendanceStatus: schema.guests.attendanceStatus,
+        partySize: schema.guests.partySize,
+        plusOneName: schema.guests.plusOneName,
+        arrivalFlight: schema.guests.arrivalFlight,
+        arrivalTime: schema.guests.arrivalTime,
+        departureFlight: schema.guests.departureFlight,
+        departureTime: schema.guests.departureTime,
+        dietary: schema.guests.dietary,
+      })
       .from(schema.guests)
       .where(eq(schema.guests.partyId, auth.loaded.party.id))
       .orderBy(schema.guests.name);

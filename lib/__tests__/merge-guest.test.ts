@@ -3,7 +3,10 @@ import {
   explicitClearsFromFormData,
   mergeGuestRow,
   readGuestToken,
+  readScopedRsvpToken,
+  rsvpCookieName,
   rsvpFieldDefaults,
+  RSVP_COOKIE,
   type GuestPatch,
 } from "@/lib/merge-guest";
 
@@ -152,5 +155,26 @@ describe("readGuestToken", () => {
     expect(readGuestToken("qa guest")).toBeNull();
     expect(readGuestToken("alex")).toBeNull();
     expect(readGuestToken("")).toBeNull();
+  });
+});
+
+describe("per-event RSVP cookies", () => {
+  it("names identity storage after the trip, not a global last-name cookie", () => {
+    expect(rsvpCookieName(12)).toBe("bp_rsvp_12");
+    expect(rsvpCookieName(12)).not.toBe(RSVP_COOKIE);
+  });
+
+  it("reads only the cookie for this trip", () => {
+    const tokenA = "a".repeat(32);
+    const tokenB = "b".repeat(32);
+    const store = {
+      get: (name: string) => {
+        if (name === RSVP_COOKIE) return { value: tokenA };
+        if (name === rsvpCookieName(2)) return { value: tokenB };
+        return undefined;
+      },
+    };
+    expect(readScopedRsvpToken(store, 2)).toBe(tokenB);
+    expect(readScopedRsvpToken(store, 1)).toBeNull();
   });
 });

@@ -34,6 +34,7 @@ export default async function TripLayout({
           siteName={tripChrome.content.trip.siteName}
           dateLabel={tripChrome.content.trip.dateLabel}
           slug={tripChrome.slug}
+          homeHref={tripChrome.guestPath}
           sections={visibleSections(tripChrome.content)}
         />
       ) : null}

@@ -12,5 +12,5 @@ export default async function GuestInvitePage({ params }: Params) {
   const resolved = await resolvePartyByGuestToken(token.toLowerCase());
   if (resolved.status === "missing") notFound();
   if (resolved.status === "unpublished") return <UnpublishedEventView />;
-  return <PartyView content={resolved.content} slug={resolved.slug} />;
+  return <PartyView content={resolved.content} slug={resolved.slug} inviteToken={resolved.guestToken} />;
 }

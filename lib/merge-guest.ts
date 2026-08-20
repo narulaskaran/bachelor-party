@@ -39,16 +39,34 @@ export function emptyToNull(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-/** Session cookie: this browser's guest token (not the display name). */
+/** Legacy global session cookie. New writes use `rsvpCookieName(partyId)`. */
 export const RSVP_COOKIE = "bp_rsvp";
 
 const GUEST_TOKEN_RE = /^[a-f0-9]{32}$/;
+
+/** Per-event identity cookie. Never a global last-name. */
+export function rsvpCookieName(partyId: number): string {
+  if (!Number.isInteger(partyId) || partyId < 1) return RSVP_COOKIE;
+  return `${RSVP_COOKIE}_${partyId}`;
+}
 
 /** 32-char hex identity. Rejects leftover name-string cookies. */
 export function readGuestToken(value: string | undefined | null): string | null {
   if (!value) return null;
   const token = value.trim().toLowerCase();
   return GUEST_TOKEN_RE.test(token) ? token : null;
+}
+
+type CookieReader = {
+  get: (name: string) => { value: string } | undefined;
+};
+
+/** Identity saved for this event, if any. Does not read another trip's cookie. */
+export function readScopedRsvpToken(
+  store: CookieReader,
+  partyId: number,
+): string | null {
+  return readGuestToken(store.get(rsvpCookieName(partyId))?.value);
 }
 
 export function rsvpFieldDefaults(existing: RsvpPrefill | null | undefined) {

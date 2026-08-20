@@ -14,6 +14,13 @@ import {
   partyExists,
 } from "@/lib/party-exists";
 import { resolvePartyByGuestToken } from "@/lib/resolve-party";
+import { REQUEST_PATHNAME_HEADER } from "@/lib/request-pathname";
+
+function nextWithPathname(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(REQUEST_PATHNAME_HEADER, request.nextUrl.pathname);
+  return NextResponse.next({ request: { headers: requestHeaders } });
+}
 
 /**
  * Admin HTML: request-time copy of clickjacking / nosniff / CSP headers.
@@ -45,14 +52,14 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAdminHtmlPath(pathname)) {
-    const response = NextResponse.next();
+    const response = nextWithPathname(request);
     applyAdminHtmlSecurityHeaders(response.headers);
     return response;
   }
 
   // Exact first segment `/api`, not the prefix — `/api-2` is a guest slug.
   if (pathname.startsWith("/api/")) {
-    return NextResponse.next();
+    return nextWithPathname(request);
   }
 
   const guestToken = guestInviteTokenFromPathname(pathname);
@@ -70,8 +77,8 @@ export async function proxy(request: NextRequest) {
       url.pathname = MISSING_GUEST_REWRITE;
       return NextResponse.rewrite(url);
     }
-    if (resolved.status === "unpublished") return NextResponse.next();
-    const response = NextResponse.next();
+    if (resolved.status === "unpublished") return nextWithPathname(request);
+    const response = nextWithPathname(request);
     const { name, value, ...options } = await guestEventCookie(resolved.id, resolved.guestToken);
     response.cookies.set(name, value, options);
     return response;
@@ -84,7 +91,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const slug = guestSlugFromPathname(pathname);
-  if (!slug || (await partyExists(slug))) return NextResponse.next();
+  if (!slug || (await partyExists(slug))) return nextWithPathname(request);
 
   const url = request.nextUrl.clone();
   url.pathname = MISSING_GUEST_REWRITE;

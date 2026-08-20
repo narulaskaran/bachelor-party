@@ -14,3 +14,14 @@ export function isGuestInviteToken(value: string): boolean {
 export function guestInvitePath(token: string): string {
   return `/g/${token}`;
 }
+
+/** Published guest door: minted `/g/{token}`, or legacy `/{slug}` when no token. */
+export function publishedGuestPath(party: {
+  guestToken?: string | null;
+  slug: string;
+}): string {
+  if (party.guestToken && isGuestInviteToken(party.guestToken)) {
+    return guestInvitePath(party.guestToken);
+  }
+  return `/${party.slug}`;
+}

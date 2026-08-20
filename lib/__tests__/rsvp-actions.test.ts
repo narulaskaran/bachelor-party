@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { createMemoryDb } from "@/test/api/memory-db";
 import { getDb } from "@/lib/db";
 import { getCurrentParty } from "@/lib/current-party";
-import { RSVP_COOKIE } from "@/lib/merge-guest";
+import { RSVP_COOKIE, rsvpCookieName } from "@/lib/merge-guest";
 import { DEMO_PARTY, DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 
 const cookieStore = {
@@ -23,9 +23,10 @@ vi.mock("@/lib/db", async (importOriginal) => {
   return { ...actual, getDb: vi.fn() };
 });
 
-vi.mock("@/lib/current-party", () => ({
-  getCurrentParty: vi.fn(),
-}));
+vi.mock("@/lib/current-party", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/current-party")>();
+  return { ...actual, getCurrentParty: vi.fn() };
+});
 
 const TOKEN_ALEX = "a".repeat(32);
 const TOKEN_SAM = "b".repeat(32);
@@ -108,7 +109,7 @@ describe("submitGuestInfo merge upsert", () => {
       activityPrefs: { rafting: "hyped" },
     });
     expect(cookieStore.set).toHaveBeenCalledWith(
-      RSVP_COOKIE,
+      rsvpCookieName(1),
       TOKEN_ALEX,
       expect.objectContaining({ httpOnly: true, path: "/" }),
     );
@@ -251,7 +252,7 @@ describe("submitGuestInfo merge upsert", () => {
     });
     expect(mem.guests[0].guestToken).toMatch(/^[a-f0-9]{32}$/);
     expect(cookieStore.set).toHaveBeenCalledWith(
-      RSVP_COOKIE,
+      rsvpCookieName(1),
       mem.guests[0].guestToken,
       expect.objectContaining({ httpOnly: true, path: "/" }),
     );
@@ -388,6 +389,92 @@ describe("submitGuestInfo merge upsert", () => {
     expect(mem.guests).toHaveLength(2);
     expect(mem.guests[0].notes).toBe("original");
     expect(mem.guests[1].notes).toBe("new browser");
+  });
+
+  it("does not prefill a name saved on a different trip", async () => {
+    const { getRsvpPrefill } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    mockParty(mem, 2);
+    mem.seedGuest({
+      partyId: 1,
+      guestToken: TOKEN_ALEX,
+      name: "Riley Night QA",
+      nameKey: "riley night qa",
+    });
+    cookieStore.get.mockImplementation((name: string) => {
+      if (name === RSVP_COOKIE || name === rsvpCookieName(1)) {
+        return { value: TOKEN_ALEX };
+      }
+      return undefined;
+    });
+
+    await expect(getRsvpPrefill()).resolves.toBeNull();
+  });
+
+  it("saves an RSVP to the invite event, not a leftover trip cookie", async () => {
+    const { submitGuestInfo, getGuests } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    const inviteB = "c".repeat(32);
+    const contentB = { trip: { siteName: "Moab" }, rsvp: { plusOnePolicy: "allowed" as const } };
+    mem.seedParty({
+      id: 1,
+      slug: "ux-night",
+      guestToken: "d".repeat(32),
+      published: true,
+      content: { trip: { siteName: "UX Night" } },
+    });
+    const partyB = mem.seedParty({
+      id: 2,
+      slug: "moab-weekend",
+      guestToken: inviteB,
+      published: true,
+      content: contentB,
+    });
+    mem.seedGuest({
+      partyId: 1,
+      guestToken: TOKEN_ALEX,
+      name: "UX Night",
+      nameKey: "ux night",
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    vi.mocked(getCurrentParty).mockResolvedValue({
+      partyId: 1,
+      slug: "ux-night",
+      content: { trip: { siteName: "UX Night" } },
+    });
+    cookieStore.get.mockImplementation((name: string) => {
+      if (name === RSVP_COOKIE || name === rsvpCookieName(1)) return { value: TOKEN_ALEX };
+      return undefined;
+    });
+
+    const saved = await submitGuestInfo(
+      null,
+      form({
+        name: "Sam",
+        attendance: "attending",
+        plusOneName: "Riley",
+        invite: inviteB,
+      }),
+    );
+    expect(saved).toEqual({ ok: true });
+    expect(mem.guests.filter((guest) => guest.partyId === 1)).toHaveLength(1);
+    expect(mem.guests.filter((guest) => guest.partyId === partyB.id)).toEqual([
+      expect.objectContaining({
+        partyId: 2,
+        name: "Sam",
+        plusOneName: "Riley",
+        attendanceStatus: "attending",
+      }),
+    ]);
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      rsvpCookieName(2),
+      expect.stringMatching(/^[a-f0-9]{32}$/),
+      expect.objectContaining({ httpOnly: true, path: "/" }),
+    );
+
+    const roster = await getGuests(inviteB);
+    expect(roster).toEqual([expect.objectContaining({ name: "Sam" })]);
+    expect(roster).not.toEqual([expect.objectContaining({ name: "UX Night" })]);
   });
 });
 

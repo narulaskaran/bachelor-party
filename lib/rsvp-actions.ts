@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
-import { getCurrentParty } from "@/lib/current-party";
+import { getCurrentParty, partyFromGuestInvite, type CurrentParty } from "@/lib/current-party";
 import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { sessionCookieOptions } from "@/lib/cookie-hash";
 import { pollActivities } from "@/lib/party-types";
@@ -19,6 +19,8 @@ import {
   explicitClearsFromFormData,
   mergeGuestRow,
   readGuestToken,
+  readScopedRsvpToken,
+  rsvpCookieName,
   type GuestPatch,
   type RsvpPrefill,
 } from "@/lib/merge-guest";
@@ -44,6 +46,26 @@ async function findGuestByToken(db: Db, partyId: number, token: string) {
     )
     .limit(1);
   return guest;
+}
+
+async function partyForRsvp(inviteRaw: FormDataEntryValue | null): Promise<CurrentParty | null> {
+  if (typeof inviteRaw === "string" && inviteRaw.trim()) {
+    return partyFromGuestInvite(inviteRaw);
+  }
+  return getCurrentParty();
+}
+
+async function rsvpIdentityToken(
+  db: Db,
+  partyId: number,
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+): Promise<string | null> {
+  const scoped = readScopedRsvpToken(cookieStore, partyId);
+  if (scoped) return scoped;
+  const legacy = readGuestToken(cookieStore.get(RSVP_COOKIE)?.value);
+  if (!legacy) return null;
+  const belongsHere = await findGuestByToken(db, partyId, legacy);
+  return belongsHere ? legacy : null;
 }
 
 function toGuestPatch(row: {
@@ -108,7 +130,7 @@ export async function submitGuestInfo(
   _prev: SubmitResult | null,
   formData: FormData
 ): Promise<SubmitResult> {
-  const current = await getCurrentParty();
+  const current = await partyForRsvp(formData.get("invite"));
   if (!current) {
     return { ok: false, error: "Session expired — refresh and log in again." };
   }
@@ -174,7 +196,7 @@ export async function submitGuestInfo(
   };
 
   const cookieStore = await cookies();
-  const cookieToken = readGuestToken(cookieStore.get(RSVP_COOKIE)?.value);
+  const cookieToken = await rsvpIdentityToken(db, current.partyId, cookieStore);
   const guestToken = cookieToken ?? newGuestToken();
   const clears = explicitClearsFromFormData(formData);
 
@@ -204,16 +226,19 @@ export async function submitGuestInfo(
     return { ok: false, error: "Couldn't save — try again in a minute." };
   }
 
-  cookieStore.set(RSVP_COOKIE, guestToken, sessionCookieOptions());
+  cookieStore.set(rsvpCookieName(current.partyId), guestToken, sessionCookieOptions());
 
   revalidatePath("/");
   revalidatePath(`/${current.slug}`);
+  revalidatePath(`/${current.slug}/host`);
   if (current.guestPath) revalidatePath(current.guestPath);
   return { ok: true };
 }
 
-export async function getGuests() {
-  const current = await getCurrentParty();
+export async function getGuests(inviteToken?: string) {
+  const current = inviteToken?.trim()
+    ? await partyFromGuestInvite(inviteToken)
+    : await getCurrentParty();
   const db = getDb();
   if (!current || !db || current.partyId === "demo") return [];
   try {
@@ -233,14 +258,15 @@ export async function getGuests() {
   }
 }
 
-/** The guest this browser last saved, if they're on the roster. */
-export async function getRsvpPrefill(): Promise<RsvpPrefill | null> {
-  const current = await getCurrentParty();
+/** The guest this browser last saved on THIS event, if they're on the roster. */
+export async function getRsvpPrefill(inviteToken?: string): Promise<RsvpPrefill | null> {
+  const current = inviteToken?.trim()
+    ? await partyFromGuestInvite(inviteToken)
+    : await getCurrentParty();
   const db = getDb();
   if (!current || !db || current.partyId === "demo") return null;
 
-  const raw = (await cookies()).get(RSVP_COOKIE)?.value;
-  const token = readGuestToken(raw);
+  const token = await rsvpIdentityToken(db, current.partyId, await cookies());
   if (!token) return null;
 
   try {

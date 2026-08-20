@@ -167,4 +167,10 @@ describe("RsvpForm", () => {
     expect((screen.getByLabelText(/^name$/i) as HTMLInputElement).value).toBe("Alex");
     expect((screen.getByLabelText(/plus-one name/i) as HTMLInputElement).value).toBe("Taylor");
   });
+
+  it("scopes the RSVP submit to this event's invite token", () => {
+    const invite = "f".repeat(32);
+    render(<RsvpForm pollActivities={[]} inviteToken={invite} />);
+    expect((document.querySelector('input[name="invite"]') as HTMLInputElement).value).toBe(invite);
+  });
 });

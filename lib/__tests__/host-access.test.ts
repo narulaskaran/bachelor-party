@@ -460,6 +460,38 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     expect((mem.parties[0].content as { draftReview?: unknown }).draftReview).toBeUndefined();
   });
 
+  it("returns the minted guest invite path after publish, not /{slug}", async () => {
+    const mem = createMemoryDb();
+    const guestToken = "e".repeat(32);
+    mem.seedParty({
+      id: 9,
+      slug: "cabin-weekend",
+      adminToken: "host-tok",
+      guestToken,
+      content: { kind: "trip", trip: { siteName: "Old guest version" } },
+      draftContent: {
+        kind: "trip",
+        trip: { siteName: "Ready to publish" },
+        draftReview: {
+          acknowledged: true,
+          facts: [{ path: "trip.siteName", label: "Event name", status: "confirmed", value: "Ready to publish" }],
+        },
+      },
+      published: false,
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
+
+    const published = await publishHostDraft("cabin-weekend");
+    expect(published).toEqual({ ok: true, guestUrl: `/g/${guestToken}` });
+    await expect(getHostEditorState("cabin-weekend")).resolves.toMatchObject({
+      ok: true,
+      published: true,
+      guestUrl: `/g/${guestToken}`,
+    });
+    expect(published.ok && "guestUrl" in published ? published.guestUrl : "").not.toBe("/cabin-weekend");
+  });
+
   it("marks a critical republish as updated without resetting RSVPs", async () => {
     const mem = createMemoryDb();
     const first = {
@@ -521,6 +553,7 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     mem.seedGuest({
       partyId: 9,
       name: "Mina",
+      plusOneName: "Jordan",
       arrivalFlight: "UA 1523",
       arrivalTime: "Fri 10:45 AM",
       departureFlight: "UA 887",
@@ -533,6 +566,7 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     await expect(getHostGuests("cabin-weekend")).resolves.toEqual([
       expect.objectContaining({
         name: "Mina",
+        plusOneName: "Jordan",
         arrivalFlight: "UA 1523",
         dietary: "Vegetarian, no nuts",
       }),

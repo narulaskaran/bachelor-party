@@ -2,12 +2,19 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { authCookieValue } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { createMemoryDb } from "@/test/api/memory-db";
+import { guestEventCookieValue, EVENT_COOKIE } from "@/lib/guest-event-auth";
+import { REQUEST_PATHNAME_HEADER } from "@/lib/request-pathname";
 
 const cookieStore = { value: undefined as string | undefined };
+const headerStore = { pathname: undefined as string | undefined };
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(async () => ({
     get: () => (cookieStore.value ? { value: cookieStore.value } : undefined),
+  })),
+  headers: vi.fn(async () => ({
+    get: (name: string) =>
+      name === REQUEST_PATHNAME_HEADER ? headerStore.pathname ?? null : null,
   })),
 }));
 
@@ -21,6 +28,7 @@ import { getCurrentParty } from "@/lib/current-party";
 describe("getCurrentParty", () => {
   afterEach(() => {
     cookieStore.value = undefined;
+    headerStore.pathname = undefined;
     vi.mocked(getDb).mockReset();
     delete process.env.PARTY_PASSWORD;
   });
@@ -71,5 +79,67 @@ describe("getCurrentParty", () => {
     cookieStore.value = await authCookieValue(8, "crew-secret");
 
     expect(await getCurrentParty()).toBeNull();
+  });
+
+  it("binds /g/{token} to that event instead of a leftover trip cookie", async () => {
+    const mem = createMemoryDb();
+    const night = { kind: "trip" as const, trip: { siteName: "UX Night" } };
+    const moab = { kind: "trip" as const, trip: { siteName: "Moab weekend" } };
+    const inviteB = "b".repeat(32);
+    mem.seedParty({
+      id: 1,
+      slug: "ux-night",
+      password: "night-secret",
+      guestToken: "a".repeat(32),
+      published: true,
+      content: night,
+    });
+    mem.seedParty({
+      id: 2,
+      slug: "moab-weekend",
+      password: "moab-secret",
+      guestToken: inviteB,
+      published: true,
+      content: moab,
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieStore.value = await authCookieValue(1, "night-secret");
+    headerStore.pathname = `/g/${inviteB}`;
+
+    expect(await getCurrentParty()).toEqual({
+      partyId: 2,
+      slug: "moab-weekend",
+      content: moab,
+      guestPath: `/g/${inviteB}`,
+    });
+  });
+
+  it("does not keep a leftover event cookie when the invite is for another trip", async () => {
+    const mem = createMemoryDb();
+    const inviteA = "a".repeat(32);
+    const inviteB = "b".repeat(32);
+    mem.seedParty({
+      id: 1,
+      slug: "ux-night",
+      guestToken: inviteA,
+      published: true,
+      content: { kind: "trip", trip: { siteName: "UX Night" } },
+    });
+    mem.seedParty({
+      id: 2,
+      slug: "moab-weekend",
+      guestToken: inviteB,
+      published: true,
+      content: { kind: "trip", trip: { siteName: "Moab weekend" } },
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieStore.value = await guestEventCookieValue(1, inviteA);
+    headerStore.pathname = `/g/${inviteB}`;
+
+    const current = await getCurrentParty();
+    expect(current?.partyId).toBe(2);
+    expect(current?.slug).toBe("moab-weekend");
+    expect(cookieStore.value.startsWith("1.")).toBe(true);
+    expect(EVENT_COOKIE).toBe("bp_event");
   });
 });
