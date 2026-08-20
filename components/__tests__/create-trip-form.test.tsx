@@ -2,7 +2,7 @@
 
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CreateTripForm } from "@/components/create-trip-form";
 import { OrganizerPacketView } from "@/components/organizer-packet-view";
@@ -23,13 +23,19 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-const { openTrip } = vi.hoisted(() => ({ openTrip: vi.fn() }));
+const { openTrip, openHost, push } = vi.hoisted(() => ({
+  openTrip: vi.fn(),
+  openHost: vi.fn(),
+  push: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push, refresh: vi.fn() }),
+}));
 
 vi.mock("@/lib/guest-access", () => ({
   openAsGuest: (...args: unknown[]) => openTrip(...args),
 }));
-
-const { openHost } = vi.hoisted(() => ({ openHost: vi.fn() }));
 
 vi.mock("@/lib/host-access", () => ({
   openAsHost: (...args: unknown[]) => openHost(...args),
@@ -37,8 +43,8 @@ vi.mock("@/lib/host-access", () => ({
 }));
 
 const PACKET: OrganizerPacket = {
-  url: "https://preview.example/cabin-weekend",
-  slug: "cabin-weekend",
+  url: "https://preview.example/eabc/host",
+  slug: "eabc1234567890ab",
   password: "guest-pw",
   adminToken: "party-tok",
 };
@@ -56,64 +62,35 @@ function assertNoAdminRequirement(html: string) {
 describe("CreateTripForm", () => {
   beforeEach(() => {
     cleanup();
+    sessionStorage.clear();
+    push.mockReset();
   });
 
-  it("posts the form to unauthenticated create with name and optional dates", async () => {
+  it("posts notes and the host-picked preset, then lands on the host workspace", async () => {
     const user = userEvent.setup();
-    const create = vi.fn<(fields: { siteName: string; startDate?: string; endDate?: string }) => Promise<CreateTripResult>>(
+    const create = vi.fn<(fields: { siteName: string; plan?: string; preset?: string }) => Promise<CreateTripResult>>(
       async () => ({ ok: true, packet: PACKET }),
     );
     const { container } = render(<CreateTripForm create={create} />);
 
     assertNoAdminRequirement(container.innerHTML);
-    expect(container.innerHTML).toMatch(/host key/i);
-    expect(container.innerHTML).not.toMatch(/admin token/i);
-    expect(screen.getByLabelText(/event name/i)).toBeTruthy();
-    expect(screen.getByLabelText(/start date/i)).toBeTruthy();
-    expect(screen.getByLabelText(/end date/i)).toBeTruthy();
+    expect(screen.queryByLabelText(/event name/i)).toBeNull();
+    expect(screen.queryByLabelText(/start date/i)).toBeNull();
+    expect(screen.getByText(/won.t invent a time, place, or headcount/i)).toBeTruthy();
 
-    await user.type(screen.getByLabelText(/event name/i), "Cabin Weekend");
-    await user.type(screen.getByLabelText(/start date/i), "2026-09-04");
-    await user.type(screen.getByLabelText(/end date/i), "2026-09-07");
-    await user.click(screen.getByRole("button", { name: /^create a draft$/i }));
+    await user.click(screen.getByRole("radio", { name: /night out/i }));
+    await user.type(screen.getByLabelText(/your event notes/i), "Thursday dinner\nRita's");
+    await user.click(screen.getByRole("button", { name: /turn into a draft/i }));
 
     expect(create).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledWith({
-      siteName: "Cabin Weekend",
-      preset: "weekend",
-      startDate: "2026-09-04",
-      endDate: "2026-09-07",
+      siteName: "",
+      plan: "Thursday dinner\nRita's",
+      preset: "night-out",
     });
-  });
-
-  it("renders packet fields once with copy controls, then drops them on create another", async () => {
-    const user = userEvent.setup();
-    const create = vi.fn(async () => ({ ok: true as const, packet: PACKET }));
-    render(<CreateTripForm create={create} />);
-
-    await user.type(screen.getByLabelText(/event name/i), "Cabin Weekend");
-    await user.click(screen.getByRole("button", { name: /^create a draft$/i }));
-
-    expect(screen.getByText(PACKET.url)).toBeTruthy();
-    expect(screen.getByText(PACKET.password)).toBeTruthy();
-    expect(screen.getByText(PACKET.adminToken)).toBeTruthy();
-    expect(screen.getAllByText(/will not be shown again/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: /open as guest/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /pick key events/i })).toBeTruthy();
-    expect(screen.queryByRole("link", { name: /open the trip/i })).toBeNull();
-    expect(screen.getByRole("button", { name: /text these to the group/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /copy invite url/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /copy guest password/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /copy host key/i })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /copy admin token/i })).toBeNull();
-    expect(screen.queryByLabelText(/event name/i)).toBeNull();
-    expect(screen.queryByText("ADMIN_UI_PASSWORD")).toBeNull();
-
-    await user.click(screen.getByRole("button", { name: /create another/i }));
-
-    expect(screen.queryByText(PACKET.url)).toBeNull();
-    expect(screen.queryByText(PACKET.adminToken)).toBeNull();
-    expect(screen.getByLabelText(/event name/i)).toBeTruthy();
+    expect(sessionStorage.getItem(`bp-host-key:${PACKET.slug}`)).toBe(PACKET.adminToken);
+    expect(push).toHaveBeenCalledWith(`/${PACKET.slug}/host`);
+    expect(screen.queryByText(PACKET.password)).toBeNull();
   });
 
   it("surfaces create failures without sending the host to /admin", async () => {
@@ -124,52 +101,12 @@ describe("CreateTripForm", () => {
     }));
     render(<CreateTripForm create={create} />);
 
-    await user.type(screen.getByLabelText(/event name/i), "Cabin Weekend");
-    await user.click(screen.getByRole("button", { name: /^create a draft$/i }));
+    await user.type(screen.getByLabelText(/your event notes/i), "Cabin weekend");
+    await user.click(screen.getByRole("button", { name: /turn into a draft/i }));
 
     expect(screen.getByRole("alert").textContent).toMatch(/few minutes/i);
     expect(screen.queryByText("ADMIN_UI_PASSWORD")).toBeNull();
     expect(screen.queryByRole("link", { name: /admin/i })).toBeNull();
-  });
-
-  it("clamps end.min to the chosen start and rejects an inverted range", async () => {
-    const user = userEvent.setup();
-    const create = vi.fn<(fields: { siteName: string; startDate?: string; endDate?: string }) => Promise<CreateTripResult>>(
-      async () => ({ ok: true, packet: PACKET }),
-    );
-    render(<CreateTripForm create={create} />);
-
-    await user.type(screen.getByLabelText(/event name/i), "Cabin Weekend");
-    const start = screen.getByLabelText(/start date/i);
-    const end = screen.getByLabelText(/end date/i);
-    expect(end.getAttribute("min")).toBeNull();
-
-    fireEvent.change(start, { target: { value: "2026-12-20" } });
-    expect(end.getAttribute("min")).toBe("2026-12-20");
-
-    fireEvent.change(end, { target: { value: "2026-12-10" } });
-    fireEvent.submit(start.closest("form")!);
-
-    expect(create).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert").textContent).toMatch(/before start date/i);
-  });
-
-  it("still creates when only one date is set or both match", async () => {
-    const user = userEvent.setup();
-    const create = vi.fn<(fields: { siteName: string; startDate?: string; endDate?: string }) => Promise<CreateTripResult>>(
-      async () => ({ ok: true, packet: PACKET }),
-    );
-    render(<CreateTripForm create={create} />);
-
-    await user.type(screen.getByLabelText(/event name/i), "Cabin Weekend");
-    await user.type(screen.getByLabelText(/start date/i), "2026-12-20");
-    await user.click(screen.getByRole("button", { name: /^create a draft$/i }));
-
-    expect(create).toHaveBeenCalledWith({
-      siteName: "Cabin Weekend",
-      preset: "weekend",
-      startDate: "2026-12-20",
-    });
   });
 });
 
@@ -217,7 +154,7 @@ describe("OrganizerPacketView", () => {
 
     await user.click(screen.getByRole("button", { name: /open as guest/i }));
 
-    expect(openTrip).toHaveBeenCalledWith("cabin-weekend", "guest-pw");
+    expect(openTrip).toHaveBeenCalledWith(PACKET.slug, "guest-pw");
   });
 
   it("Pick key events submits slug and host key so host tools unlock", async () => {
@@ -228,6 +165,6 @@ describe("OrganizerPacketView", () => {
 
     await user.click(screen.getByRole("button", { name: /pick key events/i }));
 
-    expect(openHost).toHaveBeenCalledWith("cabin-weekend", "party-tok");
+    expect(openHost).toHaveBeenCalledWith(PACKET.slug, "party-tok");
   });
 });

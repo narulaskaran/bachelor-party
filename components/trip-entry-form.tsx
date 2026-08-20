@@ -37,7 +37,7 @@ export function TripEntryForm() {
             autoComplete="off"
             spellCheck={false}
             required
-            placeholder="your-trip"
+            placeholder="https://party.narula.xyz/g/…"
             aria-describedby={
               error ? "trip-entry-error trip-entry-hint" : "trip-entry-hint"
             }

@@ -71,6 +71,7 @@ export function createTripRequestInit(fields: CreateTripFields): RequestInit {
       content: {
         kind: "trip",
         preset,
+        presentation: { style: "clean" },
         trip,
         rsvp: { plusOnePolicy: "allowed" },
       },
@@ -125,7 +126,7 @@ export async function createTripFromUi(
 ): Promise<CreateTripResult> {
   const siteName = fields.siteName.trim();
   const plan = fields.plan?.trim();
-  if (!siteName && !plan) return { ok: false, error: "Paste your notes or give the event a name." };
+  if (!siteName && !plan) return { ok: false, error: "Paste your notes." };
   if (isInvertedDateRange(fields.startDate, fields.endDate)) {
     return { ok: false, error: END_BEFORE_START_MESSAGE };
   }

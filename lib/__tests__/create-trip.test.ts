@@ -55,6 +55,7 @@ describe("create-from-UI helper", () => {
         preset: "weekend",
         trip: { siteName: "Jackson Hole '26" },
         rsvp: { plusOnePolicy: "allowed" },
+        presentation: { style: "clean" },
       },
     });
   });
@@ -161,7 +162,7 @@ describe("create-from-UI helper", () => {
     const fetchImpl = vi.fn();
     const result = await createTripFromUi({ siteName: " " }, fetchImpl);
     expect(fetchImpl).not.toHaveBeenCalled();
-    expect(result).toEqual({ ok: false, error: "Paste your notes or give the event a name." });
+    expect(result).toEqual({ ok: false, error: "Paste your notes." });
   });
 
   it("rejects an inverted date range before calling the API", async () => {
@@ -230,7 +231,7 @@ describe("create-from-UI helper", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.packet.slug).toMatch(/^e[0-9a-f]{16}$/);
-    expect(result.packet.url).toBe(`http://localhost/${result.packet.slug}`);
+    expect(result.packet.url).toBe(`http://localhost/${result.packet.slug}/host`);
     expect(result.packet.password.length).toBeGreaterThanOrEqual(8);
     expect(result.packet.adminToken.length).toBeGreaterThanOrEqual(16);
     expect(mem.parties).toHaveLength(1);

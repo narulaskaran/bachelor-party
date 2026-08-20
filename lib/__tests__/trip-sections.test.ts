@@ -28,6 +28,38 @@ describe("visibleSections", () => {
     });
   });
 
+  it("keeps night-out to RSVP unless the host added a weekend block", () => {
+    expect(
+      visibleSections({
+        preset: "night-out",
+        trip: { siteName: "Dinner", location: "Rita's", dateLabel: "Thu" },
+        lodging: { name: "Nope" },
+      }),
+    ).toEqual({
+      glance: false,
+      actionItems: false,
+      schedule: false,
+      activities: false,
+      lodging: true,
+      packing: false,
+      rsvp: true,
+    });
+    expect(
+      visibleSections({
+        preset: "night-out",
+        trip: { siteName: "Dinner", location: "Rita's" },
+      }),
+    ).toEqual({
+      glance: false,
+      actionItems: false,
+      schedule: false,
+      activities: false,
+      lodging: false,
+      packing: false,
+      rsvp: true,
+    });
+  });
+
   it("shows every section on the demo trip", () => {
     expect(visibleSections(DEMO_PARTY)).toEqual({
       glance: true,

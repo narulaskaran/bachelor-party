@@ -22,14 +22,15 @@ describe("guest-visible updates after publish", () => {
       at: "2026-08-20T12:00:00.000Z",
       fields: ["When", "Where"],
     });
-    expect(guestUpdateLabel(update!)).toMatch(/Updated .+ — When, Where/);
+    expect(guestUpdateLabel(update!, new Date("2026-08-20T12:00:00Z"))).toBe("Updated just now");
 
     const copyOnly: PartyContent = {
       ...moved,
-      trip: { ...moved.trip, tagline: "Bring layers" },
+      packing: [{ title: "Hat" }],
       guestUpdate: update,
     };
     expect(guestUpdateForPublish({ ...moved, guestUpdate: update }, copyOnly, true)).toEqual(update);
-    expect(criticalGuestChanges(published, { ...published, trip: { ...published.trip, tagline: "x" } })).toEqual([]);
+    expect(criticalGuestChanges(published, { ...published, packing: [{ title: "Hat" }] })).toEqual([]);
+    expect(criticalGuestChanges(published, { ...published, trip: { ...published.trip, tagline: "x" } })).toEqual(["What"]);
   });
 });

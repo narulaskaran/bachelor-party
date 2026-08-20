@@ -12,6 +12,7 @@ const GUEST_SLUG_BYTES = 8;
  * - rsvp, schedule, activities, basecamp — redirects to `/#…`
  * - login — historical `/login`; would collide if restored
  * - demo — built-in demo trip at `/demo`
+ * - g — guest invite URLs (`/g/:token`)
  */
 export const RESERVED_SLUGS = [
   "activities",
@@ -19,6 +20,7 @@ export const RESERVED_SLUGS = [
   "api",
   "basecamp",
   "demo",
+  "g",
   "login",
   "rsvp",
   "schedule",

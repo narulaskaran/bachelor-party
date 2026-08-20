@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
+import { guestInvitePath } from "@/lib/guest-invite";
 import { guestUpdateForPublish } from "@/lib/guest-update";
 import { reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
 import { cookieAuthenticatesHost, HOST_COOKIE, hostSessionCookie } from "@/lib/host-auth";
@@ -18,7 +19,7 @@ import {
 } from "@/lib/roster-visibility";
 import type { ScheduleDay } from "@/lib/party-types";
 
-const WRONG_HOST_KEY = "Wrong host key. It's in the organizer packet — not the guest password.";
+const WRONG_HOST_KEY = "Wrong host key. It's the key shown when you created this event — not a guest link.";
 
 export type SetKeyEventResult =
   | { ok: true; schedule: ScheduleDay[] }
@@ -90,6 +91,7 @@ async function loadHostParty(slug: string) {
       id: schema.parties.id,
       slug: schema.parties.slug,
       adminToken: schema.parties.adminToken,
+      guestToken: schema.parties.guestToken,
       content: schema.parties.content,
       draftContent: schema.parties.draftContent,
       published: schema.parties.published,
@@ -103,7 +105,13 @@ async function loadHostParty(slug: string) {
 }
 
 export type HostEditorState =
-  | { ok: true; content: import("@/lib/party-types").PartyContent; published: boolean; sample: boolean }
+  | {
+      ok: true;
+      content: import("@/lib/party-types").PartyContent;
+      published: boolean;
+      sample: boolean;
+      guestUrl?: string;
+    }
   | { ok: false; error: string };
 
 export async function getHostEditorState(slug: string): Promise<HostEditorState> {
@@ -114,11 +122,19 @@ export async function getHostEditorState(slug: string): Promise<HostEditorState>
   if (!(await hostCookieMatches(loaded.party))) {
     return { ok: false, error: WRONG_HOST_KEY };
   }
+  const published = loaded.party.published !== false;
   return {
     ok: true,
     content: draftForParty(loaded.party),
-    published: loaded.party.published !== false,
+    published,
     sample: false,
+    ...(published
+      ? {
+          guestUrl: loaded.party.guestToken
+            ? guestInvitePath(loaded.party.guestToken)
+            : `/${loaded.party.slug}`,
+        }
+      : {}),
   };
 }
 
@@ -197,7 +213,10 @@ export async function publishHostDraft(slug: string) {
       .where(eq(schema.parties.slug, slug));
     revalidatePath(`/${slug}`);
     revalidatePath(`/${slug}/host`);
-    return { ok: true as const };
+    const guestUrl = auth.loaded.party.guestToken
+      ? guestInvitePath(auth.loaded.party.guestToken)
+      : `/${slug}`;
+    return { ok: true as const, guestUrl };
   } catch (err) {
     console.error("publishHostDraft failed", err);
     return { ok: false as const, error: "Couldn't publish that trip — try again in a minute." };

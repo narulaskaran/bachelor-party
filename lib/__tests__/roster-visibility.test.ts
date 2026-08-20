@@ -22,7 +22,17 @@ const guest = {
 
 describe("roster visibility", () => {
   it("shows invite holders names only", () => {
-    expect(guestVisibleRoster([guest])).toEqual([{ id: 7, name: "Mina" }]);
+    expect(guestVisibleRoster([guest])).toEqual([{ id: 7, name: "Mina", attendanceStatus: "attending" }]);
+    expect(
+      guestVisibleRoster([
+        guest,
+        { ...guest, id: 8, name: "Alex Kim", attendanceStatus: "maybe" },
+        { ...guest, id: 9, name: "Sam", attendanceStatus: "not-attending" },
+      ]),
+    ).toEqual([
+      { id: 7, name: "Mina", attendanceStatus: "attending" },
+      { id: 8, name: "Alex", attendanceStatus: "maybe" },
+    ]);
   });
 
   it("shows organizers the full travel and dietary details", () => {

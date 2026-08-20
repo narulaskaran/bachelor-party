@@ -13,13 +13,13 @@ a private draft. Review and edit on the host page, preview, then publish.
 Unknown times, places, addresses, and headcount stay blank until you fill
 them in. Nothing is published until you say so.
 
-Save the organizer packet — invite URL, guest password, host key. The host
-key is shown once.
+Save the organizer page URL and host key (shown once). After you publish,
+copy the unguessable guest link — that URL is the invite, with no password.
 
 ## Guest
 
-Open the invite (or **I have an invite** on the homepage), enter the
-password, RSVP.
+Open the guest link (or **I have an invite** on the homepage) and RSVP.
+Older events may still ask for a password.
 
 ## Try it
 

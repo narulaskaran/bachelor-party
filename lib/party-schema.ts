@@ -23,6 +23,11 @@ export {
 
 const calendarDateSchema = z.string().refine(isValidCalendarDate, INVALID_CALENDAR_DATE_MESSAGE);
 
+const httpsUrl = z
+  .string()
+  .url("Enter a complete HTTPS URL")
+  .refine((value) => new URL(value).protocol === "https:", "URL must use HTTPS");
+
 const tripSchema = z
   .object({
     siteName: z.string().min(1),
@@ -31,11 +36,14 @@ const tripSchema = z
     endDate: calendarDateSchema.optional(),
     dateLabel: z.string().min(1).optional(),
     location: z.string().min(1).optional(),
+    address: z.string().min(1).optional(),
+    mapsUrl: httpsUrl.optional(),
     timezone: z
       .string()
       .min(1)
       .refine(isIanaTimeZone, "Pick a real time zone (for example America/Denver)")
       .optional(),
+    startTime: z.string().min(1).optional(),
     coordinates: z.string().min(1).optional(),
     elevation: z.string().min(1).optional(),
     airport: z.string().min(1).optional(),
@@ -44,11 +52,6 @@ const tripSchema = z
     message: END_BEFORE_START_MESSAGE,
     path: ["endDate"],
   });
-
-const httpsUrl = z
-  .string()
-  .url("Enter a complete HTTPS URL")
-  .refine((value) => new URL(value).protocol === "https:", "URL must use HTTPS");
 
 const lodgingSchema = z.object({
   name: z.string().min(1),

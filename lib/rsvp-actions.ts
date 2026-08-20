@@ -22,6 +22,7 @@ import {
   type GuestPatch,
   type RsvpPrefill,
 } from "@/lib/merge-guest";
+import { guestVisibleRoster } from "@/lib/roster-visibility";
 
 const prefValues = ["hyped", "fine", "pass"] as const;
 
@@ -207,6 +208,7 @@ export async function submitGuestInfo(
 
   revalidatePath("/");
   revalidatePath(`/${current.slug}`);
+  if (current.guestPath) revalidatePath(current.guestPath);
   return { ok: true };
 }
 
@@ -216,11 +218,15 @@ export async function getGuests() {
   if (!current || !db || current.partyId === "demo") return [];
   try {
     const guests = await db
-      .select({ id: schema.guests.id, name: schema.guests.name })
+      .select({
+        id: schema.guests.id,
+        name: schema.guests.name,
+        attendanceStatus: schema.guests.attendanceStatus,
+      })
       .from(schema.guests)
       .where(and(eq(schema.guests.partyId, current.partyId)))
       .orderBy(schema.guests.name);
-    return guests.map(({ id, name }) => ({ id, name }));
+    return guestVisibleRoster(guests);
   } catch (err) {
     console.error("getGuests failed", err);
     return [];

@@ -6,11 +6,12 @@ amber primary). Tests: Vitest.
 
 ## Human product
 
-Landing dump → host editor at `/{slug}/host` → preview → publish → guest
-page at `/{slug}` (password). Two presets, one Event: Night out (details +
-RSVP) and Weekend trip (optional schedule, lodge, activities, pack). Empty
-blocks stay hidden. Pack checkoff is local per browser. Unpublished drafts
-404 for guests.
+Landing dump → host editor at `/{slug}/host` → inert PartyView preview on
+that same page → publish → guest page at `/g/{token}`. Two presets, one
+Event: Night out (hero + RSVP) and Weekend trip (optional glance, schedule,
+lodge, activities, pack). Empty blocks stay hidden. Pack checkoff is local
+per browser. Unpublished `/g/{token}` shows that the event isn't public yet.
+Legacy events without a guest token still use `/{slug}` plus a password.
 
 ## Stored shape
 

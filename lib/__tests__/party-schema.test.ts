@@ -57,7 +57,7 @@ describe("partyContentSchema", () => {
   });
 
   it("rejects reserved app-route slugs", () => {
-    for (const slug of ["admin", "api", "rsvp", "schedule", "activities", "basecamp", "login", "demo"]) {
+    for (const slug of ["admin", "api", "rsvp", "schedule", "activities", "basecamp", "login", "demo", "g"]) {
       const parsed = createPartySchema.safeParse({
         slug,
         content: { trip: { siteName: "Nope" } },

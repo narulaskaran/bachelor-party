@@ -33,6 +33,7 @@ describe("uniqueSlug", () => {
     expect(await uniqueSlug("admin", async () => false)).toBe("admin-2");
     expect(await uniqueSlug("api", async () => false)).toBe("api-2");
     expect(await uniqueSlug("demo", async () => false)).toBe("demo-2");
+    expect(await uniqueSlug("g", async () => false)).toBe("g-2");
   });
 
   it("skips reserved names and existing trips together", async () => {
@@ -52,6 +53,7 @@ describe("isReservedSlug", () => {
       "basecamp",
       "login",
       "demo",
+      "g",
     ]) {
       expect(isReservedSlug(slug)).toBe(true);
       expect(RESERVED_SLUGS).toContain(slug);

@@ -61,7 +61,7 @@ describe("agent API (create / patch / guests)", () => {
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.slug).toBe("jackson-hole-26");
-    expect(body.url).toBe("http://localhost/jackson-hole-26");
+    expect(body.url).toBe("http://localhost/jackson-hole-26/host");
     expect(body.password).toEqual(expect.any(String));
     expect(body.password.length).toBeGreaterThanOrEqual(8);
     expect(body.adminToken).toEqual(expect.any(String));
@@ -316,7 +316,7 @@ describe("agent API (create / patch / guests)", () => {
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.slug).toBe("admin-3");
-    expect(body.url).toBe("http://localhost/admin-3");
+    expect(body.url).toBe("http://localhost/admin-3/host");
   });
 
   it("POST colliding slug → 409 with hint, does not upsert", async () => {

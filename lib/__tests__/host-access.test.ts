@@ -389,7 +389,7 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
 
     const result = await publishHostDraft("cabin-weekend");
 
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, guestUrl: "/cabin-weekend" });
     expect(mem.parties[0].content).toMatchObject({
       trip: { siteName: "Ready to publish" },
     });
@@ -423,7 +423,7 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
 
     const result = await publishHostDraft("cabin-weekend");
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, guestUrl: "/cabin-weekend" });
     expect(mem.parties[0].content).toMatchObject({
       trip: { startDate: "2026-09-05", location: "Boulder" },
       guestUpdate: { fields: ["When", "Where"] },

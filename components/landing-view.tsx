@@ -100,10 +100,9 @@ export function LandingView({
           <p id="trip-entry-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
             Invite links look like{" "}
             <span className="whitespace-nowrap font-mono text-foreground">
-              {inviteHost}/your-trip
+              {inviteHost}/g/…
             </span>
-            . Paste that URL or just the trip name, then enter the password on the
-            next page.
+            . Paste that URL. Older events may still use a trip name and password.
           </p>
           <TripEntryForm />
         </LandingPanelSection>

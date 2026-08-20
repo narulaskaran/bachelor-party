@@ -5,7 +5,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { SiteNav } from "@/components/site-nav";
 import type { VisibleSections } from "@/lib/trip-sections";
 
-const pageOrder = ["At a glance", "Do your part", "Schedule", "Activities", "Lodge", "Pack", "RSVP"];
+const pageOrder = ["RSVP", "At a glance", "Do your part", "Schedule", "Activities", "Lodge", "Pack"];
 
 const allVisible: VisibleSections = {
   glance: true,
@@ -24,7 +24,7 @@ describe("SiteNav", () => {
     [allVisible, pageOrder],
     [
       { ...allVisible, glance: false, schedule: false, lodging: false },
-      ["Do your part", "Activities", "Pack", "RSVP"],
+      ["RSVP", "Do your part", "Activities", "Pack"],
     ],
   ])("keeps both menus in page order while filtering hidden sections", (sections, expected) => {
     const { container } = render(

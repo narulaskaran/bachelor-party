@@ -4,8 +4,9 @@ export function organizerPacket(
   request: Request,
   party: { slug: string; password: string; adminToken: string | null },
 ) {
+  const origin = publicOriginFromRequest(request);
   return {
-    url: `${publicOriginFromRequest(request)}/${party.slug}`,
+    url: `${origin}/${party.slug}/host`,
     slug: party.slug,
     password: party.password,
     adminToken: party.adminToken,

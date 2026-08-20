@@ -15,12 +15,16 @@ export type IngestionResult = {
   review: DraftReview;
 };
 
-const CANONICAL_FACTS = [
+const CORE_FACTS = [
   ["trip.siteName", "Event name"],
-  ["trip.startDate", "Start date"],
+  ["trip.startDate", "When"],
   ["trip.endDate", "End date"],
-  ["trip.location", "Location"],
+  ["trip.tagline", "What"],
+  ["trip.location", "Where"],
   ["trip.timezone", "Timezone"],
+] as const;
+
+const WEEKEND_FACTS = [
   ["lodging.name", "Lodging"],
   ["schedule", "Schedule"],
 ] as const;
@@ -80,22 +84,27 @@ export function draftFactsForContent(content: PartyContent, previousFacts: Draft
   const previousByPath = new Map(previousFacts.map((item) => [item.path, item]));
   const values: Record<string, string | undefined> = {
     "trip.siteName": content.trip.siteName,
-    "trip.startDate": content.trip.startDate,
+    "trip.startDate": [content.trip.startDate, content.trip.startTime].filter(Boolean).join(" ") || undefined,
     "trip.endDate": content.trip.endDate,
-    "trip.location": content.trip.location,
+    "trip.tagline": content.trip.tagline,
+    "trip.location": [content.trip.location, content.trip.address].filter(Boolean).join(" · ") || undefined,
     "trip.timezone": content.trip.timezone,
     "lodging.name": content.lodging?.name,
     schedule: content.schedule?.length ? `${content.schedule.reduce((count, day) => count + day.entries.length, 0)} item(s)` : undefined,
   };
   const notes: Record<string, string | undefined> = {
     "trip.endDate": "A second date is not confirmed.",
+    "trip.tagline": "Add a one-line description when you know it.",
     "trip.location": "Location stays TBD until you confirm it.",
     "trip.timezone": "Times without a timezone are not settled logistics.",
     "lodging.name": "Lodging stays TBD until you confirm it.",
     schedule: "Add dated times only when they are explicit in the plan.",
   };
 
-  return CANONICAL_FACTS.map(([path, label]) => {
+  const weekend = (content.preset ?? "weekend") === "weekend" || Boolean(values["lodging.name"] || values.schedule);
+  const fields = weekend ? [...CORE_FACTS, ...WEEKEND_FACTS] : [...CORE_FACTS];
+
+  return fields.map(([path, label]) => {
     const value = values[path];
     const previous = previousByPath.get(path);
     const changed = previous !== undefined && previous.value !== value;
@@ -151,6 +160,11 @@ function titleFromPlan(plan: string): { value?: string; source?: string } {
   return first ? { value: first.slice(0, 100), source: first } : {};
 }
 
+function firstClockTime(plan: string): string | undefined {
+  const match = plan.match(TIME_RE);
+  return match?.[0]?.trim();
+}
+
 function scheduleFromPlan(plan: string, dates: string[]): ScheduleDay[] | undefined {
   const days = new Map<string, ScheduleDay>();
   const lines = plan.split("\n").map((line) => line.trim()).filter(Boolean);
@@ -189,11 +203,20 @@ export function ingestEventPlan(planInput: string, overrides: IngestionOverrides
   const packing = packingFromPlan(plan);
   const schedule = scheduleFromPlan(plan, dates.dates);
   const preset = parseEventPreset(overrides.preset);
+  const labeledWhat = labeled(plan, ["what", "tagline", "description"]);
+  const tagline = settledText(labeledWhat.value);
+  const labeledAddress = labeled(plan, ["address"]);
+  const address = settledText(labeledAddress.value);
+  const startTime = firstClockTime(plan);
+  const nightOut = preset === "night-out";
+  const lodgingForContent = nightOut ? undefined : lodgingValue;
+  const scheduleForContent = nightOut ? undefined : schedule;
+  const packingForContent = nightOut ? undefined : packing;
   const titleStatus: DraftFactStatus = overrides.siteName ? "confirmed" : title ? "extracted" : "missing";
   const startDateStatus: DraftFactStatus = overrides.startDate ? "confirmed" : startDate ? "extracted" : "missing";
   const endDateStatus: DraftFactStatus = overrides.endDate ? "confirmed" : endDate ? "extracted" : "missing";
   const locationStatus: DraftFactStatus = locationValue ? "extracted" : "missing";
-  const lodgingStatus: DraftFactStatus = lodgingValue ? "extracted" : "missing";
+  const lodgingStatus: DraftFactStatus = lodgingForContent ? "extracted" : "missing";
   const timezoneStatus: DraftFactStatus = timezone ? "extracted" : "missing";
   const timezoneNote = timezone
     ? undefined
@@ -201,15 +224,21 @@ export function ingestEventPlan(planInput: string, overrides: IngestionOverrides
       ? `Saw ${rawTimezone}; pick an IANA time zone. Abbreviations are not settled logistics.`
       : "Times without a timezone are not settled logistics.";
   const dateNote = dates.malformed.length ? `Could not use ${dates.malformed.join(", ")}; confirm the date.` : !dates.dates.length ? "No complete calendar date found." : undefined;
+  const whenValue = [startDate, nightOut ? startTime : undefined].filter(Boolean).join(" ") || undefined;
   const facts: DraftFact[] = [
     fact("trip.siteName", "Event name", titleStatus, title, title ? undefined : "Add a name before sharing.", titled.source),
-    fact("trip.startDate", "Start date", startDateStatus, startDate, dateNote, dates.source),
+    fact("trip.startDate", "When", startDateStatus, whenValue, dateNote, dates.source),
     fact("trip.endDate", "End date", endDateStatus, endDate, dates.dates.length < 2 ? "A second date is not confirmed." : undefined, dates.source),
-    fact("trip.location", "Location", locationStatus, locationValue, "Location stays TBD until you confirm it.", labeledLocation.source),
-    fact("lodging.name", "Lodging", lodgingStatus, lodgingValue, "Lodging stays TBD until you confirm it.", labeledLodging.source),
+    fact("trip.tagline", "What", tagline ? "extracted" : "missing", tagline, "Add a one-line description when you know it.", labeledWhat.source),
+    fact("trip.location", "Where", locationStatus, [locationValue, address].filter(Boolean).join(" · ") || undefined, "Location stays TBD until you confirm it.", labeledLocation.source),
     fact("trip.timezone", "Timezone", timezoneStatus, timezone, timezoneNote, labeledTimezone.source ?? rawTimezone),
-    fact("schedule", "Schedule", schedule ? "extracted" : "missing", schedule ? `${schedule.reduce((count, day) => count + day.entries.length, 0)} item(s)` : undefined, schedule ? undefined : "Add dated times only when they are explicit in the plan."),
   ];
+  if (!nightOut) {
+    facts.push(
+      fact("lodging.name", "Lodging", lodgingStatus, lodgingForContent, "Lodging stays TBD until you confirm it.", labeledLodging.source),
+      fact("schedule", "Schedule", scheduleForContent ? "extracted" : "missing", scheduleForContent ? `${scheduleForContent.reduce((count, day) => count + day.entries.length, 0)} item(s)` : undefined, scheduleForContent ? undefined : "Add dated times only when they are explicit in the plan."),
+    );
+  }
   const review: DraftReview = {
     acknowledged: false,
     sourcePlan: plan || undefined,
@@ -219,18 +248,22 @@ export function ingestEventPlan(planInput: string, overrides: IngestionOverrides
   const content: PartyContent = {
     kind: "trip",
     preset,
+    presentation: { style: "clean" },
     trip: {
       siteName: title ?? "Untitled event",
+      ...(tagline ? { tagline } : {}),
       ...(startDate ? { startDate } : {}),
       ...(endDate ? { endDate } : {}),
       ...(dateLabel ? { dateLabel } : {}),
       ...(locationValue ? { location: locationValue } : {}),
+      ...(address ? { address } : {}),
       ...(timezone ? { timezone } : {}),
+      ...(startTime ? { startTime } : {}),
     },
     rsvp: { plusOnePolicy: "allowed" },
-    ...(lodgingValue ? { lodging: { name: lodgingValue } } : {}),
-    ...(schedule ? { schedule } : {}),
-    ...(packing ? { packing } : {}),
+    ...(lodgingForContent ? { lodging: { name: lodgingForContent } } : {}),
+    ...(scheduleForContent ? { schedule: scheduleForContent } : {}),
+    ...(packingForContent ? { packing: packingForContent } : {}),
     draftReview: review,
   };
   return { content, review };

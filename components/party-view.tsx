@@ -1,9 +1,7 @@
 import type { PartyContent } from "@/lib/party-types";
 import { pollActivities } from "@/lib/party-types";
-import { guestUpdateLabel } from "@/lib/guest-update";
 import {
-  heroMeta,
-  showFlightFields,
+  guestRsvpExtras,
   visibleSections,
 } from "@/lib/trip-sections";
 import { Hero } from "@/components/sections/hero";
@@ -27,7 +25,7 @@ export function PartyView({
   slug?: string;
 }) {
   const sections = visibleSections(content);
-  const missing = missingGuestFacts(content);
+  const extras = guestRsvpExtras(content);
   const footerBits = [
     content.trip.location,
     content.trip.elevation,
@@ -40,19 +38,7 @@ export function PartyView({
         className="mx-auto w-full min-w-0 max-w-5xl px-4"
         data-presentation={content.presentation?.style ?? "clean"}
       >
-        <Hero trip={content.trip} meta={heroMeta(content.trip)} />
-        {content.guestUpdate?.fields.length ? (
-          <aside className="mb-6 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm" aria-label="Event updated">
-            <p className="font-medium">{guestUpdateLabel(content.guestUpdate)}</p>
-            <p className="mt-1 text-muted-foreground">Your RSVP is still saved. Check the details in case something moved.</p>
-          </aside>
-        ) : null}
-        {missing.length > 0 ? (
-          <aside className="mb-6 rounded-lg border border-amber-300/70 bg-amber-50/70 px-4 py-3 text-sm text-amber-950 dark:bg-amber-950/20 dark:text-amber-100" aria-label="Details to be confirmed">
-            <p className="font-medium">A few details are still being confirmed</p>
-            <p className="mt-1">{missing.join(" · ")}</p>
-          </aside>
-        ) : null}
+        <Hero trip={content.trip} guestUpdate={content.guestUpdate} />
         {sections.glance ? (
           <Glance trip={content.trip} lodging={content.lodging} />
         ) : null}
@@ -74,10 +60,11 @@ export function PartyView({
         <RsvpSection
           sample={sample}
           pollActivities={pollActivities(content)}
-          airport={showFlightFields(content) ? content.trip.airport : undefined}
+          airport={extras.flights ? content.trip.airport : undefined}
           heading={content.rsvp?.heading}
           description={content.rsvp?.description}
           rsvpConfig={content.rsvp}
+          extras={extras}
         />
 
         {footerBits.length > 0 ? (
@@ -90,14 +77,4 @@ export function PartyView({
       </div>
     </InitialHashFocus>
   );
-}
-
-function missingGuestFacts(content: PartyContent): string[] {
-  const weekend = (content.preset ?? "weekend") === "weekend";
-  return [
-    !content.trip.startDate && "Date TBD",
-    !content.trip.location && "Location TBD",
-    weekend && !content.lodging?.name && "Lodging TBD",
-    content.schedule?.some((day) => day.timed) && !content.trip.timezone && "Time zone TBD",
-  ].filter((value): value is string => Boolean(value));
 }

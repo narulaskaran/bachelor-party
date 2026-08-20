@@ -1,26 +1,42 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { END_BEFORE_START_MESSAGE, formatDateLabel, isInvertedDateRange } from "@/lib/trip-dates";
-import { packingToText, parsePackingText, rsvpForDraft, scheduleToText, parseScheduleText } from "@/lib/draft-publish";
-import { EVENT_PRESET_LABELS, parseEventPreset, type EventPreset } from "@/lib/event-preset";
+import { rsvpForDraft } from "@/lib/draft-publish";
+import { parseEventPreset, showWeekendEditorBlock, type WeekendBlock } from "@/lib/event-preset";
 import { draftFactsForContent } from "@/lib/plan-ingestion";
+import { slugFromName } from "@/lib/slug";
+import {
+  packingFromRows,
+  rowsFromActivities,
+  rowsFromPacking,
+  rowsFromSchedule,
+  scheduleFromRows,
+  type ActivityEditorRow,
+  type PackEditorRow,
+  type ScheduleEditorRow,
+} from "@/lib/schedule-rows";
 import { EVENT_TIMEZONES, formatTimeZoneLabel, settledTimeZone } from "@/lib/timezones";
 import type { DraftFact, PartyContent } from "@/lib/party-types";
 
 export type HostEditorAction =
   (slug: string, content: PartyContent, preserveScheduleKeyEvents?: boolean) => Promise<{ ok: boolean; error?: string }>;
 
+const EMPTY_SCHEDULE_ROW: ScheduleEditorRow = { date: "", time: "", title: "", note: "" };
+const EMPTY_PACK_ROW: PackEditorRow = { title: "", note: "" };
+const EMPTY_ACTIVITY_ROW: ActivityEditorRow = { name: "", note: "" };
+
 export function HostEditor({
   slug,
   initial,
   published,
   sample = false,
+  guestUrl,
   save,
   publish,
 }: {
@@ -28,26 +44,38 @@ export function HostEditor({
   initial: PartyContent;
   published: boolean;
   sample?: boolean;
+  guestUrl?: string;
   save: HostEditorAction;
-  publish: (slug: string) => Promise<{ ok: boolean; error?: string }>;
+  publish: (slug: string) => Promise<{ ok: boolean; error?: string; guestUrl?: string }>;
 }) {
   const [content, setContent] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(published ? guestUrl ?? null : null);
   const [isPending, startTransition] = useTransition();
   const [reviewAcknowledged, setReviewAcknowledged] = useState(initial.draftReview?.acknowledged === true);
   const [hasSavedDraft, setHasSavedDraft] = useState(true);
+  const preset = parseEventPreset(content.preset);
+  const [scheduleRows, setScheduleRows] = useState<ScheduleEditorRow[]>(() => rowsFromSchedule(initial.schedule));
+  const [packingRows, setPackingRows] = useState<PackEditorRow[]>(() => rowsFromPacking(initial.packing));
+  const [activityRows, setActivityRows] = useState<ActivityEditorRow[]>(() => rowsFromActivities(initial.activities));
+  const [enabledBlocks, setEnabledBlocks] = useState<Record<WeekendBlock, boolean>>({
+    schedule: showWeekendEditorBlock(initial, "schedule"),
+    lodging: showWeekendEditorBlock(initial, "lodging"),
+    activities: showWeekendEditorBlock(initial, "activities"),
+    packing: showWeekendEditorBlock(initial, "packing"),
+  });
 
   const trip = content.trip;
   const lodging = content.lodging;
-  const scheduleText = scheduleToText(content.schedule);
-  const packingText = packingToText(content.packing);
-  const preset = parseEventPreset(content.preset);
 
-  function updateTrip(field: keyof typeof trip, value: string) {
+  function invalidateFieldEdit() {
     setReviewAcknowledged(false);
     setHasSavedDraft(false);
+  }
+
+  function updateTrip(field: keyof typeof trip, value: string) {
+    invalidateFieldEdit();
     setContent((current) => {
       const next = {
         ...current,
@@ -66,12 +94,7 @@ export function HostEditor({
   }
 
   function reviewFacts(): DraftFact[] {
-    return draftFactsForContent(content, content.draftReview?.facts);
-  }
-
-  function invalidateFieldEdit() {
-    setReviewAcknowledged(false);
-    setHasSavedDraft(false);
+    return draftFactsForContent({ ...content, preset }, content.draftReview?.facts);
   }
 
   function handleFormChange(event: React.ChangeEvent<HTMLFormElement>) {
@@ -79,6 +102,22 @@ export function HostEditor({
     if (target instanceof HTMLInputElement && target.type === "checkbox") return;
     invalidateFieldEdit();
   }
+
+  function enableBlock(block: WeekendBlock) {
+    invalidateFieldEdit();
+    setEnabledBlocks((current) => ({ ...current, [block]: true }));
+    if (block === "schedule" && scheduleRows.length === 0) setScheduleRows([{ ...EMPTY_SCHEDULE_ROW }]);
+    if (block === "packing" && packingRows.length === 0) setPackingRows([{ ...EMPTY_PACK_ROW }]);
+    if (block === "activities" && activityRows.length === 0) setActivityRows([{ ...EMPTY_ACTIVITY_ROW }]);
+  }
+
+  const hiddenBlocks = useMemo(
+    () =>
+      (["schedule", "lodging", "activities", "packing"] as WeekendBlock[]).filter(
+        (block) => !enabledBlocks[block],
+      ),
+    [enabledBlocks],
+  );
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -92,12 +131,18 @@ export function HostEditor({
     }
 
     let schedule = content.schedule;
-    const initialScheduleText = scheduleToText(content.schedule).trim();
     try {
-      const rawSchedule = String(form.get("schedule") ?? "").trim();
-      schedule = rawSchedule ? parseScheduleText(rawSchedule) : undefined;
+      schedule = enabledBlocks.schedule ? scheduleFromRows(scheduleRows) : undefined;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Fix the schedule lines.");
+      setError(cause instanceof Error ? cause.message : "Fix the schedule rows.");
+      setNotice(null);
+      return;
+    }
+
+    const mapsUrlValue = String(form.get("mapsUrl") ?? "").trim();
+    const mapsUrl = urlForSave(mapsUrlValue, content.trip.mapsUrl);
+    if (mapsUrlValue && !mapsUrl) {
+      setError("Maps URL must use HTTPS.");
       setNotice(null);
       return;
     }
@@ -105,20 +150,22 @@ export function HostEditor({
     const next: PartyContent = {
       ...content,
       kind: "trip",
-      preset: parseEventPreset(String(form.get("preset") ?? content.preset)),
+      preset,
       trip: {
         ...content.trip,
-        siteName: String(form.get("siteName") ?? "").trim(),
+        siteName: String(form.get("siteName") ?? "").trim() || "Untitled event",
         tagline: String(form.get("tagline") ?? "").trim() || undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
+        startTime: String(form.get("startTime") ?? "").trim() || undefined,
         dateLabel: formatDateLabel(startDate, endDate),
         location: String(form.get("location") ?? "").trim() || undefined,
-        airport: String(form.get("airport") ?? "").trim() || undefined,
+        address: String(form.get("address") ?? "").trim() || undefined,
+        mapsUrl,
         timezone: settledTimeZone(String(form.get("timezone") ?? "")),
       },
       schedule,
-      packing: parsePackingText(String(form.get("packing") ?? "")),
+      packing: enabledBlocks.packing ? packingFromRows(packingRows) : undefined,
       rsvp: rsvpForDraft(
         content.rsvp,
         String(form.get("rsvpHeading") ?? ""),
@@ -129,43 +176,65 @@ export function HostEditor({
         style: String(form.get("presentationStyle") ?? "clean") === "editorial" ? "editorial" : "clean",
       },
     };
-    const lodgingName = String(form.get("lodgingName") ?? "").trim();
-    if (lodgingName) {
-      const lodgingUrlValue = String(form.get("lodgingUrl") ?? "").trim();
-      const mapsUrlValue = String(form.get("mapsUrl") ?? "").trim();
-      const url = urlForSave(lodgingUrlValue, content.lodging?.url);
-      const mapsUrl = urlForSave(mapsUrlValue, content.lodging?.mapsUrl);
-      if (lodgingUrlValue && !url) {
-        setError("Lodging URL must use HTTPS.");
-        setNotice(null);
-        return;
+
+    if (enabledBlocks.activities) {
+      const core = activityRows
+        .map((row) => {
+          const name = row.name.trim();
+          if (!name) return null;
+          const slug = slugFromName(name) || "activity";
+          const description = row.note.trim();
+          return { slug, name, ...(description ? { description } : {}) };
+        })
+        .filter((item): item is { slug: string; name: string; description?: string } => item !== null);
+      next.activities = core.length ? { ...content.activities, core } : undefined;
+    } else {
+      next.activities = undefined;
+    }
+
+    if (enabledBlocks.lodging) {
+      const lodgingName = String(form.get("lodgingName") ?? "").trim();
+      if (lodgingName) {
+        const lodgingUrlValue = String(form.get("lodgingUrl") ?? "").trim();
+        const lodgingMapsValue = String(form.get("lodgingMapsUrl") ?? "").trim();
+        const url = urlForSave(lodgingUrlValue, content.lodging?.url);
+        const lodgingMapsUrl = urlForSave(lodgingMapsValue, content.lodging?.mapsUrl);
+        if (lodgingUrlValue && !url) {
+          setError("Lodging URL must use HTTPS.");
+          setNotice(null);
+          return;
+        }
+        if (lodgingMapsValue && !lodgingMapsUrl) {
+          setError("Maps URL must use HTTPS.");
+          setNotice(null);
+          return;
+        }
+        next.lodging = {
+          name: lodgingName,
+          url,
+          mapsUrl: lodgingMapsUrl,
+          address: String(form.get("lodgingAddress") ?? "").trim() || undefined,
+        };
+      } else {
+        next.lodging = undefined;
       }
-      if (mapsUrlValue && !mapsUrl) {
-        setError("Maps URL must use HTTPS.");
-        setNotice(null);
-        return;
-      }
-      next.lodging = {
-        ...content.lodging,
-        name: lodgingName,
-        url,
-        mapsUrl,
-        address: String(form.get("lodgingAddress") ?? "").trim() || undefined,
-      };
     } else {
       next.lodging = undefined;
     }
+
     next.draftReview = {
       ...(content.draftReview ?? { facts: [] }),
       acknowledged: reviewAcknowledged,
       facts: draftFactsForContent(next, content.draftReview?.facts),
     };
 
+    const scheduleUnchanged =
+      JSON.stringify(rowsFromSchedule(content.schedule)) === JSON.stringify(scheduleRows);
+
     startTransition(async () => {
       setError(null);
       setNotice(null);
-      const rawSchedule = String(form.get("schedule") ?? "").trim();
-      const result = await save(slug, next, rawSchedule === initialScheduleText);
+      const result = await save(slug, next, scheduleUnchanged);
       if (!result.ok) {
         setError(result.error ?? "Couldn't save the draft.");
         return;
@@ -195,7 +264,8 @@ export function HostEditor({
         setError(result.error ?? "Couldn't publish the draft.");
         return;
       }
-      setPublishedUrl(`/${slug}`);
+      const nextUrl = result.guestUrl ?? publishedUrl;
+      if (nextUrl) setPublishedUrl(nextUrl);
       setNotice("Published. Guests now see this version.");
     });
   }
@@ -207,7 +277,11 @@ export function HostEditor({
           <div>
             <CardTitle>Event editor</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              {sample ? "Sample event — changes stay in this tab." : published ? "Editing a private draft." : "Unpublished draft — guests cannot see these details."}
+              {sample
+                ? "Sample event — changes stay in this tab."
+                : published
+                  ? "Editing a private draft."
+                  : "Unpublished draft — guests cannot see these details."}
             </p>
           </div>
           <span className="rounded-full border px-3 py-1 text-xs font-medium" aria-label={`Event status: ${published ? "published" : "draft"}`}>
@@ -267,26 +341,9 @@ export function HostEditor({
         <form className="space-y-8" onSubmit={submit} onChange={handleFormChange}>
           <fieldset disabled={isPending || sample} className="space-y-6">
             <legend className="text-lg font-semibold">Event basics</legend>
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Preset</legend>
-              <p className="text-xs text-muted-foreground">Same event, different optional blocks. Empty sections stay hidden for guests.</p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                {(["night-out", "weekend"] as EventPreset[]).map((value) => (
-                  <label key={value} className="flex min-h-11 items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
-                    <input
-                      type="radio"
-                      name="preset"
-                      value={value}
-                      defaultChecked={preset === value}
-                    />
-                    {EVENT_PRESET_LABELS[value]}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+            <Field label="Event title" name="siteName" value={trip.siteName} required onChange={(value) => updateTrip("siteName", value)} />
+            <Field label="Tagline" name="tagline" value={trip.tagline ?? ""} onChange={(value) => updateTrip("tagline", value)} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Event title" name="siteName" value={trip.siteName} required onChange={(value) => updateTrip("siteName", value)} />
-              <Field label="Tagline" name="tagline" value={trip.tagline ?? ""} onChange={(value) => updateTrip("tagline", value)} />
               <div>
                 <Label htmlFor="startDate">Start date</Label>
                 <Input id="startDate" name="startDate" type="date" defaultValue={trip.startDate ?? ""} aria-describedby="date-help" />
@@ -295,11 +352,7 @@ export function HostEditor({
                 <Label htmlFor="endDate">End date</Label>
                 <Input id="endDate" name="endDate" type="date" defaultValue={trip.endDate ?? ""} aria-describedby="date-help" aria-invalid={Boolean(error?.includes("End date"))} />
               </div>
-            </div>
-            <p id="date-help" className="text-xs text-muted-foreground">Dates are optional. End date cannot be before start date.</p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Location" name="location" value={trip.location ?? ""} onChange={(value) => updateTrip("location", value)} />
-              <Field label="Airport" name="airport" value={trip.airport ?? ""} onChange={(value) => updateTrip("airport", value)} />
+              <Field label="Start time" name="startTime" value={trip.startTime ?? ""} placeholder="7:00 PM" onChange={(value) => updateTrip("startTime", value)} />
               <div>
                 <Label htmlFor="timezone">Time zone</Label>
                 <select
@@ -317,21 +370,42 @@ export function HostEditor({
                 </select>
               </div>
             </div>
-          </fieldset>
-
-          <fieldset disabled={isPending || sample} className="space-y-4">
-            <legend className="text-lg font-semibold">Lodging</legend>
+            <p id="date-help" className="text-xs text-muted-foreground">
+              Dates are optional. End date cannot be before start date. No timezone means guests see time TBD — we will not guess America/New_York.
+            </p>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Lodging name" name="lodgingName" defaultValue={lodging?.name ?? ""} />
-              <Field label="Address" name="lodgingAddress" defaultValue={lodging?.address ?? ""} />
-              <Field label="Listing URL (HTTPS)" name="lodgingUrl" type="url" defaultValue={lodging?.url ?? ""} />
-              <Field label="Maps URL (HTTPS)" name="mapsUrl" type="url" defaultValue={lodging?.mapsUrl ?? ""} />
+              <Field label="Location" name="location" value={trip.location ?? ""} onChange={(value) => updateTrip("location", value)} />
+              <Field label="Place address" name="address" value={trip.address ?? ""} onChange={(value) => updateTrip("address", value)} />
+              <Field label="Maps URL (HTTPS)" name="mapsUrl" type="url" defaultValue={trip.mapsUrl ?? ""} />
             </div>
           </fieldset>
 
+          {hiddenBlocks.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {hiddenBlocks.map((block) => (
+                <Button key={block} type="button" variant="outline" onClick={() => enableBlock(block)}>
+                  Add {block === "lodging" ? "lodge" : block}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+
+          {enabledBlocks.lodging ? (
+            <fieldset disabled={isPending || sample} className="space-y-4">
+              <legend className="text-lg font-semibold">Lodge</legend>
+              <p className="text-sm text-muted-foreground">Name, address, maps — no beds or headcount required.</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Lodging name" name="lodgingName" defaultValue={lodging?.name ?? ""} />
+                <Field label="Lodge address" name="lodgingAddress" defaultValue={lodging?.address ?? ""} />
+                <Field label="Listing URL (HTTPS)" name="lodgingUrl" type="url" defaultValue={lodging?.url ?? ""} />
+                <Field label="Lodge maps URL (HTTPS)" name="lodgingMapsUrl" type="url" defaultValue={lodging?.mapsUrl ?? ""} />
+              </div>
+            </fieldset>
+          ) : null}
+
           <fieldset disabled={isPending || sample} className="space-y-3">
             <legend className="text-lg font-semibold">Page presentation</legend>
-            <p className="text-sm text-muted-foreground">Choose how the same event facts feel on the guest page. This changes presentation only, not logistics.</p>
+            <p className="text-sm text-muted-foreground">Two looks only. This is presentation, not a third event type.</p>
             <Label htmlFor="presentationStyle">Page style</Label>
             <select
               id="presentationStyle"
@@ -344,21 +418,176 @@ export function HostEditor({
             </select>
           </fieldset>
 
-          <fieldset disabled={isPending || sample} className="space-y-3">
-            <legend className="text-lg font-semibold">Schedule</legend>
-            <p className="text-sm text-muted-foreground">One event per line: date | weekday | day label | time | event title | optional note. Leave time out for a loose plan. Hidden for guests when empty.</p>
-            <Label htmlFor="schedule-input">Schedule events</Label>
-            <Textarea id="schedule-input" name="schedule" defaultValue={scheduleText} rows={8} aria-describedby="schedule-help" />
-            <p id="schedule-help" className="text-xs text-muted-foreground">Example: 2026-09-04 | Friday | Arrival | 7:00 PM | Group dinner</p>
-          </fieldset>
+          {enabledBlocks.schedule ? (
+            <fieldset disabled={isPending || sample} className="space-y-3">
+              <legend className="text-lg font-semibold">Schedule</legend>
+              <p className="text-sm text-muted-foreground">Add or remove rows. Hidden for guests when empty.</p>
+              <ol className="space-y-3">
+                {scheduleRows.map((row, index) => (
+                  <li key={index} className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2">
+                    <Field
+                      label={`Schedule date ${index + 1}`}
+                      name={`scheduleDate-${index}`}
+                      type="date"
+                      value={row.date}
+                      onChange={(value) => {
+                        invalidateFieldEdit();
+                        setScheduleRows((rows) => rows.map((item, i) => (i === index ? { ...item, date: value } : item)));
+                      }}
+                    />
+                    <Field
+                      label={`Schedule time ${index + 1}`}
+                      name={`scheduleTime-${index}`}
+                      value={row.time}
+                      onChange={(value) => {
+                        invalidateFieldEdit();
+                        setScheduleRows((rows) => rows.map((item, i) => (i === index ? { ...item, time: value } : item)));
+                      }}
+                    />
+                    <Field
+                      label={`Schedule title ${index + 1}`}
+                      name={`scheduleTitle-${index}`}
+                      value={row.title}
+                      onChange={(value) => {
+                        invalidateFieldEdit();
+                        setScheduleRows((rows) => rows.map((item, i) => (i === index ? { ...item, title: value } : item)));
+                      }}
+                    />
+                    <Field
+                      label={`Schedule note ${index + 1}`}
+                      name={`scheduleNote-${index}`}
+                      value={row.note}
+                      onChange={(value) => {
+                        invalidateFieldEdit();
+                        setScheduleRows((rows) => rows.map((item, i) => (i === index ? { ...item, note: value } : item)));
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        invalidateFieldEdit();
+                        setScheduleRows((rows) => rows.filter((_, i) => i !== index));
+                      }}
+                    >
+                      Remove row
+                    </Button>
+                  </li>
+                ))}
+              </ol>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  invalidateFieldEdit();
+                  setScheduleRows((rows) => [...rows, { ...EMPTY_SCHEDULE_ROW }]);
+                }}
+              >
+                Add schedule row
+              </Button>
+            </fieldset>
+          ) : null}
 
-          <fieldset disabled={isPending || sample} className="space-y-3">
-            <legend className="text-lg font-semibold">Pack list</legend>
-            <p className="text-sm text-muted-foreground">Host-authored list. Guests check items off in their own browser — not a shared roster. Hidden when empty.</p>
-            <Label htmlFor="packing-input">Pack items</Label>
-            <Textarea id="packing-input" name="packing" defaultValue={packingText} rows={5} aria-describedby="packing-help" />
-            <p id="packing-help" className="text-xs text-muted-foreground">One item per line. Optional note after a pipe: Layers | Nights drop below 40</p>
-          </fieldset>
+          {enabledBlocks.activities ? (
+            <fieldset disabled={isPending || sample} className="space-y-3">
+              <legend className="text-lg font-semibold">Activities</legend>
+              <ol className="space-y-3">
+                {activityRows.map((row, index) => (
+                  <li key={index} className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2">
+                    <Field
+                      label={`Activity name ${index + 1}`}
+                      name={`activityName-${index}`}
+                      value={row.name}
+                      onChange={(value) => {
+                        invalidateFieldEdit();
+                        setActivityRows((rows) => rows.map((item, i) => (i === index ? { ...item, name: value } : item)));
+                      }}
+                    />
+                    <Field
+                      label={`Activity note ${index + 1}`}
+                      name={`activityNote-${index}`}
+                      value={row.note}
+                      onChange={(value) => {
+                        invalidateFieldEdit();
+                        setActivityRows((rows) => rows.map((item, i) => (i === index ? { ...item, note: value } : item)));
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        invalidateFieldEdit();
+                        setActivityRows((rows) => rows.filter((_, i) => i !== index));
+                      }}
+                    >
+                      Remove activity
+                    </Button>
+                  </li>
+                ))}
+              </ol>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  invalidateFieldEdit();
+                  setActivityRows((rows) => [...rows, { ...EMPTY_ACTIVITY_ROW }]);
+                }}
+              >
+                Add activity
+              </Button>
+            </fieldset>
+          ) : null}
+
+          {enabledBlocks.packing ? (
+            <fieldset disabled={isPending || sample} className="space-y-3">
+              <legend className="text-lg font-semibold">Pack list</legend>
+              <p className="text-sm text-muted-foreground">Host-authored list. Guests check items off in their own browser. Hidden when empty.</p>
+              <ol className="space-y-3">
+                {packingRows.map((row, index) => (
+                  <li key={index} className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-2">
+                    <Field
+                      label={`Pack title ${index + 1}`}
+                      name={`packTitle-${index}`}
+                      value={row.title}
+                      onChange={(value) => {
+                        invalidateFieldEdit();
+                        setPackingRows((rows) => rows.map((item, i) => (i === index ? { ...item, title: value } : item)));
+                      }}
+                    />
+                    <Field
+                      label={`Pack note ${index + 1}`}
+                      name={`packNote-${index}`}
+                      value={row.note}
+                      onChange={(value) => {
+                        invalidateFieldEdit();
+                        setPackingRows((rows) => rows.map((item, i) => (i === index ? { ...item, note: value } : item)));
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        invalidateFieldEdit();
+                        setPackingRows((rows) => rows.filter((_, i) => i !== index));
+                      }}
+                    >
+                      Remove item
+                    </Button>
+                  </li>
+                ))}
+              </ol>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  invalidateFieldEdit();
+                  setPackingRows((rows) => [...rows, { ...EMPTY_PACK_ROW }]);
+                }}
+              >
+                Add pack item
+              </Button>
+            </fieldset>
+          ) : null}
 
           <fieldset disabled={isPending || sample} className="space-y-4">
             <legend className="text-lg font-semibold">RSVP section</legend>
@@ -375,7 +604,7 @@ export function HostEditor({
                 defaultChecked={content.rsvp?.plusOnePolicy === "allowed" || content.rsvp?.allowPlusOne === true}
                 className="mt-0.5 size-4 accent-primary"
               />
-              <span>Allow plus-ones. Guests can add an optional count; this never invents a headcount.</span>
+              <span>Allow plus-ones. When a guest says Yes, they can add an optional name — never a required headcount.</span>
             </label>
           </fieldset>
 
@@ -383,7 +612,20 @@ export function HostEditor({
           {notice ? (
             <div role="status" className="space-y-1 text-sm text-emerald-700">
               <p>{notice}</p>
-              {publishedUrl ? <a href={publishedUrl} className="font-medium underline underline-offset-4">Open the guest page: {publishedUrl}</a> : null}
+            </div>
+          ) : null}
+          {publishedUrl ? (
+            <div className="rounded-md border border-border p-3 text-sm">
+              <p className="font-medium">Guest link</p>
+              <p className="mt-1 break-all font-mono text-xs">{publishedUrl}</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-2"
+                onClick={() => navigator.clipboard.writeText(absoluteGuestUrl(publishedUrl))}
+              >
+                Copy guest link
+              </Button>
             </div>
           ) : null}
           <div className="flex flex-wrap gap-3">
@@ -394,6 +636,12 @@ export function HostEditor({
       </CardContent>
     </Card>
   );
+}
+
+function absoluteGuestUrl(path: string): string {
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
 }
 
 function Field({

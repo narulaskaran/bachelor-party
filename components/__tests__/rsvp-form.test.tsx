@@ -57,7 +57,7 @@ describe("RsvpForm", () => {
     );
 
     expect(screen.getByRole("alert").textContent).toBe(DEMO_RSVP_MESSAGE);
-    expect(screen.getByPlaceholderText(/allergies, vegetarian, no shellfish/i)).toBeTruthy();
+    expect(screen.queryByPlaceholderText(/allergies, vegetarian, no shellfish/i)).toBeNull();
     const save = screen.getByRole("button", { name: /^save$/i });
     expect((save as HTMLButtonElement).disabled).toBe(true);
     expect(save.className).toMatch(/min-h-11/);
@@ -113,10 +113,11 @@ describe("RsvpForm", () => {
     );
 
     expect(screen.getByRole("group", { name: /attendance/i })).toBeTruthy();
-    expect(screen.getByLabelText("Attending")).toBeTruthy();
+    expect(screen.getByLabelText("Yes")).toBeTruthy();
     expect(screen.getByLabelText("Maybe")).toBeTruthy();
-    expect(screen.getByLabelText("Not attending")).toBeTruthy();
-    expect((screen.getByLabelText(/^plus-ones$/i) as HTMLInputElement).value).toBe("1");
+    expect(screen.getByLabelText("No")).toBeTruthy();
+    expect(screen.queryByLabelText(/plus-one name/i)).toBeNull();
+    fireEvent.click(screen.getByLabelText("Yes"));
     expect((screen.getByLabelText(/plus-one name/i) as HTMLInputElement).value).toBe("Taylor");
   });
 });

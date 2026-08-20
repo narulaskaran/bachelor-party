@@ -31,6 +31,7 @@ const initial: PartyContent = {
     timed: true,
     entries: [{ time: "7:00 PM", title: "Dinner" }],
   }],
+  packing: [{ title: "Layers", note: "Cold" }],
   rsvp: { heading: "RSVP", description: "Tell us if you can come." },
   draftReview: {
     acknowledged: true,
@@ -51,18 +52,18 @@ const editableFields = [
   ["Tagline", "Updated tagline"],
   ["Start date", "2026-09-05"],
   ["End date", "2026-09-08"],
+  ["Start time", "8:00 PM"],
   ["Location", "Boulder"],
-  ["Airport", "BJC"],
   ["Time zone", "America/Chicago"],
   ["Lodging name", "New cabin"],
-  ["Address", "2 Main St"],
+  ["Lodge address", "2 Main St"],
   ["Listing URL (HTTPS)", "https://example.com/new-cabin"],
-  ["Maps URL (HTTPS)", "https://maps.example.com/new-cabin"],
+  ["Lodge maps URL (HTTPS)", "https://maps.example.com/new-cabin"],
   ["Page style", "editorial"],
-  ["Schedule events", "2026-09-04 | Friday | Arrival | 8:00 PM | Dinner"],
+  ["Schedule title 1", "Late dinner"],
   ["RSVP heading", "Reply now"],
   ["RSVP instructions", "Reply by Friday."],
-  ["Pack items", "Government ID | Wallet"],
+  ["Pack title 1", "Government ID"],
 ] as const;
 
 describe("HostEditor draft review safety", () => {
@@ -104,9 +105,7 @@ describe("HostEditor draft review safety", () => {
     fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Updated title" } });
     fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2026-09-05" } });
     fireEvent.change(screen.getByLabelText("Lodging name"), { target: { value: "New cabin" } });
-    fireEvent.change(screen.getByLabelText("Schedule events"), {
-      target: { value: "2026-09-04 | Friday | Arrival | 8:00 PM | Dinner" },
-    });
+    fireEvent.change(screen.getByLabelText("Schedule title 1"), { target: { value: "Late dinner" } });
     fireEvent.submit(screen.getByRole("button", { name: /save draft/i }).closest("form")!);
 
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1));

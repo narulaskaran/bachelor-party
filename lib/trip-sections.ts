@@ -4,6 +4,7 @@ import {
   type PackingItem,
   type PartyContent,
   type Trip,
+  pollActivities,
 } from "@/lib/party-types";
 
 export type GlanceFact = {
@@ -120,7 +121,7 @@ export function costEachNote(totalCost: string, headcount?: number): string {
 }
 
 export function visibleSections(content: PartyContent): VisibleSections {
-  return {
+  const weekendBlocks: VisibleSections = {
     glance: glanceFacts(content.trip, content.lodging).length > 0,
     actionItems: (content.actionItems?.length ?? 0) > 0,
     schedule: (content.schedule?.length ?? 0) > 0,
@@ -128,5 +129,34 @@ export function visibleSections(content: PartyContent): VisibleSections {
     lodging: hasLodging(content),
     packing: hasPacking(content),
     rsvp: true,
+  };
+  if ((content.preset ?? "weekend") === "night-out") {
+    return {
+      glance: false,
+      actionItems: false,
+      schedule: weekendBlocks.schedule,
+      activities: weekendBlocks.activities,
+      lodging: weekendBlocks.lodging,
+      packing: weekendBlocks.packing,
+      rsvp: true,
+    };
+  }
+  return weekendBlocks;
+}
+
+export function guestRsvpExtras(content: PartyContent): {
+  flights: boolean;
+  food: boolean;
+  votes: boolean;
+  notes: boolean;
+} {
+  if ((content.preset ?? "weekend") === "night-out") {
+    return { flights: false, food: false, votes: false, notes: false };
+  }
+  return {
+    flights: showFlightFields(content),
+    food: false,
+    votes: pollActivities(content).length > 0,
+    notes: false,
   };
 }

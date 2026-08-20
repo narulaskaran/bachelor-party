@@ -89,12 +89,18 @@ describe("RSVP readiness contract", () => {
   it("accepts and normalizes a named plus-one under an explicit allow policy", () => {
     expect(
       parseRsvpSubmission(
-        { attendance: "attending", partySize: "2", plusOneName: "  Taylor  " },
+        { attendance: "attending", plusOneName: "  Taylor  " },
         plusOnesAllowed,
       ),
     ).toEqual({
       ok: true,
       value: { attendanceStatus: "attending", partySize: 2, plusOneName: "Taylor" },
+    });
+    expect(
+      parseRsvpSubmission({ attendance: "maybe", plusOneName: "Taylor" }, plusOnesAllowed),
+    ).toEqual({
+      ok: true,
+      value: { attendanceStatus: "maybe", partySize: 1, plusOneName: null },
     });
   });
 

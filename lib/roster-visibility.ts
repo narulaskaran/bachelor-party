@@ -14,7 +14,9 @@ export type RosterGuest = {
   activityPrefs?: Record<string, string> | null;
 };
 
-export type GuestVisibleRosterEntry = Pick<RosterGuest, "id" | "name">;
+export type GuestVisibleRosterEntry = Pick<RosterGuest, "id" | "name"> & {
+  attendanceStatus: "attending" | "maybe";
+};
 
 export type OrganizerVisibleRosterEntry = Pick<
   RosterGuest,
@@ -30,11 +32,19 @@ export type OrganizerVisibleRosterEntry = Pick<
   | "dietary"
 >;
 
-/** The shared trip page exposes names only to invite holders. */
+export function guestFirstName(name: string): string {
+  return name.trim().split(/\s+/)[0] || name;
+}
+
+/** Guests see first names and Yes/Maybe. No is omitted. */
 export function guestVisibleRoster(
   guests: RosterGuest[],
 ): GuestVisibleRosterEntry[] {
-  return guests.map(({ id, name }) => ({ id, name }));
+  return guests.flatMap((guest) => {
+    if (guest.attendanceStatus === "not-attending") return [];
+    const attendanceStatus = guest.attendanceStatus === "maybe" ? "maybe" : "attending";
+    return [{ id: guest.id, name: guestFirstName(guest.name), attendanceStatus }];
+  });
 }
 
 /** The organizer view may expose flight and dietary details. */

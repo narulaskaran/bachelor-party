@@ -153,10 +153,10 @@ describe("GET /", () => {
     expect(html).not.toContain(SCHEDULE_TITLE);
     expect(html).not.toContain(LODGE_NAME);
     expect(html).toContain("party.narula.xyz");
-    expect(html).toContain("/your-trip");
+    expect(html).toContain("/g/");
     expect(html).not.toContain("yoursite.com");
     expect(html).toMatch(
-      /trip-entry-hint[\s\S]*whitespace-nowrap font-mono[\s\S]*party\.narula\.xyz\/your-trip/,
+      /trip-entry-hint[\s\S]*whitespace-nowrap font-mono[\s\S]*party\.narula\.xyz\/g\//,
     );
     expect(html).not.toMatch(/trip-entry-hint[\s\S]*<wbr\/?>/);
   });
@@ -171,7 +171,7 @@ describe("GET /", () => {
     const html = renderToStaticMarkup(await Page());
 
     expect(html).toContain("preview.example");
-    expect(html).toContain("/your-trip");
+    expect(html).toContain("/g/");
     expect(html).not.toContain("yoursite.com");
   });
 
@@ -185,7 +185,7 @@ describe("GET /", () => {
     const html = renderToStaticMarkup(await Page());
 
     expect(html).toContain("party.narula.xyz");
-    expect(html).toContain("/your-trip");
+    expect(html).toContain("/g/");
     expect(html).not.toContain("bachelor-party-eight.vercel.app/your-trip");
   });
 

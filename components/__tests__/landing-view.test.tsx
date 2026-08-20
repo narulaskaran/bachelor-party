@@ -113,7 +113,7 @@ describe("homepage trip entry", () => {
     expect(screen.getByRole("button", { name: /open trip/i, hidden: true }).className).toMatch(
       /min-h-11/,
     );
-    expect(screen.getByRole("button", { name: /^create a draft$/i, hidden: true }).className).toMatch(
+    expect(screen.getByRole("button", { name: /turn into a draft/i, hidden: true }).className).toMatch(
       /min-h-11/,
     );
     expect(screen.getByText(/party\.narula\.xyz/i)).toBeTruthy();
@@ -138,7 +138,7 @@ describe("homepage trip entry", () => {
     const { container } = render(<LandingView />);
     const example = container.querySelector("#trip-entry-hint .font-mono");
 
-    expect(example?.textContent).toBe("party.narula.xyz/your-trip");
+    expect(example?.textContent).toBe("party.narula.xyz/g/…");
     expect(example?.innerHTML).not.toContain("<wbr>");
     expect(example?.querySelector(".whitespace-nowrap")).toBeNull();
     expect(example?.className).toMatch(/whitespace-nowrap/);

@@ -180,4 +180,20 @@ describe("messy event plan ingestion", () => {
     expect(weekend.content.schedule).toBeUndefined();
     expect(weekend.content.lodging).toBeUndefined();
   });
+
+  it("lifts night-out when/where/what onto trip and leaves weekend blocks off", () => {
+    const { content } = ingestEventPlan(
+      "Thursday dinner\nLocation: Rita's\nWhat: First round is on us\n2026-09-04 7:00 PM — drinks\nLodging: still deciding\nPack: Jacket",
+      { preset: "night-out" },
+    );
+    expect(content.preset).toBe("night-out");
+    expect(content.trip.startDate).toBe("2026-09-04");
+    expect(content.trip.startTime).toBe("7:00 PM");
+    expect(content.trip.location).toBe("Rita's");
+    expect(content.trip.tagline).toBe("First round is on us");
+    expect(content.schedule).toBeUndefined();
+    expect(content.lodging).toBeUndefined();
+    expect(content.packing).toBeUndefined();
+    expect(content.presentation?.style).toBe("clean");
+  });
 });

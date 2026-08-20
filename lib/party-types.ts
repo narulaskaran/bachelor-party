@@ -37,7 +37,11 @@ export type Trip = {
   endDate?: string;
   dateLabel?: string; // human form, e.g. "Sep 4–7, 2026"
   location?: string;
+  address?: string;
+  mapsUrl?: string;
   timezone?: string;
+  /** Optional clock time, e.g. "19:00" or "7:00 PM". Shown only with a real IANA zone. */
+  startTime?: string;
   coordinates?: string;
   elevation?: string;
   airport?: string;
