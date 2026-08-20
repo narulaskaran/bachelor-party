@@ -24,7 +24,7 @@ import {
 import { formatGuestWhen } from "@/lib/guest-when";
 import { EVENT_TIMEZONES, formatTimeZoneLabel, settledTimeZone } from "@/lib/timezones";
 import type { DraftFact, PartyContent } from "@/lib/party-types";
-import { hostKeyStorageKey } from "@/components/create-trip-form";
+import { readStoredHostKey, rememberHostKey } from "@/lib/host-key-storage";
 import { HostLoginForm } from "@/app/[slug]/host/host-login-form";
 import { unlockHostTrip } from "@/lib/host-access";
 import { isWrongHostKeyError } from "@/lib/host-auth";
@@ -76,6 +76,8 @@ export function HostEditor({
     packing: showWeekendEditorBlock(initial, "packing"),
   });
 
+  const [hostKeyFallback, setHostKeyFallback] = useState("");
+
   const trip = content.trip;
   const lodging = content.lodging;
 
@@ -109,7 +111,7 @@ export function HostEditor({
 
   function handleFormChange(event: React.ChangeEvent<HTMLFormElement>) {
     const target = event.target;
-    if (target instanceof HTMLInputElement && target.type === "checkbox") return;
+    if (target instanceof HTMLInputElement && (target.type === "checkbox" || target.name === "hostKeyFallback")) return;
     invalidateFieldEdit();
   }
 
@@ -129,9 +131,13 @@ export function HostEditor({
     [enabledBlocks],
   );
 
-  function storedHostKey(): string | undefined {
-    if (typeof window === "undefined") return undefined;
-    return sessionStorage.getItem(hostKeyStorageKey(slug)) ?? undefined;
+  function hostKeyForActions(form?: FormData): string | undefined {
+    const typed = (form ? String(form.get("hostKeyFallback") ?? "") : hostKeyFallback).trim();
+    if (typed) {
+      rememberHostKey(slug, typed);
+      return typed;
+    }
+    return readStoredHostKey(slug);
   }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -249,7 +255,7 @@ export function HostEditor({
     startTransition(async () => {
       setError(null);
       setNotice(null);
-      const result = await save(slug, next, scheduleUnchanged, storedHostKey());
+      const result = await save(slug, next, scheduleUnchanged, hostKeyForActions(form));
       if (!result.ok) {
         setError(result.error ?? "Couldn't save the draft.");
         return;
@@ -274,7 +280,7 @@ export function HostEditor({
     startTransition(async () => {
       setError(null);
       setNotice(null);
-      const result = await publish(slug, storedHostKey());
+      const result = await publish(slug, hostKeyForActions());
       if (!result.ok) {
         setError(result.error ?? "Couldn't publish the draft.");
         return;
@@ -311,6 +317,7 @@ export function HostEditor({
               Enter the host key from when you created this event. This is not the guest link.
             </p>
             <HostLoginForm
+              slug={slug}
               loginAction={async (_state, formData) =>
                 unlockHostTrip(slug, String(formData.get("hostKey") ?? ""))
               }
@@ -672,6 +679,23 @@ export function HostEditor({
               >
                 Copy guest link
               </Button>
+            </div>
+          ) : null}
+          {!isWrongHostKeyError(error) ? (
+            <div className="space-y-2 rounded-lg border border-border p-4">
+              <Label htmlFor="hostKeyFallback">Host key</Label>
+              <Input
+                id="hostKeyFallback"
+                name="hostKeyFallback"
+                type="password"
+                autoComplete="off"
+                spellCheck={false}
+                value={hostKeyFallback}
+                onChange={(event) => setHostKeyFallback(event.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                If Save draft asks for a host key, paste it here. Copying the key never signs you out.
+              </p>
             </div>
           ) : null}
           <div className="flex flex-wrap gap-3">

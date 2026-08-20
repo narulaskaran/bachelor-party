@@ -1,8 +1,9 @@
 /** @vitest-environment jsdom */
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HostEditor } from "@/components/host-editor";
+import { hostKeyStorageKey, rememberHostKey } from "@/lib/host-key-storage";
 import type { PartyContent } from "@/lib/party-types";
 
 const initial: PartyContent = {
@@ -68,6 +69,7 @@ const editableFields = [
 
 describe("HostEditor draft review safety", () => {
   afterEach(() => cleanup());
+  beforeEach(() => sessionStorage.clear());
 
   it.each(editableFields)("invalidates acknowledgement and saved state when %s changes", (label, value) => {
     const publish = vi.fn(async () => ({ ok: true as const }));
@@ -146,7 +148,14 @@ describe("HostEditor draft review safety", () => {
   });
 
   it("shows a working host-key field when Save draft is rejected for a missing cookie", async () => {
-    const save = vi.fn(async () => ({
+    const save = vi.fn<
+      (
+        slug: string,
+        content: PartyContent,
+        preserveScheduleKeyEvents?: boolean,
+        hostKey?: string,
+      ) => Promise<{ ok: false; error: string }>
+    >(async () => ({
       ok: false as const,
       error: "Wrong host key. It's the key shown when you created this event — not a guest link.",
     }));
@@ -160,11 +169,65 @@ describe("HostEditor draft review safety", () => {
       />,
     );
 
-    expect(screen.queryByLabelText(/^host key$/i)).toBeNull();
+    expect(screen.getByLabelText(/^host key$/i)).toBeTruthy();
     fireEvent.submit(screen.getByRole("button", { name: /save draft/i }).closest("form")!);
     await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(save.mock.calls[0]?.[3]).toBeUndefined();
     expect(screen.getByLabelText(/^host key$/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: /^enter$/i })).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toMatch(/wrong host key/i);
+  });
+
+  it("keeps the stored host key for Save draft after the banner would have been copied", async () => {
+    rememberHostKey("cabin-weekend", "party-tok");
+    const save = vi.fn<
+      (
+        slug: string,
+        content: PartyContent,
+        preserveScheduleKeyEvents?: boolean,
+        hostKey?: string,
+      ) => Promise<{ ok: true }>
+    >(async () => ({ ok: true }));
+    render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published={false}
+        save={save}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+
+    fireEvent.submit(screen.getByRole("button", { name: /save draft/i }).closest("form")!);
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save.mock.calls[0]?.[3]).toBe("party-tok");
+    expect(sessionStorage.getItem(hostKeyStorageKey("cabin-weekend"))).toBe("party-tok");
+  });
+
+  it("sends a typed host key with Save draft when the tab session is empty", async () => {
+    const save = vi.fn<
+      (
+        slug: string,
+        content: PartyContent,
+        preserveScheduleKeyEvents?: boolean,
+        hostKey?: string,
+      ) => Promise<{ ok: true }>
+    >(async () => ({ ok: true }));
+    render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published={false}
+        save={save}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+
+    expect(screen.getByLabelText(/^host key$/i)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/^host key$/i), { target: { value: "party-tok" } });
+    fireEvent.submit(screen.getByRole("button", { name: /save draft/i }).closest("form")!);
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save.mock.calls[0]?.[3]).toBe("party-tok");
+    expect(sessionStorage.getItem(hostKeyStorageKey("cabin-weekend"))).toBe("party-tok");
   });
 });

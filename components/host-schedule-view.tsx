@@ -7,6 +7,7 @@ import { ScheduleSection } from "@/components/sections/schedule";
 import { setScheduleKeyEvent } from "@/lib/host-access";
 import { setDayKeyEvent } from "@/lib/key-events";
 import type { ScheduleDay } from "@/lib/party-types";
+import { nonemptySchedule } from "@/lib/trip-sections";
 
 export function HostScheduleView({
   slug,
@@ -23,7 +24,7 @@ export function HostScheduleView({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  if (schedule.length === 0) {
+  if (nonemptySchedule(schedule).length === 0) {
     return null;
   }
 

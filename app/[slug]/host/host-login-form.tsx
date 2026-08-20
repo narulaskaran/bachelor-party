@@ -4,14 +4,24 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { rememberHostKey } from "@/lib/host-key-storage";
 
 type LoginAction = (
   state: { error?: string },
   formData: FormData,
 ) => Promise<{ error?: string }>;
 
-export function HostLoginForm({ loginAction }: { loginAction: LoginAction }) {
-  const [state, formAction, isPending] = useActionState(loginAction, {});
+export function HostLoginForm({
+  loginAction,
+  slug,
+}: {
+  loginAction: LoginAction;
+  slug?: string;
+}) {
+  const [state, formAction, isPending] = useActionState(async (prev: { error?: string }, formData: FormData) => {
+    if (slug) rememberHostKey(slug, String(formData.get("hostKey") ?? ""));
+    return loginAction(prev, formData);
+  }, {});
 
   return (
     <form action={formAction} className="flex flex-col gap-4">

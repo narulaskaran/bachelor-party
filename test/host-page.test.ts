@@ -34,6 +34,7 @@ vi.mock("@/lib/host-access", () => ({
   getHostGuests: vi.fn(),
   saveHostDraft: vi.fn(),
   publishHostDraft: vi.fn(),
+  setScheduleKeyEvent: vi.fn(),
 }));
 
 vi.mock("@/components/host-editor", () => ({
@@ -42,10 +43,6 @@ vi.mock("@/components/host-editor", () => ({
 
 vi.mock("@/components/host-key-banner", () => ({
   HostKeyBanner: () => null,
-}));
-
-vi.mock("@/components/host-schedule-view", () => ({
-  HostScheduleView: () => null,
 }));
 
 vi.mock("@/components/organizer-roster", () => ({
@@ -99,6 +96,9 @@ describe("host guest preview", () => {
     expect(html).toContain("inert");
     expect(html).toContain("PARTY_VIEW sample=false preview=true");
     expect(html).not.toContain("PARTY_VIEW sample=true");
+    expect(html).not.toContain("Key events");
+    expect(html).not.toMatch(/API, CLI, or an agent/);
+    expect(html).not.toContain("Add days and events");
   });
 
   it("keeps /demo host preview on sample copy", async () => {
@@ -134,5 +134,39 @@ describe("host guest preview", () => {
     expect(html).toContain('id="hostKey"');
     expect(html).toContain('name="hostKey"');
     expect(html).not.toContain("HOST_EDITOR");
+  });
+
+  it("does not mount Key events for a night out with empty schedule days", async () => {
+    vi.mocked(resolvePartyBySlug).mockResolvedValue({ status: "unpublished" });
+    vi.mocked(hostSessionForSlug).mockResolvedValue(true);
+    vi.mocked(getHostEditorState).mockResolvedValue({
+      ok: true,
+      content: {
+        ...nightOut,
+        schedule: [
+          {
+            key: "2026-09-04",
+            date: "2026-09-04",
+            weekday: "Friday",
+            label: "Friday",
+            timed: false,
+            entries: [],
+          },
+        ],
+      },
+      published: false,
+      sample: false,
+    });
+    vi.mocked(getHostGuests).mockResolvedValue([]);
+
+    const html = renderToStaticMarkup(
+      (await HostPage({ params: Promise.resolve({ slug: "friday-drinks" }) })) as ReactElement,
+    );
+
+    expect(html).toContain("Guest preview");
+    expect(html).not.toContain("Key events");
+    expect(html).not.toMatch(/API, CLI, or an agent/);
+    expect(html).not.toContain("Add days and events");
+    expect(html).not.toContain('id="key-events"');
   });
 });

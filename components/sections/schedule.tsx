@@ -1,5 +1,6 @@
 import type { ScheduleDay } from "@/lib/party-types";
 import { KEY_EVENT_HINT, isKeyEvent, keyEventCount } from "@/lib/key-events";
+import { nonemptySchedule } from "@/lib/trip-sections";
 import { kickerClass, sectionTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +18,8 @@ export function ScheduleSection({
   picker?: SchedulePicker;
   id?: string;
 }) {
-  if (schedule.length === 0) return null;
+  const days = nonemptySchedule(schedule);
+  if (days.length === 0) return null;
 
   return (
     <section id={id} className="scroll-mt-20 py-12 sm:py-16">
@@ -27,7 +29,7 @@ export function ScheduleSection({
       ) : null}
 
       <div className="mx-auto mt-8 flex max-w-3xl flex-col">
-        {schedule.map((day, dayIndex) => {
+        {days.map((day, dayIndex) => {
           const marked = keyEventCount(day.entries);
           const headingLabel = guestDayLabel(day);
           return (

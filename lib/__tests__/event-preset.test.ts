@@ -23,5 +23,23 @@ describe("event presets", () => {
     expect(showWeekendEditorBlock(night, "packing")).toBe(false);
     expect(showWeekendEditorBlock(weekend, "packing")).toBe(true);
     expect(showWeekendEditorBlock({ ...night, packing: [{ title: "Jacket" }] }, "packing")).toBe(true);
+    expect(
+      showWeekendEditorBlock(
+        {
+          ...night,
+          schedule: [
+            {
+              key: "2026-09-04",
+              date: "2026-09-04",
+              weekday: "Friday",
+              label: "Friday",
+              timed: false,
+              entries: [],
+            },
+          ],
+        },
+        "schedule",
+      ),
+    ).toBe(false);
   });
 });

@@ -34,6 +34,15 @@ const friday: ScheduleDay = {
   ],
 };
 
+const emptyDay: ScheduleDay = {
+  key: "2026-09-04",
+  date: "2026-09-04",
+  weekday: "Friday",
+  label: "Friday",
+  timed: true,
+  entries: [],
+};
+
 describe("ScheduleSection", () => {
   it("labels key events and paints time, title, and dot with the primary color", () => {
     const html = renderToStaticMarkup(createElement(ScheduleSection, { schedule: [friday] }));
@@ -128,6 +137,14 @@ describe("HostScheduleView", () => {
     expect(container.textContent).not.toMatch(/key events/i);
     expect(container.textContent).not.toMatch(/Add days and events/i);
   });
+
+  it("hides the key events picker when days have no titled events", () => {
+    const { container } = render(<HostScheduleView slug="cabin" schedule={[emptyDay]} />);
+    expect(container.textContent).toBe("");
+    expect(container.textContent).not.toMatch(/Key events/i);
+    expect(container.textContent).not.toMatch(/API, CLI, or an agent/i);
+    expect(container.textContent).not.toMatch(/Add days and events/i);
+  });
 });
 
 describe("ScheduleSection empty", () => {
@@ -136,5 +153,18 @@ describe("ScheduleSection empty", () => {
     expect(html).toBe("");
     expect(html).not.toMatch(/Key events/i);
     expect(html).not.toMatch(/API, CLI, or an agent/i);
+  });
+
+  it("renders nothing when days have no titled events, even with a picker", () => {
+    const html = renderToStaticMarkup(
+      createElement(ScheduleSection, {
+        schedule: [emptyDay],
+        picker: { onToggle: () => undefined },
+      }),
+    );
+    expect(html).toBe("");
+    expect(html).not.toMatch(/Key events/i);
+    expect(html).not.toMatch(/API, CLI, or an agent/i);
+    expect(html).not.toMatch(/Add days and events/i);
   });
 });

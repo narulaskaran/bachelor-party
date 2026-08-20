@@ -3,6 +3,7 @@ import {
   type Lodging,
   type PackingItem,
   type PartyContent,
+  type ScheduleDay,
   type Trip,
   pollActivities,
 } from "@/lib/party-types";
@@ -51,6 +52,20 @@ export function nonemptyPacking(list?: PackingItem[]): PackingItem[] {
 
 export function hasPacking(content: PartyContent): boolean {
   return nonemptyPacking(content.packing).length > 0;
+}
+
+/** Days that have at least one titled event. Empty or untitled days stay hidden. */
+export function nonemptySchedule(schedule?: ScheduleDay[]): ScheduleDay[] {
+  return (schedule ?? [])
+    .map((day) => ({
+      ...day,
+      entries: (day.entries ?? []).filter((entry) => Boolean(entry.title?.trim())),
+    }))
+    .filter((day) => day.entries.length > 0);
+}
+
+export function hasSchedule(content: PartyContent): boolean {
+  return nonemptySchedule(content.schedule).length > 0;
 }
 
 export function heroMeta(trip: Trip): string[] {
@@ -124,7 +139,7 @@ export function visibleSections(content: PartyContent): VisibleSections {
   const weekendBlocks: VisibleSections = {
     glance: glanceFacts(content.trip, content.lodging).length > 0,
     actionItems: (content.actionItems?.length ?? 0) > 0,
-    schedule: (content.schedule?.length ?? 0) > 0,
+    schedule: hasSchedule(content),
     activities: hasActivities(content),
     lodging: hasLodging(content),
     packing: hasPacking(content),

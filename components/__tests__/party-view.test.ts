@@ -41,6 +41,38 @@ describe("PartyView host preview", () => {
     );
     expect(html).toContain('data-rsvp-sample="false"');
     expect(html).toContain('data-rsvp-preview="true"');
+    expect(html).not.toContain("Key events");
+    expect(html).not.toContain("Add days and events");
+    expect(html).not.toMatch(/API, CLI, or an agent/);
+  });
+
+  it("hides Key events in host preview when a night out has empty schedule days", () => {
+    const html = renderToStaticMarkup(
+      createElement(PartyView, {
+        content: {
+          kind: "trip",
+          preset: "night-out",
+          trip: { siteName: "Friday drinks" },
+          schedule: [
+            {
+              key: "2026-09-04",
+              date: "2026-09-04",
+              weekday: "Friday",
+              label: "Friday",
+              timed: false,
+              entries: [],
+            },
+          ],
+        },
+        preview: true,
+        slug: "friday-drinks",
+      }),
+    );
+    expect(html).not.toContain("Key events");
+    expect(html).not.toContain("Schedule");
+    expect(html).not.toContain("Add days and events");
+    expect(html).not.toMatch(/API, CLI, or an agent/);
+    expect(html).not.toContain('id="schedule"');
   });
 
   it("still marks the public demo fixture as sample", () => {

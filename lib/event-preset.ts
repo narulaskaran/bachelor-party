@@ -1,5 +1,5 @@
 import type { PartyContent } from "@/lib/party-types";
-import { hasActivities, hasLodging, hasPacking } from "@/lib/trip-sections";
+import { hasActivities, hasLodging, hasPacking, hasSchedule } from "@/lib/trip-sections";
 
 /** One Event model, two host starting points. Empty blocks stay hidden for guests. */
 export const EVENT_PRESETS = ["night-out", "weekend"] as const;
@@ -23,7 +23,7 @@ export type WeekendBlock = "schedule" | "lodging" | "activities" | "packing";
 
 export function weekendBlocksFilled(content: PartyContent): WeekendBlock[] {
   const filled: WeekendBlock[] = [];
-  if ((content.schedule?.length ?? 0) > 0) filled.push("schedule");
+  if (hasSchedule(content)) filled.push("schedule");
   if (hasLodging(content)) filled.push("lodging");
   if (hasActivities(content)) filled.push("activities");
   if (hasPacking(content)) filled.push("packing");

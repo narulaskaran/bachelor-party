@@ -10,13 +10,10 @@ import {
   type CreateTripResult,
 } from "@/lib/create-trip";
 import { openAsHost } from "@/lib/host-access";
+import { rememberHostKey } from "@/lib/host-key-storage";
 import { sectionTitleClass } from "@/lib/type";
 
-const HOST_KEY_STORAGE = "bp-host-key";
-
-export function hostKeyStorageKey(slug: string): string {
-  return `${HOST_KEY_STORAGE}:${slug}`;
-}
+export { hostKeyStorageKey } from "@/lib/host-key-storage";
 
 const PLAN_PLACEHOLDER = `Friday drinks
 Rita's on 6th
@@ -51,7 +48,7 @@ export function CreateTripForm({
     try {
       const result = await create({ siteName: "", plan, preset });
       if (result.ok) {
-        sessionStorage.setItem(hostKeyStorageKey(result.packet.slug), result.packet.adminToken);
+        rememberHostKey(result.packet.slug, result.packet.adminToken);
         const unlocked = await openAsHost(result.packet.slug, result.packet.adminToken);
         if (unlocked?.error) {
           setError(unlocked.error);

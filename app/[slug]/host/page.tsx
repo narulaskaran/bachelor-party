@@ -7,6 +7,7 @@ import { HostEditor } from "@/components/host-editor";
 import { HostScheduleView } from "@/components/host-schedule-view";
 import { getHostGuests, getHostEditorState, hostSessionForSlug, publishHostDraft, saveHostDraft } from "@/lib/host-access";
 import { resolvePartyBySlug } from "@/lib/resolve-party";
+import { hasSchedule } from "@/lib/trip-sections";
 import { login } from "./actions";
 import { HostLoginForm } from "./host-login-form";
 
@@ -32,7 +33,7 @@ export default async function HostPage({ params }: Params) {
             </p>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
-            <HostLoginForm loginAction={loginWithSlug} />
+            <HostLoginForm loginAction={loginWithSlug} slug={slug} />
           </CardContent>
         </Card>
       </div>
@@ -79,7 +80,7 @@ export default async function HostPage({ params }: Params) {
           </div>
         </section>
       </main>
-      {(editor.content.schedule?.length ?? 0) > 0 ? (
+      {hasSchedule(editor.content) ? (
         <HostScheduleView
           slug={slug}
           schedule={editor.content.schedule ?? []}

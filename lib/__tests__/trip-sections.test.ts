@@ -6,7 +6,9 @@ import {
   hasActivities,
   hasLodging,
   hasPacking,
+  hasSchedule,
   heroMeta,
+  nonemptySchedule,
   showFlightFields,
   visibleSections,
 } from "@/lib/trip-sections";
@@ -92,6 +94,91 @@ describe("visibleSections", () => {
     expect(hasPacking({ trip: { siteName: "X" }, packing: [{ title: "Government ID" }] })).toBe(
       true,
     );
+  });
+
+  it("does not treat empty or untitled schedule days as present", () => {
+    expect(hasSchedule({ trip: { siteName: "X" } })).toBe(false);
+    expect(hasSchedule({ trip: { siteName: "X" }, schedule: [] })).toBe(false);
+    expect(
+      hasSchedule({
+        trip: { siteName: "X" },
+        schedule: [
+          {
+            key: "2026-09-04",
+            date: "2026-09-04",
+            weekday: "Friday",
+            label: "Friday",
+            timed: true,
+            entries: [],
+          },
+        ],
+      }),
+    ).toBe(false);
+    expect(
+      hasSchedule({
+        trip: { siteName: "X" },
+        schedule: [
+          {
+            key: "2026-09-04",
+            date: "2026-09-04",
+            weekday: "Friday",
+            label: "Friday",
+            timed: true,
+            entries: [{ time: "7:00 PM", title: "   " }],
+          },
+        ],
+      }),
+    ).toBe(false);
+    expect(
+      hasSchedule({
+        trip: { siteName: "X" },
+        schedule: [
+          {
+            key: "2026-09-04",
+            date: "2026-09-04",
+            weekday: "Friday",
+            label: "Friday",
+            timed: true,
+            entries: [{ time: "7:00 PM", title: "Dinner" }],
+          },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      nonemptySchedule([
+        {
+          key: "2026-09-04",
+          date: "2026-09-04",
+          weekday: "Friday",
+          label: "Friday",
+          timed: true,
+          entries: [{ title: "   " }, { title: "Dinner" }],
+        },
+      ]),
+    ).toEqual([
+      expect.objectContaining({
+        entries: [{ title: "Dinner" }],
+      }),
+    ]);
+  });
+
+  it("hides night-out schedule when days exist but have no events", () => {
+    expect(
+      visibleSections({
+        preset: "night-out",
+        trip: { siteName: "Dinner" },
+        schedule: [
+          {
+            key: "2026-09-04",
+            date: "2026-09-04",
+            weekday: "Friday",
+            label: "Friday",
+            timed: false,
+            entries: [],
+          },
+        ],
+      }).schedule,
+    ).toBe(false);
   });
 });
 
