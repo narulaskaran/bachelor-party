@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ingestEventPlan, reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
+import { draftFactsForContent, ingestEventPlan, reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
 
 describe("messy event plan ingestion", () => {
   it("rejects empty input as an unreviewed draft with no invented logistics", () => {
@@ -49,6 +49,24 @@ describe("messy event plan ingestion", () => {
       startDate: "2026-10-10",
       endDate: "2026-10-12",
     });
+  });
+
+  it("does not confirm a missing start date when only the end date is overridden", () => {
+    const { content, review } = ingestEventPlan("Event: Cabin Weekend", { endDate: "2026-10-12" });
+    expect(content.trip.startDate).toBeUndefined();
+    expect(content.trip.endDate).toBe("2026-10-12");
+    expect(review.facts.find((item) => item.path === "trip.startDate")).toMatchObject({ status: "missing" });
+    expect(review.facts.find((item) => item.path === "trip.endDate")).toMatchObject({ status: "confirmed", value: "2026-10-12" });
+  });
+
+  it("recomputes canonical fact values and confirms edited values", () => {
+    const initial = ingestEventPlan("Event: Notes title\nLocation: Old place");
+    const facts = draftFactsForContent(
+      { ...initial.content, trip: { ...initial.content.trip, siteName: "Edited title", location: "New place" } },
+      initial.review.facts,
+    );
+    expect(facts.find((item) => item.path === "trip.siteName")).toMatchObject({ status: "confirmed", value: "Edited title" });
+    expect(facts.find((item) => item.path === "trip.location")).toMatchObject({ status: "confirmed", value: "New place" });
   });
 
   it("requires explicit review before publishing and strips private review metadata", () => {

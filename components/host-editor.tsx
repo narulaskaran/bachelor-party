@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { END_BEFORE_START_MESSAGE, isInvertedDateRange } from "@/lib/trip-dates";
 import { parseScheduleText, rsvpForDraft, scheduleToText } from "@/lib/draft-publish";
+import { draftFactsForContent } from "@/lib/plan-ingestion";
 import type { DraftFact, PartyContent } from "@/lib/party-types";
 
 export type HostEditorAction =
@@ -44,22 +45,36 @@ export function HostEditor({
     setReviewAcknowledged(false);
     setHasSavedDraft(false);
     setContent((current) => ({
-      ...current,
-      trip: { ...current.trip, [field]: value || undefined },
-      draftReview: current.draftReview ? { ...current.draftReview, acknowledged: false } : current.draftReview,
+      ...(current.draftReview
+        ? {
+            ...current,
+            trip: { ...current.trip, [field]: value || undefined },
+            draftReview: {
+              ...current.draftReview,
+              acknowledged: false,
+              facts: draftFactsForContent(
+                { ...current, trip: { ...current.trip, [field]: value || undefined } },
+                current.draftReview.facts,
+              ),
+            },
+          }
+        : { ...current, trip: { ...current.trip, [field]: value || undefined } }),
     }));
   }
 
   function reviewFacts(): DraftFact[] {
-    return content.draftReview?.facts ?? [
-      { path: "trip.siteName", label: "Event name", status: trip.siteName ? "confirmed" : "missing", value: trip.siteName },
-      { path: "trip.startDate", label: "Start date", status: trip.startDate ? "confirmed" : "missing", value: trip.startDate },
-      { path: "trip.endDate", label: "End date", status: trip.endDate ? "confirmed" : "missing", value: trip.endDate },
-      { path: "trip.location", label: "Location", status: trip.location ? "confirmed" : "missing", value: trip.location },
-      { path: "trip.timezone", label: "Timezone", status: trip.timezone ? "confirmed" : "missing", value: trip.timezone },
-      { path: "lodging.name", label: "Lodging", status: lodging?.name ? "confirmed" : "missing", value: lodging?.name },
-      { path: "schedule", label: "Schedule", status: content.schedule?.length ? "confirmed" : "missing", value: content.schedule?.length ? `${content.schedule.length} day(s)` : undefined },
-    ];
+    return draftFactsForContent(content, content.draftReview?.facts);
+  }
+
+  function invalidateFieldEdit() {
+    setReviewAcknowledged(false);
+    setHasSavedDraft(false);
+  }
+
+  function handleFormChange(event: React.ChangeEvent<HTMLFormElement>) {
+    const target = event.target;
+    if (target instanceof HTMLInputElement && target.type === "checkbox") return;
+    invalidateFieldEdit();
   }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -107,10 +122,6 @@ export function HostEditor({
       presentation: {
         style: String(form.get("presentationStyle") ?? "clean") === "editorial" ? "editorial" : "clean",
       },
-      draftReview: {
-        ...(content.draftReview ?? { facts: reviewFacts() }),
-        acknowledged: reviewAcknowledged,
-      },
     };
     const lodgingName = String(form.get("lodgingName") ?? "").trim();
     if (lodgingName) {
@@ -138,6 +149,11 @@ export function HostEditor({
     } else {
       next.lodging = undefined;
     }
+    next.draftReview = {
+      ...(content.draftReview ?? { facts: [] }),
+      acknowledged: reviewAcknowledged,
+      facts: draftFactsForContent(next, content.draftReview?.facts),
+    };
 
     startTransition(async () => {
       setError(null);
@@ -231,8 +247,9 @@ export function HostEditor({
                 setContent((current) => ({
                   ...current,
                   draftReview: {
-                    ...(current.draftReview ?? { facts: reviewFacts() }),
+                    ...(current.draftReview ?? { facts: draftFactsForContent(current) }),
                     acknowledged: checked,
+                    facts: draftFactsForContent(current, current.draftReview?.facts),
                   },
                 }));
               }}
@@ -241,7 +258,7 @@ export function HostEditor({
             <span>I reviewed every fact, corrected what I know, and confirm no logistics were guessed.</span>
           </label>
         </section>
-        <form className="space-y-8" onSubmit={submit}>
+        <form className="space-y-8" onSubmit={submit} onChange={handleFormChange}>
           <fieldset disabled={isPending || sample} className="space-y-6">
             <legend className="text-lg font-semibold">Trip basics</legend>
             <div className="grid gap-4 sm:grid-cols-2">

@@ -12,6 +12,16 @@ export type IngestionResult = {
   review: DraftReview;
 };
 
+const CANONICAL_FACTS = [
+  ["trip.siteName", "Event name"],
+  ["trip.startDate", "Start date"],
+  ["trip.endDate", "End date"],
+  ["trip.location", "Location"],
+  ["trip.timezone", "Timezone"],
+  ["lodging.name", "Lodging"],
+  ["schedule", "Schedule"],
+] as const;
+
 const MONTHS = new Map([
   ["jan", 1], ["january", 1], ["feb", 2], ["february", 2], ["mar", 3], ["march", 3],
   ["apr", 4], ["april", 4], ["may", 5], ["jun", 6], ["june", 6], ["jul", 7],
@@ -31,6 +41,43 @@ function clean(value: string | undefined): string | undefined {
 
 function fact(path: string, label: string, status: DraftFactStatus, value?: string, note?: string, source?: string): DraftFact {
   return { path, label, status, ...(value ? { value } : {}), ...(note ? { note } : {}), ...(source ? { source } : {}) };
+}
+
+/** Reconcile review facts with the canonical fields after a host edit. */
+export function draftFactsForContent(content: PartyContent, previousFacts: DraftFact[] = []): DraftFact[] {
+  const previousByPath = new Map(previousFacts.map((item) => [item.path, item]));
+  const values: Record<string, string | undefined> = {
+    "trip.siteName": content.trip.siteName,
+    "trip.startDate": content.trip.startDate,
+    "trip.endDate": content.trip.endDate,
+    "trip.location": content.trip.location,
+    "trip.timezone": content.trip.timezone,
+    "lodging.name": content.lodging?.name,
+    schedule: content.schedule?.length ? `${content.schedule.reduce((count, day) => count + day.entries.length, 0)} item(s)` : undefined,
+  };
+  const notes: Record<string, string | undefined> = {
+    "trip.endDate": "A second date is not confirmed.",
+    "trip.location": "Location stays TBD until you confirm it.",
+    "trip.timezone": "Times without a timezone are not settled logistics.",
+    "lodging.name": "Lodging stays TBD until you confirm it.",
+    schedule: "Add dated times only when they are explicit in the plan.",
+  };
+
+  return CANONICAL_FACTS.map(([path, label]) => {
+    const value = values[path];
+    const previous = previousByPath.get(path);
+    const changed = previous !== undefined && previous.value !== value;
+    const next: DraftFact = {
+      path,
+      label,
+      status: value ? (changed ? "confirmed" : previous?.status ?? "confirmed") : "missing",
+    };
+    if (value) next.value = value;
+    if (!changed && previous?.source) next.source = previous.source;
+    if (!value) next.note = previous?.note ?? notes[path];
+    else if (!changed && previous?.note) next.note = previous.note;
+    return next;
+  });
 }
 
 function validIso(value: string): string | undefined {
@@ -104,15 +151,16 @@ export function ingestEventPlan(planInput: string, overrides: IngestionOverrides
   const timezone = labeled(plan, ["timezone", "time zone"]).value ?? plan.match(TIMEZONE_RE)?.[0];
   const schedule = scheduleFromPlan(plan, dates.dates);
   const titleStatus: DraftFactStatus = overrides.siteName ? "confirmed" : title ? "extracted" : "missing";
-  const dateStatus: DraftFactStatus = overrides.startDate || overrides.endDate ? "confirmed" : dates.dates.length ? "extracted" : "missing";
+  const startDateStatus: DraftFactStatus = overrides.startDate ? "confirmed" : startDate ? "extracted" : "missing";
+  const endDateStatus: DraftFactStatus = overrides.endDate ? "confirmed" : endDate ? "extracted" : "missing";
   const locationStatus: DraftFactStatus = location.value ? "extracted" : "missing";
   const lodgingStatus: DraftFactStatus = lodging.value ? "extracted" : "missing";
   const timezoneStatus: DraftFactStatus = timezone ? "extracted" : "missing";
   const dateNote = dates.malformed.length ? `Could not use ${dates.malformed.join(", ")}; confirm the date.` : !dates.dates.length ? "No complete calendar date found." : undefined;
   const facts: DraftFact[] = [
     fact("trip.siteName", "Event name", titleStatus, title, title ? undefined : "Add a name before sharing.", titleFromPlan(plan).source),
-    fact("trip.startDate", "Start date", dateStatus, startDate, dateNote, dates.source),
-    fact("trip.endDate", "End date", endDate ? dateStatus : "missing", endDate, dates.dates.length < 2 ? "A second date is not confirmed." : undefined, dates.source),
+    fact("trip.startDate", "Start date", startDateStatus, startDate, dateNote, dates.source),
+    fact("trip.endDate", "End date", endDateStatus, endDate, dates.dates.length < 2 ? "A second date is not confirmed." : undefined, dates.source),
     fact("trip.location", "Location", locationStatus, location.value, "Location stays TBD until you confirm it.", location.source),
     fact("lodging.name", "Lodging", lodgingStatus, lodging.value, "Lodging stays TBD until you confirm it.", lodging.source),
     fact("trip.timezone", "Timezone", timezoneStatus, timezone, "Times without a timezone are not settled logistics.", timezone ? String(timezone) : undefined),
