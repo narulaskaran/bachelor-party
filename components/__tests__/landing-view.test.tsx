@@ -71,6 +71,8 @@ describe("homepage trip entry", () => {
     expect(invite.closest("[data-slot=button]")!.className).toMatch(/min-h-11/);
     expect(hosting.getAttribute("aria-expanded")).toBe("false");
     expect(invite.getAttribute("aria-expanded")).toBe("false");
+    expect(hosting.closest("[data-slot=button]")?.getAttribute("data-variant")).toBe("outline");
+    expect(invite.closest("[data-slot=button]")?.getAttribute("data-variant")).toBe("outline");
     expect(panelEl("create")).toBeTruthy();
     expect(panelEl("enter")).toBeTruthy();
     expectPanel("create", false);

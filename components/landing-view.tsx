@@ -50,7 +50,7 @@ export function LandingView({
         </p>
 
         <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
-          <Button asChild variant={panel === "enter" ? "outline" : "default"}>
+          <Button asChild variant={panel === null || panel === "enter" ? "outline" : "default"}>
             <HashFocusLink
               href={landingPanelHash("create")}
               focusId={["plan", "create-trip-heading"]}
@@ -61,7 +61,7 @@ export function LandingView({
               I&apos;m hosting
             </HashFocusLink>
           </Button>
-          <Button asChild variant={panel === "create" ? "outline" : "default"}>
+          <Button asChild variant={panel === null || panel === "create" ? "outline" : "default"}>
             <HashFocusLink
               href={landingPanelHash("enter")}
               focusId={["trip-slug", "trip-entry-heading"]}
