@@ -171,6 +171,10 @@ describe("RSVP lower-anchor navigation contract", () => {
       expect(window.location.hash).toBe("#rsvp");
       expect(document.activeElement).toBe(target);
       expectFullyVisible(target, height);
+      expect(scrollIntoView).toHaveBeenCalledTimes(2);
+      expect(scrollIntoView).toHaveBeenNthCalledWith(1, { behavior: "smooth", block: "start" });
+      expect(scrollIntoView).toHaveBeenNthCalledWith(2, { behavior: "auto", block: "start" });
+      expect(window.scrollTo).not.toHaveBeenCalled();
     },
   );
 
