@@ -28,6 +28,15 @@ function prefersReducedMotion() {
   );
 }
 
+/** Let transient UI close and layout settle before moving a lower anchor. */
+function afterLayout(callback: () => void) {
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => callback());
+  } else {
+    queueMicrotask(callback);
+  }
+}
+
 /** In-page hash link that moves keyboard/AT focus after the target is shown. */
 export function HashFocusLink({
   href,
@@ -66,7 +75,7 @@ export function HashFocusLink({
         });
       }
     };
-    if (deferFocus) queueMicrotask(navigate);
+    if (deferFocus) afterLayout(navigate);
     else navigate();
   }
 

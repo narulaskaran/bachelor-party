@@ -71,11 +71,42 @@ describe("MobileNav", () => {
 
     await user.click(screen.getByLabelText("Open menu"));
     await user.click(screen.getByRole("link", { name: "RSVP" }));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     expect(order).toEqual(["focus", "menu:false", "scroll"]);
     expect(window.location.hash).toBe("#rsvp");
     expect(document.activeElement).toBe(target);
     expect(details.open).toBe(false);
+  });
+
+  it("waits for the menu layout to settle before making a lower anchor visible", async () => {
+    const user = userEvent.setup();
+    const order: string[] = [];
+    let frame: FrameRequestCallback | undefined;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frame = callback;
+      return 1;
+    });
+    const target = document.createElement("section");
+    target.id = "rsvp";
+    target.addEventListener("focus", () => order.push("focus"));
+    document.body.append(target);
+    const { container } = render(<MobileNav links={links} />);
+    const details = container.querySelector("details")!;
+    target.addEventListener("focus", () => order.push(`menu:${details.open}`));
+    scrollIntoView.mockImplementation(() => order.push("scroll"));
+
+    await user.click(screen.getByLabelText("Open menu"));
+    await user.click(screen.getByRole("link", { name: "RSVP" }));
+
+    expect(details.open).toBe(false);
+    expect(frame).toEqual(expect.any(Function));
+    expect(order).toEqual([]);
+
+    frame?.(0);
+
+    expect(order).toEqual(["focus", "menu:false", "scroll"]);
+    expect(document.activeElement).toBe(target);
   });
 
   it("closes on an outside tap", async () => {
