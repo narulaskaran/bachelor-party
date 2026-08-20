@@ -28,6 +28,32 @@ function prefersReducedMotion() {
   );
 }
 
+/**
+ * Scroll an anchor with a deterministic fallback for browsers that suppress
+ * programmatic smooth scrolling while the document requests scroll-smooth.
+ */
+function scrollDestination(element: HTMLElement, behavior: ScrollBehavior) {
+  const initialTop = element.getBoundingClientRect().top;
+  element.scrollIntoView({ behavior, block: "start" });
+  if (behavior !== "smooth") return;
+
+  const settle = () => {
+    if (Math.abs(element.getBoundingClientRect().top - initialTop) > 1) return;
+
+    const root = document.documentElement;
+    const previousScrollBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = "auto";
+    element.scrollIntoView({ behavior: "auto", block: "start" });
+    root.style.scrollBehavior = previousScrollBehavior;
+  };
+
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => requestAnimationFrame(settle));
+  } else {
+    queueMicrotask(settle);
+  }
+}
+
 /** Let transient UI close and layout settle before moving a lower anchor. */
 function afterLayout(callback: () => void) {
   if (typeof requestAnimationFrame === "function") {
@@ -69,10 +95,10 @@ export function HashFocusLink({
     const navigate = () => {
       if (destination) focusDestination(destination);
       if (scroll) {
-        (section ?? target)?.scrollIntoView({
-          behavior: prefersReducedMotion() ? "auto" : "smooth",
-          block: "start",
-        });
+        const scrollTarget = section ?? target;
+        if (scrollTarget) {
+          scrollDestination(scrollTarget, prefersReducedMotion() ? "auto" : "smooth");
+        }
       }
     };
     if (deferFocus) afterLayout(navigate);

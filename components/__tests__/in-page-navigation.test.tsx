@@ -66,6 +66,32 @@ describe("in-page navigation", () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "auto", block: "start" });
   });
 
+  it("falls back to an instant scroll when smooth scrolling does not move the target", () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    addTarget("rsvp");
+    render(
+      <HashFocusLink href="#rsvp" focusId="rsvp">
+        RSVP
+      </HashFocusLink>,
+    );
+
+    fireEvent.click(screen.getByRole("link", { name: "RSVP" }));
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(scrollIntoView).toHaveBeenLastCalledWith({ behavior: "smooth", block: "start" });
+
+    while (frames.length > 0) {
+      frames.shift()!(0);
+    }
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(2);
+    expect(scrollIntoView).toHaveBeenLastCalledWith({ behavior: "auto", block: "start" });
+    expect(document.documentElement.style.scrollBehavior).toBe("");
+  });
+
   it("smooth-scrolls action-item links to their section", async () => {
     const user = userEvent.setup();
     addTarget("rsvp");
