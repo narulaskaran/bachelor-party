@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { readBearerToken } from "@/lib/admin-auth";
 import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
 import { getDb, schema } from "@/lib/db";
+import { hostSessionCookie } from "@/lib/host-auth";
 import { organizerPacket } from "@/lib/organizer-packet";
 import { createPartySchema } from "@/lib/party-schema";
 import { rateLimitCreate } from "@/lib/rate-limit";
@@ -157,7 +158,7 @@ export async function POST(request: Request) {
         adminToken: rawAdminToken,
       })
       .returning();
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         trip: { id: party.id, slug: party.slug, adminToken: party.adminToken },
         party: { id: party.id, slug: party.slug, adminToken: party.adminToken },
@@ -169,6 +170,11 @@ export async function POST(request: Request) {
       },
       { status: 201 },
     );
+    // Same cookie unlockHostTrip sets, so /host Save and reload keep working
+    // after create without pasting the host key.
+    const { name, value, ...options } = await hostSessionCookie(party.id, rawAdminToken);
+    response.cookies.set(name, value, options);
+    return response;
   } catch (err) {
     console.error("create trip failed", err);
     return NextResponse.json({ error: "Failed to create trip" }, { status: 500 });

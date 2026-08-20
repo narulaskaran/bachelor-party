@@ -8,8 +8,7 @@ import { getDb, schema } from "@/lib/db";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
 import { reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
-import { sessionCookieOptions } from "@/lib/cookie-hash";
-import { cookieAuthenticatesHost, HOST_COOKIE, hostCookieValue } from "@/lib/host-auth";
+import { cookieAuthenticatesHost, HOST_COOKIE, hostSessionCookie } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
 import { parsePartyContentForExisting } from "@/lib/party-schema";
 import {
@@ -26,11 +25,8 @@ export type SetKeyEventResult =
 
 async function setHostAccessCookie(partyId: number, adminToken: string) {
   const cookieStore = await cookies();
-  cookieStore.set(
-    HOST_COOKIE,
-    await hostCookieValue(partyId, adminToken),
-    sessionCookieOptions(),
-  );
+  const { name, value, ...options } = await hostSessionCookie(partyId, adminToken);
+  cookieStore.set(name, value, options);
 }
 
 /** Set the host cookie and send them to the key-event picker. */

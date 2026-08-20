@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { HOST_COOKIE, hostCookieValue } from "@/lib/host-auth";
+import { POST } from "@/app/api/admin/trips/route";
+import { createTripFromUi } from "@/lib/create-trip";
+import { cookieAuthenticatesHost, HOST_COOKIE, hostCookieValue } from "@/lib/host-auth";
 import { getDb } from "@/lib/db";
+import type { PartyContent } from "@/lib/party-types";
+import { resetRateLimitStore } from "@/lib/rate-limit";
 import { createMemoryDb } from "@/test/api/memory-db";
+import type { NextResponse } from "next/server";
 
 const setCookie = vi.fn();
 const cookieGet = vi.fn();
@@ -29,13 +34,19 @@ vi.mock("@/lib/db", async (importOriginal) => {
 });
 
 import {
+  getHostEditorState,
   getHostGuests,
+  hostSessionForSlug,
   openAsHost,
   publishHostDraft,
   saveHostDraft,
   setScheduleKeyEvent,
   unlockHostTrip,
 } from "@/lib/host-access";
+
+function hostCookieFromResponse(res: Response) {
+  return (res as NextResponse).cookies.get(HOST_COOKIE);
+}
 
 const fridaySchedule = [
   {
@@ -56,7 +67,57 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
   afterEach(() => {
     setCookie.mockReset();
     cookieGet.mockReset();
+    resetRateLimitStore();
     vi.mocked(getDb).mockReset();
+  });
+
+  it("create-set host cookie authorizes Save draft and a later /host GET", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    let created: Response | undefined;
+    const result = await createTripFromUi(
+      { siteName: "qa-retest-cookie", plan: "2026-09-04 7:00 PM — group dinner" },
+      async (_url, init) => {
+        created = await POST(
+          new Request("http://localhost/api/admin/trips", {
+            method: init?.method ?? "POST",
+            headers: init?.headers,
+            body: init?.body as BodyInit,
+          }),
+        );
+        return created;
+      },
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok || !created) return;
+    const cookie = hostCookieFromResponse(created);
+    const party = mem.parties[0] as {
+      id: number;
+      adminToken: string;
+      draftContent: PartyContent;
+    };
+    expect(cookie?.name).toBe(HOST_COOKIE);
+    expect(cookie?.path).toBe("/");
+    expect(cookie?.httpOnly).toBe(true);
+    expect(cookie?.sameSite).toBe("lax");
+    expect(cookie?.value).not.toBe(result.packet.adminToken);
+    expect(await cookieAuthenticatesHost(cookie?.value, party.id, party.adminToken)).toBe(true);
+
+    cookieGet.mockReturnValue({ value: cookie?.value });
+
+    const saved = await saveHostDraft(result.packet.slug, {
+      ...party.draftContent,
+      draftReview: {
+        ...(party.draftContent.draftReview ?? { facts: [] }),
+        acknowledged: true,
+      },
+    });
+    expect(saved.ok).toBe(true);
+
+    await expect(hostSessionForSlug(result.packet.slug)).resolves.toBe(true);
+    await expect(getHostEditorState(result.packet.slug)).resolves.toMatchObject({ ok: true });
   });
 
   it("sets the host cookie and redirects to the picker", async () => {

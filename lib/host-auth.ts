@@ -1,4 +1,4 @@
-import { constantTimeEqual, sha256hex } from "@/lib/cookie-hash";
+import { constantTimeEqual, sessionCookieOptions, sha256hex } from "@/lib/cookie-hash";
 
 export const HOST_COOKIE = "bp_host";
 
@@ -8,6 +8,15 @@ export const HOST_COOKIE = "bp_host";
 export async function hostCookieValue(partyId: number, adminToken: string): Promise<string> {
   const token = await sha256hex(`bp-host-v1:${partyId}:${adminToken}`);
   return `${partyId}.${token}`;
+}
+
+/** Name, hashed value, and options for create-set and host-unlock cookies. */
+export async function hostSessionCookie(partyId: number, adminToken: string) {
+  return {
+    name: HOST_COOKIE,
+    value: await hostCookieValue(partyId, adminToken),
+    ...sessionCookieOptions(),
+  };
 }
 
 export async function cookieAuthenticatesHost(

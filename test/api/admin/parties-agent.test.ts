@@ -5,10 +5,13 @@ import { GET as listGET, POST } from "@/app/api/admin/trips/route";
 import { GET, PATCH, DELETE } from "@/app/api/admin/trips/[slug]/route";
 import { GET as guestsGET } from "@/app/api/admin/trips/[slug]/guests/route";
 import { DELETE as guestDELETE } from "@/app/api/admin/trips/[slug]/guests/[id]/route";
+import { AUTH_COOKIE } from "@/lib/auth";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { getDb } from "@/lib/db";
+import { cookieAuthenticatesHost, HOST_COOKIE } from "@/lib/host-auth";
 import { CREATE_RATE_LIMIT, consumeRateLimit, createRateLimitKey, resetRateLimitStore } from "@/lib/rate-limit";
 import { createMemoryDb } from "../memory-db";
+import type { NextResponse } from "next/server";
 
 vi.mock("@/lib/db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/db")>();
@@ -67,6 +70,30 @@ describe("agent API (create / patch / guests)", () => {
       kind: "trip",
       trip: { siteName: "Jackson Hole '26" },
     });
+  });
+
+  it("create 201 sets a host session cookie that matches host auth checks", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: { content: { trip: { siteName: "Cabin Weekend" } } },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    const cookie = (res as NextResponse).cookies.get(HOST_COOKIE);
+    const party = mem.parties[0] as { id: number; adminToken: string };
+
+    expect(cookie?.name).toBe(HOST_COOKIE);
+    expect(cookie?.path).toBe("/");
+    expect(cookie?.httpOnly).toBe(true);
+    expect(cookie?.sameSite).toBe("lax");
+    expect(cookie?.value).not.toBe(body.adminToken);
+    expect((res as NextResponse).cookies.get(AUTH_COOKIE)).toBeUndefined();
+    expect(await cookieAuthenticatesHost(cookie?.value, party.id, party.adminToken)).toBe(true);
   });
 
   it("packet adminToken can mutate that trip", async () => {

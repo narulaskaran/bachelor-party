@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { authCookieValue } from "@/lib/auth";
-import { cookieAuthenticatesHost, hostCookieValue } from "@/lib/host-auth";
+import { sessionCookieOptions } from "@/lib/cookie-hash";
+import {
+  cookieAuthenticatesHost,
+  HOST_COOKIE,
+  hostCookieValue,
+  hostSessionCookie,
+} from "@/lib/host-auth";
 
 describe("cookieAuthenticatesHost", () => {
   it("returns false when no cookie is present", async () => {
@@ -20,5 +26,17 @@ describe("cookieAuthenticatesHost", () => {
   it("does not accept a guest password cookie as a host session", async () => {
     const guest = await authCookieValue(1, "host-tok");
     expect(await cookieAuthenticatesHost(guest, 1, "host-tok")).toBe(false);
+  });
+});
+
+describe("hostSessionCookie", () => {
+  it("create-set cookies use the same name, hash, and options host checks accept", async () => {
+    const cookie = await hostSessionCookie(4, "party-tok");
+    expect(cookie.name).toBe(HOST_COOKIE);
+    expect(cookie).toMatchObject(sessionCookieOptions());
+    expect(cookie.path).toBe("/");
+    expect(await cookieAuthenticatesHost(cookie.value, 4, "party-tok")).toBe(true);
+    expect(cookie.value).toBe(await hostCookieValue(4, "party-tok"));
+    expect(cookie.value).not.toBe("party-tok");
   });
 });
