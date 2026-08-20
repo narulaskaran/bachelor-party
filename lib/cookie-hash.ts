@@ -1,5 +1,17 @@
 /** SHA-256 hex for httpOnly auth cookies (guest, host, admin). */
 
+export const SESSION_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
+
+export function sessionCookieOptions() {
+  return {
+    httpOnly: true as const,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    maxAge: SESSION_COOKIE_MAX_AGE_SECONDS,
+    path: "/",
+  };
+}
+
 export async function sha256hex(input: string): Promise<string> {
   const digest = await crypto.subtle.digest(
     "SHA-256",

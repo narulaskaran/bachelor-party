@@ -3,22 +3,19 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE, authCookieValue } from "@/lib/auth";
+import { sessionCookieOptions } from "@/lib/cookie-hash";
 import { resolvePartyBySlug, type ResolvedSlugParty } from "@/lib/resolve-party";
-
-const NINETY_DAYS = 60 * 60 * 24 * 90;
 
 export async function setGuestAccessCookie(
   partyId: number | "demo",
   password: string,
 ) {
   const cookieStore = await cookies();
-  cookieStore.set(AUTH_COOKIE, await authCookieValue(partyId, password), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: NINETY_DAYS,
-    path: "/",
-  });
+  cookieStore.set(
+    AUTH_COOKIE,
+    await authCookieValue(partyId, password),
+    sessionCookieOptions(),
+  );
 }
 
 /** Set the guest cookie (when gated) and send them to the trip page. */

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { getCurrentParty } from "@/lib/current-party";
 import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
+import { sessionCookieOptions } from "@/lib/cookie-hash";
 import { pollActivities } from "@/lib/party-types";
 import {
   parseRsvpSubmission,
@@ -24,10 +25,24 @@ import {
 
 const prefValues = ["hyped", "fine", "pass"] as const;
 
-const NINETY_DAYS = 60 * 60 * 24 * 90;
+type Db = NonNullable<ReturnType<typeof getDb>>;
 
 function newGuestToken(): string {
   return randomBytes(16).toString("hex");
+}
+
+async function findGuestByToken(db: Db, partyId: number, token: string) {
+  const [guest] = await db
+    .select()
+    .from(schema.guests)
+    .where(
+      and(
+        eq(schema.guests.partyId, partyId),
+        eq(schema.guests.guestToken, token),
+      ),
+    )
+    .limit(1);
+  return guest;
 }
 
 function toGuestPatch(row: {
@@ -83,13 +98,8 @@ export type SubmitResult = {
   error?: string;
 };
 
-/** Lives in a "use server" file, so this must be async. */
-async function sampleTripRsvpResult(): Promise<SubmitResult> {
-  return { ok: false, error: DEMO_RSVP_MESSAGE };
-}
-
 export async function submitSampleGuestInfo(): Promise<SubmitResult> {
-  return await sampleTripRsvpResult();
+  return { ok: false, error: DEMO_RSVP_MESSAGE };
 }
 
 export async function submitGuestInfo(
@@ -103,7 +113,7 @@ export async function submitGuestInfo(
 
   const db = getDb();
   if (!db || current.partyId === "demo") {
-    return await sampleTripRsvpResult();
+    return { ok: false, error: DEMO_RSVP_MESSAGE };
   }
 
   const parsed = guestSchema.safeParse({
@@ -167,18 +177,9 @@ export async function submitGuestInfo(
   try {
     // Identity is the cookie token, never the display name. Same name from
     // another browser inserts a distinct row instead of clobbering.
-    const [existing] = cookieToken
-      ? await db
-          .select()
-          .from(schema.guests)
-          .where(
-            and(
-              eq(schema.guests.partyId, current.partyId),
-              eq(schema.guests.guestToken, cookieToken),
-            ),
-          )
-          .limit(1)
-      : [];
+    const existing = cookieToken
+      ? await findGuestByToken(db, current.partyId, cookieToken)
+      : undefined;
 
     const row = mergeGuestRow(
       existing ? toGuestPatch(existing) : null,
@@ -199,13 +200,7 @@ export async function submitGuestInfo(
     return { ok: false, error: "Couldn't save — try again in a minute." };
   }
 
-  cookieStore.set(RSVP_COOKIE, guestToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: NINETY_DAYS,
-    path: "/",
-  });
+  cookieStore.set(RSVP_COOKIE, guestToken, sessionCookieOptions());
 
   revalidatePath("/");
   revalidatePath(`/${current.slug}`);
@@ -230,10 +225,7 @@ export async function getGuests() {
 }
 
 /** The guest this browser last saved, if they're on the roster. */
-export async function getRsvpPrefill(
-  _guests: Awaited<ReturnType<typeof getGuests>>,
-): Promise<RsvpPrefill | null> {
-  void _guests;
+export async function getRsvpPrefill(): Promise<RsvpPrefill | null> {
   const current = await getCurrentParty();
   const db = getDb();
   if (!current || !db || current.partyId === "demo") return null;
@@ -243,16 +235,7 @@ export async function getRsvpPrefill(
   if (!token) return null;
 
   try {
-    const [guest] = await db
-      .select()
-      .from(schema.guests)
-      .where(
-        and(
-          eq(schema.guests.partyId, current.partyId),
-          eq(schema.guests.guestToken, token),
-        ),
-      )
-      .limit(1);
+    const guest = await findGuestByToken(db, current.partyId, token);
     if (!guest) return null;
     return {
       name: guest.name,

@@ -20,7 +20,7 @@ export async function RsvpSection({
   description?: string;
 }) {
   const guests = sample ? [] : await getGuests();
-  const prefill = sample ? null : await getRsvpPrefill(guests);
+  const prefill = sample ? null : await getRsvpPrefill();
   const formKey = prefill
     ? `self:${String(prefill.updatedAt ?? "")}`
     : "new";

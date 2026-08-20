@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   explicitClearsFromFormData,
-  matchPrefillGuest,
   mergeGuestRow,
   readGuestToken,
   rsvpFieldDefaults,
@@ -143,17 +142,6 @@ describe("form prefills existing data", () => {
     expect(rsvpFieldDefaults(null).name).toBe("");
     expect(rsvpFieldDefaults(null).phone).toBe("");
     expect(rsvpFieldDefaults(undefined).activityPrefs).toEqual({});
-  });
-
-  it("selects the roster row matching the guest-token cookie, not another name", () => {
-    const guests = [
-      { guestToken: "b".repeat(32), nameKey: "sam", name: "Sam" },
-      { guestToken: "a".repeat(32), nameKey: "alex", name: "Alex" },
-    ];
-    expect(matchPrefillGuest(guests, "A".repeat(32))).toEqual(guests[1]);
-    expect(matchPrefillGuest(guests, "alex")).toBeNull();
-    expect(matchPrefillGuest(guests, "nobody")).toBeNull();
-    expect(matchPrefillGuest(guests, undefined)).toBeNull();
   });
 });
 

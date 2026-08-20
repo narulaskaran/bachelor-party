@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { submitGuestInfo, submitSampleGuestInfo } from "@/lib/rsvp-actions";
 import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { rsvpFieldDefaults, type RsvpPrefill } from "@/lib/merge-guest";
+import { plusOneAllowed, rsvpMaxPartySize } from "@/lib/rsvp-contract";
 import type { Activity, RsvpConfig } from "@/lib/party-types";
 import { VoteActivityGroup } from "@/components/vote-activity-group";
 
@@ -51,9 +52,7 @@ export function RsvpForm({
   );
   const router = useRouter();
   const defaults = rsvpFieldDefaults(existing);
-  const plusOneAllowed =
-    rsvpConfig.plusOnePolicy !== "not-allowed" &&
-    (rsvpConfig.plusOnePolicy === "allowed" || rsvpConfig.allowPlusOne === true);
+  const allowPlusOne = plusOneAllowed(rsvpConfig);
 
   useEffect(() => {
     if (state?.ok) {
@@ -78,7 +77,6 @@ export function RsvpForm({
           <AlertDescription>{DEMO_RSVP_MESSAGE}</AlertDescription>
         </Alert>
       ) : null}
-      {/* WHO */}
       <section className="space-y-4">
         <Eyebrow>Who</Eyebrow>
         <div className="space-y-2">
@@ -132,17 +130,17 @@ export function RsvpForm({
             name="partySize"
             type="number"
             min={0}
-            max={Math.max(1, Math.min(20, rsvpConfig.maxPartySize ?? 10))}
+            max={rsvpMaxPartySize(rsvpConfig)}
             defaultValue={defaults.partySize}
             required={!sample}
           />
           <p className="text-xs text-muted-foreground">
-            {plusOneAllowed
+            {allowPlusOne
               ? "Include yourself and any plus-one."
               : "This trip does not allow plus-ones."}
           </p>
         </div>
-        {plusOneAllowed ? (
+        {allowPlusOne ? (
           <div className="space-y-2">
             <Label htmlFor="plusOneName">Plus-one name</Label>
             <HadField name="plusOneName" value={existing?.plusOneName} />
@@ -207,7 +205,6 @@ export function RsvpForm({
       </section>
       ) : null}
 
-      {/* FOOD */}
       <section className="space-y-4 border-t border-border pt-8">
         <Eyebrow>Food</Eyebrow>
         <div className="space-y-2">
@@ -240,7 +237,6 @@ export function RsvpForm({
       </section>
       ) : null}
 
-      {/* NOTES */}
       <section className="space-y-4 border-t border-border pt-8">
         <Eyebrow>Notes</Eyebrow>
         <div className="space-y-2">

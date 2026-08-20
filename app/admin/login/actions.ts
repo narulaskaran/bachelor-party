@@ -8,8 +8,7 @@ import {
   getAdminUiPassword,
   logAdminUiUnconfigured,
 } from "@/lib/admin-ui";
-
-const NINETY_DAYS = 60 * 60 * 24 * 90;
+import { sessionCookieOptions } from "@/lib/cookie-hash";
 
 export async function adminLogin(
   _prevState: { error?: string },
@@ -29,13 +28,7 @@ export async function adminLogin(
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(ADMIN_COOKIE, await adminCookieValue(expected), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: NINETY_DAYS,
-    path: "/",
-  });
+  cookieStore.set(ADMIN_COOKIE, await adminCookieValue(expected), sessionCookieOptions());
 
   redirect("/admin");
 }
