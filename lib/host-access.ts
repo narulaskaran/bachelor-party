@@ -161,7 +161,7 @@ async function authenticatedHostParty(slug: string) {
 }
 
 async function authenticateHostParty(slug: string, hostKey?: string) {
-  let auth = await authenticatedHostParty(slug);
+  const auth = await authenticatedHostParty(slug);
   if (auth.ok || !hostKey) return auth;
   const established = await establishHostSession(slug, hostKey);
   if (!established.ok) return { ok: false as const, error: established.error };
