@@ -88,6 +88,28 @@ describe("HostEditor draft review safety", () => {
     expect(screen.getByRole("alert").textContent).toMatch(/review every fact/i);
   });
 
+  it("previews the guest When line as dates, time, and timezone change", () => {
+    render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published
+        save={vi.fn(async () => ({ ok: true as const }))}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+
+    const preview = () => screen.getByText(/guests will see:/i);
+    expect(preview().textContent).toMatch(/Fri, Sep 4 – Mon, Sep 7/);
+
+    fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "19:00" } });
+    expect(preview().textContent).toMatch(/Fri, Sep 4 – Mon, Sep 7, 7:00 PM M[DS]T/);
+
+    fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2026-09-04" } });
+    expect(preview().textContent).toMatch(/Fri, Sep 4, 7:00 PM M[DS]T/);
+    expect(preview().textContent).not.toMatch(/Sep 4 –/);
+  });
+
   it("recomputes saved review facts from the edited canonical fields", async () => {
     const save = vi.fn<
       (slug: string, content: PartyContent, preserveScheduleKeyEvents?: boolean) => Promise<{ ok: true }>

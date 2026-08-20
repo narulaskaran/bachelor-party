@@ -153,11 +153,39 @@ function labeled(plan: string, labels: string[]): { value?: string; source?: str
   return match ? { value: clean(match[1]), source: match[0].trim() } : {};
 }
 
+const LABELED_FACT_LINE_RE =
+  /^(event|trip|title|name|where|location|when|date|end date|lodging|hotel|cabin|stay|rsvp|timezone|time zone|what|tagline|description|address|maps|pack|packing|bring|schedule)\s*[:=-]/i;
+
+function isLabeledFactLine(line: string): boolean {
+  return LABELED_FACT_LINE_RE.test(line);
+}
+
+/** First unlabeled line is the name. A comma-joined dump is not the title. */
+function shortTitleFromUnlabeledLine(line: string): string {
+  if (!/[,;]/.test(line) && line.length <= 48) return line;
+  const clause = line.split(/\s*[,;]\s*/)[0]?.trim() || line;
+  if (/[,;]/.test(line)) {
+    const beforePlace = clause.split(/\s+in\s+/i)[0]?.trim();
+    if (beforePlace && beforePlace !== clause && beforePlace.split(/\s+/).length <= 5) {
+      return beforePlace.slice(0, 48);
+    }
+  }
+  if (clause.length <= 48) return clause;
+  const truncated = clause.slice(0, 48);
+  const lastSpace = truncated.lastIndexOf(" ");
+  return (lastSpace >= 8 ? truncated.slice(0, lastSpace) : truncated).trim();
+}
+
 function titleFromPlan(plan: string): { value?: string; source?: string } {
   const labeledTitle = labeled(plan, ["event", "trip", "title", "name"]);
-  if (labeledTitle.value) return labeledTitle;
-  const first = plan.split("\n").map(clean).find((line) => line && !/^(where|location|when|date|lodging|hotel|cabin|rsvp|timezone)\s*:/i.test(line));
-  return first ? { value: first.slice(0, 100), source: first } : {};
+  if (labeledTitle.value) return { value: labeledTitle.value.slice(0, 100), source: labeledTitle.source };
+  const first = plan
+    .split(/\r?\n/)
+    .map(clean)
+    .find((line) => line && !isLabeledFactLine(line));
+  if (!first) return {};
+  const value = shortTitleFromUnlabeledLine(first);
+  return value ? { value: value.slice(0, 100), source: first } : {};
 }
 
 function firstClockTime(plan: string): string | undefined {

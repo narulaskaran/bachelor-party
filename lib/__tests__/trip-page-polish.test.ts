@@ -32,6 +32,26 @@ describe("trip page polish", () => {
     expect(html).not.toContain("grid-cols-4");
   });
 
+  it("shows hero Where from address or maps without inventing a place name", () => {
+    const addressOnly = renderToStaticMarkup(
+      createElement(Hero, {
+        trip: { siteName: "Dinner", address: "123 Main St" },
+      }),
+    );
+    expect(addressOnly).toContain("123 Main St");
+    expect(addressOnly).toContain("Dinner");
+    expect(addressOnly).not.toContain("Rita");
+
+    const mapsOnly = renderToStaticMarkup(
+      createElement(Hero, {
+        trip: { siteName: "Dinner", mapsUrl: "https://maps.example.com/venue" },
+      }),
+    );
+    expect(mapsOnly).toContain("Map");
+    expect(mapsOnly).toContain("https://maps.example.com/venue");
+    expect(mapsOnly).not.toContain("Rita");
+  });
+
   it("does not render stray hero dividers for missing coordinates and elevation", () => {
     const trip = { siteName: "X", dateLabel: "Sep 4–7", coordinates: "  ", elevation: "" };
     const html = renderToStaticMarkup(

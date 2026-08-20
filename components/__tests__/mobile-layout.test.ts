@@ -142,6 +142,18 @@ describe("mobile trip layout", () => {
     expect(rsvpIdx).toBeGreaterThan(packIdx);
   });
 
+  it("hides night-out key events when there is no schedule", () => {
+    const html = renderToStaticMarkup(
+      createElement(PartyView, {
+        content: { preset: "night-out", trip: { siteName: "Dinner" } },
+      }),
+    );
+    expect(html).not.toContain("Key events");
+    expect(html).not.toContain("Add days and events");
+    expect(html).not.toMatch(/API, CLI, or an agent/);
+    expect(html).not.toContain('id="schedule"');
+  });
+
   it("hides Pack when the trip has no packing list", () => {
     const html = renderToStaticMarkup(
       createElement(PartyView, { content: { trip: { siteName: "X" } } }),

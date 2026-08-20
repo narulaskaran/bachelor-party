@@ -26,13 +26,12 @@ export function Hero({
 
       <div className="mt-4 space-y-1 text-sm text-muted-foreground">
         <p>{when ?? "When TBD"}</p>
-        {where.place ? (
+        {where.place || where.address || where.mapsUrl ? (
           <p className="break-words">
-            {where.place}
-            {where.address ? ` · ${where.address}` : ""}
+            {[where.place, where.address].filter(Boolean).join(" · ")}
             {where.mapsUrl ? (
               <>
-                {" "}
+                {where.place || where.address ? " " : null}
                 <a href={where.mapsUrl} className="underline underline-offset-4" target="_blank" rel="noopener noreferrer">
                   Map
                 </a>

@@ -131,6 +131,23 @@ describe("messy event plan ingestion", () => {
     expect(stripDraftReview(reviewed).draftReview).toBeUndefined();
   });
 
+  it("uses a short first unlabeled line as the title and does not swallow the dump", () => {
+    const { content, review } = ingestEventPlan(
+      "Cabin weekend in Denver, Sep 4-6, pack layers and a swimsuit",
+      { preset: "weekend" },
+    );
+    expect(content.trip.siteName).toBe("Cabin weekend");
+    expect(content.trip.siteName).not.toMatch(/pack layers|Denver|Sep 4/);
+    expect(content.trip.location).toBeUndefined();
+    expect(content.trip.startDate).toBeUndefined();
+    expect(review.sourcePlan).toContain("pack layers");
+  });
+
+  it("keeps a dedicated first unlabeled line as the title", () => {
+    const { content } = ingestEventPlan("Cabin weekend\nDenver\nSep 4-6, pack layers");
+    expect(content.trip.siteName).toBe("Cabin weekend");
+  });
+
   it("does not invent a time, place, address, or headcount from prose", () => {
     const { content } = ingestEventPlan(
       "Let's do something fun, maybe 20 people at a place downtown around 7 if we can find a table",

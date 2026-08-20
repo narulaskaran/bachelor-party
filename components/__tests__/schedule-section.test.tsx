@@ -120,11 +120,12 @@ describe("HostScheduleView", () => {
     expect(screen.getByText(/2 key events/i)).toBeTruthy();
   });
 
-  it("explains an empty schedule instead of showing a blank picker", () => {
-    render(<HostScheduleView slug="cabin" schedule={[]} />);
-    expect(screen.getByText(/no schedule yet/i)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /view trip/i }).getAttribute("href")).toBe(
-      "/cabin",
-    );
+  it("hides the key events picker when there is no schedule", () => {
+    const { container } = render(<HostScheduleView slug="cabin" schedule={[]} />);
+    expect(container.textContent).toBe("");
+    expect(container.textContent).not.toMatch(/API, CLI, or an agent/i);
+    expect(container.textContent).not.toMatch(/no schedule yet/i);
+    expect(container.textContent).not.toMatch(/key events/i);
+    expect(container.textContent).not.toMatch(/Add days and events/i);
   });
 });
