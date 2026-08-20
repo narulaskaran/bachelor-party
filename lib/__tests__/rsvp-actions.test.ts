@@ -12,6 +12,7 @@ const cookieStore = {
 
 vi.mock("next/headers", () => ({
   cookies: async () => cookieStore,
+  headers: async () => ({ get: () => null }),
 }));
 
 vi.mock("next/cache", () => ({
@@ -150,7 +151,7 @@ describe("submitGuestInfo merge upsert", () => {
   });
 
   it("prefills the session guest from the guest-token cookie", async () => {
-    const { getRsvpPrefill } = await import("@/lib/rsvp-actions");
+    const { getRsvpPrefill } = await import("@/lib/rsvp-roster");
     const mem = createMemoryDb();
     const party = mockParty(mem);
     mem.seedGuest({
@@ -182,7 +183,8 @@ describe("submitGuestInfo merge upsert", () => {
   });
 
   it("prefills the plus-one name saved by this browser", async () => {
-    const { submitGuestInfo, getRsvpPrefill } = await import("@/lib/rsvp-actions");
+    const { submitGuestInfo } = await import("@/lib/rsvp-actions");
+    const { getRsvpPrefill } = await import("@/lib/rsvp-roster");
     const mem = createMemoryDb();
     mockParty(mem, 1, { plusOnePolicy: "allowed" });
 
@@ -208,7 +210,7 @@ describe("submitGuestInfo merge upsert", () => {
   });
 
   it("does not prefill another guest who shares the same display name", async () => {
-    const { getRsvpPrefill } = await import("@/lib/rsvp-actions");
+    const { getRsvpPrefill } = await import("@/lib/rsvp-roster");
     const mem = createMemoryDb();
     const party = mockParty(mem);
     mem.seedGuest({
@@ -392,7 +394,7 @@ describe("submitGuestInfo merge upsert", () => {
   });
 
   it("does not prefill a name saved on a different trip", async () => {
-    const { getRsvpPrefill } = await import("@/lib/rsvp-actions");
+    const { getRsvpPrefill } = await import("@/lib/rsvp-roster");
     const mem = createMemoryDb();
     mockParty(mem, 2);
     mem.seedGuest({
@@ -412,7 +414,8 @@ describe("submitGuestInfo merge upsert", () => {
   });
 
   it("saves an RSVP to the invite event, not a leftover trip cookie", async () => {
-    const { submitGuestInfo, getGuests } = await import("@/lib/rsvp-actions");
+    const { submitGuestInfo } = await import("@/lib/rsvp-actions");
+    const { getGuests } = await import("@/lib/rsvp-roster");
     const mem = createMemoryDb();
     const inviteB = "c".repeat(32);
     const contentB = { trip: { siteName: "Moab" }, rsvp: { plusOnePolicy: "allowed" as const } };

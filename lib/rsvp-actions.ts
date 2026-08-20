@@ -3,7 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { getCurrentParty, partyFromGuestInvite, type CurrentParty } from "@/lib/current-party";
@@ -15,37 +15,17 @@ import {
   type RsvpAttendance,
 } from "@/lib/rsvp-contract";
 import {
-  RSVP_COOKIE,
   explicitClearsFromFormData,
   mergeGuestRow,
-  readGuestToken,
-  readScopedRsvpToken,
   rsvpCookieName,
   type GuestPatch,
-  type RsvpPrefill,
 } from "@/lib/merge-guest";
-import { guestVisibleRoster } from "@/lib/roster-visibility";
+import { findGuestByToken, rsvpIdentityToken } from "@/lib/rsvp-identity";
 
 const prefValues = ["hyped", "fine", "pass"] as const;
 
-type Db = NonNullable<ReturnType<typeof getDb>>;
-
 function newGuestToken(): string {
   return randomBytes(16).toString("hex");
-}
-
-async function findGuestByToken(db: Db, partyId: number, token: string) {
-  const [guest] = await db
-    .select()
-    .from(schema.guests)
-    .where(
-      and(
-        eq(schema.guests.partyId, partyId),
-        eq(schema.guests.guestToken, token),
-      ),
-    )
-    .limit(1);
-  return guest;
 }
 
 async function partyForRsvp(inviteRaw: FormDataEntryValue | null): Promise<CurrentParty | null> {
@@ -53,19 +33,6 @@ async function partyForRsvp(inviteRaw: FormDataEntryValue | null): Promise<Curre
     return partyFromGuestInvite(inviteRaw);
   }
   return getCurrentParty();
-}
-
-async function rsvpIdentityToken(
-  db: Db,
-  partyId: number,
-  cookieStore: Awaited<ReturnType<typeof cookies>>,
-): Promise<string | null> {
-  const scoped = readScopedRsvpToken(cookieStore, partyId);
-  if (scoped) return scoped;
-  const legacy = readGuestToken(cookieStore.get(RSVP_COOKIE)?.value);
-  if (!legacy) return null;
-  const belongsHere = await findGuestByToken(db, partyId, legacy);
-  return belongsHere ? legacy : null;
 }
 
 function toGuestPatch(row: {
@@ -233,63 +200,4 @@ export async function submitGuestInfo(
   revalidatePath(`/${current.slug}/host`);
   if (current.guestPath) revalidatePath(current.guestPath);
   return { ok: true };
-}
-
-export async function getGuests(inviteToken?: string) {
-  const current = inviteToken?.trim()
-    ? await partyFromGuestInvite(inviteToken)
-    : await getCurrentParty();
-  const db = getDb();
-  if (!current || !db || current.partyId === "demo") return [];
-  try {
-    const guests = await db
-      .select({
-        id: schema.guests.id,
-        name: schema.guests.name,
-        attendanceStatus: schema.guests.attendanceStatus,
-      })
-      .from(schema.guests)
-      .where(and(eq(schema.guests.partyId, current.partyId)))
-      .orderBy(schema.guests.name);
-    return guestVisibleRoster(guests);
-  } catch (err) {
-    console.error("getGuests failed", err);
-    return [];
-  }
-}
-
-/** The guest this browser last saved on THIS event, if they're on the roster. */
-export async function getRsvpPrefill(inviteToken?: string): Promise<RsvpPrefill | null> {
-  const current = inviteToken?.trim()
-    ? await partyFromGuestInvite(inviteToken)
-    : await getCurrentParty();
-  const db = getDb();
-  if (!current || !db || current.partyId === "demo") return null;
-
-  const token = await rsvpIdentityToken(db, current.partyId, await cookies());
-  if (!token) return null;
-
-  try {
-    const guest = await findGuestByToken(db, current.partyId, token);
-    if (!guest) return null;
-    return {
-      name: guest.name,
-      nameKey: guest.nameKey,
-      attendanceStatus: guest.attendanceStatus,
-      partySize: guest.partySize,
-      plusOneName: guest.plusOneName,
-      phone: guest.phone,
-      arrivalFlight: guest.arrivalFlight,
-      arrivalTime: guest.arrivalTime,
-      departureFlight: guest.departureFlight,
-      departureTime: guest.departureTime,
-      dietary: guest.dietary,
-      notes: guest.notes,
-      activityPrefs: guest.activityPrefs,
-      updatedAt: guest.updatedAt,
-    };
-  } catch (err) {
-    console.error("getRsvpPrefill failed", err);
-    return null;
-  }
 }

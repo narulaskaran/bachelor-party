@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { RsvpForm } from "@/components/rsvp-form";
-import { getGuests, getRsvpPrefill } from "@/lib/rsvp-actions";
+import { getGuests, getRsvpPrefill } from "@/lib/rsvp-roster";
 import type { Activity, RsvpConfig } from "@/lib/party-types";
 import { sectionTitleClass } from "@/lib/type";
 

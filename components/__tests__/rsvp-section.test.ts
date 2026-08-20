@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RsvpSection } from "@/components/sections/rsvp";
-import { getGuests } from "@/lib/rsvp-actions";
+import { getGuests } from "@/lib/rsvp-roster";
 
 vi.mock("@/components/rsvp-form", () => ({
   RsvpForm: ({ sample, preview }: { sample?: boolean; preview?: boolean }) =>
@@ -13,14 +13,15 @@ vi.mock("@/components/rsvp-form", () => ({
     }),
 }));
 
-vi.mock("@/lib/rsvp-actions", () => ({
+vi.mock("@/lib/rsvp-roster", () => ({
   getGuests: vi.fn(async () => []),
   getRsvpPrefill: vi.fn(async () => null),
 }));
 
 describe("RsvpSection sample copy", () => {
   beforeEach(() => {
-    vi.mocked(getGuests).mockClear();
+    vi.mocked(getGuests).mockReset();
+    vi.mocked(getGuests).mockResolvedValue([]);
   });
 
   it("does not tell demo visitors to come back and update a saved RSVP", async () => {
@@ -97,5 +98,19 @@ describe("RsvpSection sample copy", () => {
     expect(html).not.toContain("Mina");
     expect(html).not.toContain("UA 1523");
     expect(html).not.toContain("Vegetarian, no nuts");
+  });
+
+  it("does not show another trip's RSVP on a brand-new invite", async () => {
+    const invite = "c".repeat(32);
+    vi.mocked(getGuests).mockImplementation(async (token?: string) => {
+      if (token === invite) return [];
+      return [{ id: 1, name: "Karan", attendanceStatus: "attending" as const }];
+    });
+    const html = renderToStaticMarkup(
+      await RsvpSection({ sample: false, pollActivities: [], inviteToken: invite }),
+    );
+    expect(getGuests).toHaveBeenCalledWith(invite);
+    expect(html).toContain("No one&#x27;s on the list yet");
+    expect(html).not.toContain("Karan");
   });
 });
