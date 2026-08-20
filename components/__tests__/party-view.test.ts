@@ -75,6 +75,34 @@ describe("PartyView host preview", () => {
     expect(html).not.toContain('id="schedule"');
   });
 
+  it("also hides Key events on a published guest view with empty schedule days", () => {
+    const html = renderToStaticMarkup(
+      createElement(PartyView, {
+        content: {
+          kind: "trip",
+          preset: "night-out",
+          trip: { siteName: "Friday drinks" },
+          schedule: [
+            {
+              key: "2026-09-04",
+              date: "2026-09-04",
+              weekday: "Friday",
+              label: "Friday",
+              timed: false,
+              entries: [],
+            },
+          ],
+        },
+        inviteToken: "a".repeat(32),
+      }),
+    );
+    expect(html).not.toContain("Key events");
+    expect(html).not.toContain("Schedule");
+    expect(html).not.toContain("Add days and events");
+    expect(html).not.toMatch(/API, CLI, or an agent/);
+    expect(html).not.toContain('id="schedule"');
+  });
+
   it("still marks the public demo fixture as sample", () => {
     const html = renderToStaticMarkup(
       createElement(PartyView, {
