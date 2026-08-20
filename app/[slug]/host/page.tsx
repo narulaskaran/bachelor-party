@@ -17,6 +17,7 @@ type Params = { params: Promise<{ slug: string }> };
 
 export default async function HostPage({ params }: Params) {
   const { slug } = await params;
+  const isDemo = slug === "demo";
   const resolved = await resolvePartyBySlug(slug);
   if (resolved.status === "missing") notFound();
 
@@ -59,7 +60,7 @@ export default async function HostPage({ params }: Params) {
           slug={slug}
           initial={editor.content}
           published={editor.published}
-          sample={editor.sample}
+          sample={isDemo}
           guestUrl={editor.guestUrl}
           save={saveHostDraft}
           publish={publishHostDraft}
@@ -73,7 +74,7 @@ export default async function HostPage({ params }: Params) {
           <div inert>
             <PartyView
               content={editor.content}
-              sample={editor.sample}
+              sample={isDemo}
               preview
               slug={slug}
             />
@@ -84,7 +85,7 @@ export default async function HostPage({ params }: Params) {
         <HostScheduleView
           slug={slug}
           schedule={editor.content.schedule ?? []}
-          sample={editor.sample}
+          sample={isDemo}
           guestHref={editor.guestUrl}
         />
       ) : null}

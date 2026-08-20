@@ -84,7 +84,8 @@ describe("host guest preview", () => {
       ok: true,
       content: nightOut,
       published: false,
-      sample: false,
+      // The route, not an editor-state flag, owns the explicit /demo mode.
+      sample: true,
     });
     vi.mocked(getHostGuests).mockResolvedValue([]);
 
@@ -111,7 +112,8 @@ describe("host guest preview", () => {
       ok: true,
       content: nightOut,
       published: true,
-      sample: true,
+      // The route, not an editor-state flag, owns the explicit /demo mode.
+      sample: false,
     });
     vi.mocked(getHostGuests).mockResolvedValue([]);
 
