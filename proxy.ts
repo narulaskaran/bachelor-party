@@ -6,7 +6,9 @@ import {
   isAdminHtmlPath,
 } from "@/lib/admin-security-headers";
 import { canonicalRedirectLocation } from "@/lib/invite-host";
+import { sessionCookieOptions } from "@/lib/cookie-hash";
 import { guestEventCookie } from "@/lib/guest-event-auth";
+import { HOST_COOKIE } from "@/lib/host-auth";
 import {
   guestInviteTokenFromPathname,
   guestSlugFromPathname,
@@ -19,7 +21,14 @@ import { REQUEST_PATHNAME_HEADER } from "@/lib/request-pathname";
 function nextWithPathname(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(REQUEST_PATHNAME_HEADER, request.nextUrl.pathname);
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const hostSession = request.cookies.get(HOST_COOKIE)?.value;
+  if (hostSession) {
+    // Refresh the opaque session while the host navigates away. Host access
+    // still validates this value against the requested trip before unlocking.
+    response.cookies.set(HOST_COOKIE, hostSession, sessionCookieOptions());
+  }
+  return response;
 }
 
 /**
