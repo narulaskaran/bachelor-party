@@ -24,9 +24,18 @@ import {
 import { formatGuestWhen } from "@/lib/guest-when";
 import { EVENT_TIMEZONES, formatTimeZoneLabel, settledTimeZone } from "@/lib/timezones";
 import type { DraftFact, PartyContent } from "@/lib/party-types";
+import { hostKeyStorageKey } from "@/components/create-trip-form";
+import { HostLoginForm } from "@/app/[slug]/host/host-login-form";
+import { unlockHostTrip } from "@/lib/host-access";
+import { isWrongHostKeyError } from "@/lib/host-auth";
 
 export type HostEditorAction =
-  (slug: string, content: PartyContent, preserveScheduleKeyEvents?: boolean) => Promise<{ ok: boolean; error?: string }>;
+  (
+    slug: string,
+    content: PartyContent,
+    preserveScheduleKeyEvents?: boolean,
+    hostKey?: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
 
 const EMPTY_SCHEDULE_ROW: ScheduleEditorRow = { date: "", time: "", title: "", note: "" };
 const EMPTY_PACK_ROW: PackEditorRow = { title: "", note: "" };
@@ -47,7 +56,7 @@ export function HostEditor({
   sample?: boolean;
   guestUrl?: string;
   save: HostEditorAction;
-  publish: (slug: string) => Promise<{ ok: boolean; error?: string; guestUrl?: string }>;
+  publish: (slug: string, hostKey?: string) => Promise<{ ok: boolean; error?: string; guestUrl?: string }>;
 }) {
   const [content, setContent] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -119,6 +128,11 @@ export function HostEditor({
       ),
     [enabledBlocks],
   );
+
+  function storedHostKey(): string | undefined {
+    if (typeof window === "undefined") return undefined;
+    return sessionStorage.getItem(hostKeyStorageKey(slug)) ?? undefined;
+  }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -235,7 +249,7 @@ export function HostEditor({
     startTransition(async () => {
       setError(null);
       setNotice(null);
-      const result = await save(slug, next, scheduleUnchanged);
+      const result = await save(slug, next, scheduleUnchanged, storedHostKey());
       if (!result.ok) {
         setError(result.error ?? "Couldn't save the draft.");
         return;
@@ -260,7 +274,7 @@ export function HostEditor({
     startTransition(async () => {
       setError(null);
       setNotice(null);
-      const result = await publish(slug);
+      const result = await publish(slug, storedHostKey());
       if (!result.ok) {
         setError(result.error ?? "Couldn't publish the draft.");
         return;
@@ -291,6 +305,18 @@ export function HostEditor({
         </div>
       </CardHeader>
       <CardContent>
+        {isWrongHostKeyError(error) ? (
+          <div className="mb-6 rounded-lg border border-border p-4">
+            <p className="mb-3 text-sm text-muted-foreground">
+              Enter the host key from when you created this event. This is not the guest link.
+            </p>
+            <HostLoginForm
+              loginAction={async (_state, formData) =>
+                unlockHostTrip(slug, String(formData.get("hostKey") ?? ""))
+              }
+            />
+          </div>
+        ) : null}
         <section aria-labelledby="review-heading" className="mb-8 rounded-lg border border-amber-300/70 bg-amber-50/60 p-4 dark:bg-amber-950/20">
           <h3 id="review-heading" className="text-lg font-semibold">Review the facts before sharing</h3>
           <p className="mt-1 text-sm text-muted-foreground">

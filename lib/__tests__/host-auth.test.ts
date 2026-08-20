@@ -6,6 +6,8 @@ import {
   HOST_COOKIE,
   hostCookieValue,
   hostSessionCookie,
+  isWrongHostKeyError,
+  WRONG_HOST_KEY,
 } from "@/lib/host-auth";
 
 describe("cookieAuthenticatesHost", () => {
@@ -26,6 +28,13 @@ describe("cookieAuthenticatesHost", () => {
   it("does not accept a guest password cookie as a host session", async () => {
     const guest = await authCookieValue(1, "host-tok");
     expect(await cookieAuthenticatesHost(guest, 1, "host-tok")).toBe(false);
+  });
+});
+
+describe("isWrongHostKeyError", () => {
+  it("matches the host-key gate copy without treating other errors as auth failures", () => {
+    expect(isWrongHostKeyError(WRONG_HOST_KEY)).toBe(true);
+    expect(isWrongHostKeyError("Couldn't save that draft — try again in a minute.")).toBe(false);
   });
 });
 

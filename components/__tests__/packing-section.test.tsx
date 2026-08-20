@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PackingSection } from "@/components/sections/packing";
 import { packingStorageKey } from "@/lib/packing-storage";
@@ -58,12 +58,14 @@ describe("PackingSection", () => {
     expect(window.localStorage.getItem(packingStorageKey("demo"))).toBe("{}");
   });
 
-  it("restores checks for this slug after a remount", () => {
+  it("restores checks for this slug after a remount", async () => {
     window.localStorage.setItem(packingStorageKey("demo"), '{"Layers":true}');
     render(<PackingSection slug="demo" packing={items} />);
 
-    expect(screen.getByRole("checkbox", { name: /layers/i }).getAttribute("aria-checked")).toBe(
-      "true",
+    await waitFor(() =>
+      expect(screen.getByRole("checkbox", { name: /layers/i }).getAttribute("aria-checked")).toBe(
+        "true",
+      ),
     );
     expect(screen.getByRole("checkbox", { name: /government id/i }).getAttribute("aria-checked")).toBe(
       "false",

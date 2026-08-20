@@ -10,7 +10,7 @@ import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
 import { guestInvitePath } from "@/lib/guest-invite";
 import { guestUpdateForPublish } from "@/lib/guest-update";
 import { reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
-import { cookieAuthenticatesHost, HOST_COOKIE, hostSessionCookie } from "@/lib/host-auth";
+import { cookieAuthenticatesHost, HOST_COOKIE, WRONG_HOST_KEY, hostSessionCookie } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
 import { parsePartyContentForExisting } from "@/lib/party-schema";
 import {
@@ -18,8 +18,6 @@ import {
   type OrganizerVisibleRosterEntry,
 } from "@/lib/roster-visibility";
 import type { ScheduleDay } from "@/lib/party-types";
-
-const WRONG_HOST_KEY = "Wrong host key. It's the key shown when you created this event — not a guest link.";
 
 export type SetKeyEventResult =
   | { ok: true; schedule: ScheduleDay[] }
@@ -31,21 +29,18 @@ async function setHostAccessCookie(partyId: number, adminToken: string) {
   cookieStore.set(name, value, options);
 }
 
-/** Set the host cookie and send them to the key-event picker. */
-export async function unlockHostTrip(
+/** Persist the trip-scoped host cookie. Never log the key. */
+export async function establishHostSession(
   slug: string,
   hostKey: string,
-): Promise<{ error?: string }> {
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const attempt = hostKey.trim();
-  if (!attempt) return { error: "Enter the host key." };
-
-  if (slug === "demo") {
-    redirect("/demo/host");
-  }
+  if (!attempt) return { ok: false, error: "Enter the host key." };
+  if (slug === "demo") return { ok: true };
 
   const db = getDb();
   if (!db) {
-    return { error: "Couldn't check that — try again in a minute." };
+    return { ok: false, error: "Couldn't check that — try again in a minute." };
   }
 
   let party: {
@@ -64,14 +59,27 @@ export async function unlockHostTrip(
     party = row;
   } catch (err) {
     console.error("host unlock lookup failed", err);
-    return { error: "Couldn't check that — try again in a minute." };
+    return { ok: false, error: "Couldn't check that — try again in a minute." };
   }
 
   if (!party?.adminToken || attempt !== party.adminToken) {
-    return { error: WRONG_HOST_KEY };
+    return { ok: false, error: WRONG_HOST_KEY };
   }
 
   await setHostAccessCookie(party.id, party.adminToken);
+  return { ok: true };
+}
+
+/** Set the host cookie and send them to the host workspace. */
+export async function unlockHostTrip(
+  slug: string,
+  hostKey: string,
+): Promise<{ error?: string }> {
+  if (slug === "demo") {
+    redirect("/demo/host");
+  }
+  const established = await establishHostSession(slug, hostKey);
+  if (!established.ok) return { error: established.error };
   redirect(`/${slug}/host`);
 }
 
@@ -152,13 +160,22 @@ async function authenticatedHostParty(slug: string) {
   return { ok: true as const, loaded };
 }
 
+async function authenticateHostParty(slug: string, hostKey?: string) {
+  let auth = await authenticatedHostParty(slug);
+  if (auth.ok || !hostKey) return auth;
+  const established = await establishHostSession(slug, hostKey);
+  if (!established.ok) return { ok: false as const, error: established.error };
+  return authenticatedHostParty(slug);
+}
+
 export async function saveHostDraft(
   slug: string,
   content: import("@/lib/party-types").PartyContent,
   preserveExistingKeyEvents = true,
+  hostKey?: string,
 ) {
   if (slug === "demo") return { ok: false as const, error: "The sample trip does not save drafts." };
-  const auth = await authenticatedHostParty(slug);
+  const auth = await authenticateHostParty(slug, hostKey);
   if (!auth.ok) return auth;
   const previous = draftForParty(auth.loaded.party);
   const contentToSave = {
@@ -187,9 +204,9 @@ export async function saveHostDraft(
   }
 }
 
-export async function publishHostDraft(slug: string) {
+export async function publishHostDraft(slug: string, hostKey?: string) {
   if (slug === "demo") return { ok: false as const, error: "The sample trip cannot be published." };
-  const auth = await authenticatedHostParty(slug);
+  const auth = await authenticateHostParty(slug, hostKey);
   if (!auth.ok) return auth;
   const next = draftForParty(auth.loaded.party);
   if (!reviewComplete(next.draftReview)) {

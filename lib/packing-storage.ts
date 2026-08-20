@@ -33,6 +33,8 @@ export function subscribePackingChecks(onStoreChange: () => void): () => void {
   listeners.add(onStoreChange);
   if (typeof window !== "undefined") {
     window.addEventListener("storage", onStoreChange);
+    // Client subscribe happens after SSR's empty snapshot; re-read localStorage.
+    queueMicrotask(onStoreChange);
   }
   return () => {
     listeners.delete(onStoreChange);

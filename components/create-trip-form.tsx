@@ -9,6 +9,7 @@ import {
   type CreateTripFields,
   type CreateTripResult,
 } from "@/lib/create-trip";
+import { openAsHost } from "@/lib/host-access";
 import { sectionTitleClass } from "@/lib/type";
 
 const HOST_KEY_STORAGE = "bp-host-key";
@@ -51,7 +52,11 @@ export function CreateTripForm({
       const result = await create({ siteName: "", plan, preset });
       if (result.ok) {
         sessionStorage.setItem(hostKeyStorageKey(result.packet.slug), result.packet.adminToken);
-        router.push(`/${result.packet.slug}/host`);
+        const unlocked = await openAsHost(result.packet.slug, result.packet.adminToken);
+        if (unlocked?.error) {
+          setError(unlocked.error);
+          router.push(`/${result.packet.slug}/host`);
+        }
         return;
       }
       setError(result.error);

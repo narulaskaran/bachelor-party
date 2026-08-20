@@ -144,4 +144,27 @@ describe("HostEditor draft review safety", () => {
       expect.objectContaining({ path: "schedule", status: "confirmed", value: "1 item(s)" }),
     ]));
   });
+
+  it("shows a working host-key field when Save draft is rejected for a missing cookie", async () => {
+    const save = vi.fn(async () => ({
+      ok: false as const,
+      error: "Wrong host key. It's the key shown when you created this event — not a guest link.",
+    }));
+    render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published={false}
+        save={save}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+
+    expect(screen.queryByLabelText(/^host key$/i)).toBeNull();
+    fireEvent.submit(screen.getByRole("button", { name: /save draft/i }).closest("form")!);
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(screen.getByLabelText(/^host key$/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^enter$/i })).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toMatch(/wrong host key/i);
+  });
 });

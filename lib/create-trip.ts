@@ -48,6 +48,7 @@ export function createTripRequestInit(fields: CreateTripFields): RequestInit {
     const ingested = ingestEventPlan(plan, { siteName, startDate, endDate, preset });
     return {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ slug, content: ingested.content }),
     };
@@ -65,6 +66,7 @@ export function createTripRequestInit(fields: CreateTripFields): RequestInit {
 
   return {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       slug,

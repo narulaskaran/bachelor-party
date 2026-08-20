@@ -121,4 +121,18 @@ describe("host guest preview", () => {
 
     expect(html).toContain("PARTY_VIEW sample=true preview=true");
   });
+
+  it("shows a host-key field when the create cookie is missing", async () => {
+    vi.mocked(resolvePartyBySlug).mockResolvedValue({ status: "unpublished" });
+    vi.mocked(hostSessionForSlug).mockResolvedValue(false);
+
+    const html = renderToStaticMarkup(
+      (await HostPage({ params: Promise.resolve({ slug: "friday-drinks" }) })) as ReactElement,
+    );
+
+    expect(html).toMatch(/host key/i);
+    expect(html).toContain('id="hostKey"');
+    expect(html).toContain('name="hostKey"');
+    expect(html).not.toContain("HOST_EDITOR");
+  });
 });

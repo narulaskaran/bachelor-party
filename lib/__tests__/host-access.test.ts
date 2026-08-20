@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/admin/trips/route";
 import { createTripFromUi } from "@/lib/create-trip";
-import { cookieAuthenticatesHost, HOST_COOKIE, hostCookieValue } from "@/lib/host-auth";
+import { cookieAuthenticatesHost, HOST_COOKIE, WRONG_HOST_KEY, hostCookieValue } from "@/lib/host-auth";
 import { getDb } from "@/lib/db";
 import type { PartyContent } from "@/lib/party-types";
 import { resetRateLimitStore } from "@/lib/rate-limit";
@@ -103,6 +103,10 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     expect(cookie?.httpOnly).toBe(true);
     expect(cookie?.sameSite).toBe("lax");
     expect(cookie?.value).not.toBe(result.packet.adminToken);
+    const setCookieHeader = created.headers.getSetCookie?.().join("\n") ?? created.headers.get("set-cookie") ?? "";
+    expect(setCookieHeader).toMatch(/Path=\//);
+    expect(setCookieHeader).toMatch(/Max-Age=/);
+    expect(setCookieHeader).not.toContain(result.packet.adminToken);
     expect(await cookieAuthenticatesHost(cookie?.value, party.id, party.adminToken)).toBe(true);
 
     cookieGet.mockReturnValue({ value: cookie?.value });
@@ -118,6 +122,65 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
 
     await expect(hostSessionForSlug(result.packet.slug)).resolves.toBe(true);
     await expect(getHostEditorState(result.packet.slug)).resolves.toMatchObject({ ok: true });
+
+    // Same cookie is still sent after a document GET to another path (Path=/).
+    cookieGet.mockReturnValue({ value: cookie?.value });
+    await expect(hostSessionForSlug(result.packet.slug)).resolves.toBe(true);
+    const savedAgain = await saveHostDraft(result.packet.slug, {
+      ...party.draftContent,
+      draftReview: {
+        ...(party.draftContent.draftReview ?? { facts: [] }),
+        acknowledged: true,
+      },
+    });
+    expect(savedAgain.ok).toBe(true);
+  });
+
+  it("re-establishes Save draft from the host key when the cookie is missing", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      id: 9,
+      slug: "cabin-weekend",
+      adminToken: "host-tok",
+      draftContent: { kind: "trip", trip: { siteName: "Cabin Weekend" } },
+      content: { kind: "trip", trip: { siteName: "Cabin Weekend" } },
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockImplementation(() => {
+      const last = setCookie.mock.calls.at(-1);
+      return last ? { value: last[1] } : undefined;
+    });
+
+    const saved = await saveHostDraft(
+      "cabin-weekend",
+      { kind: "trip", trip: { siteName: "Cabin Weekend" } },
+      true,
+      "host-tok",
+    );
+    expect(saved.ok).toBe(true);
+    expect(setCookie).toHaveBeenCalledWith(
+      HOST_COOKIE,
+      await hostCookieValue(9, "host-tok"),
+      expect.objectContaining({ path: "/", httpOnly: true, sameSite: "lax" }),
+    );
+  });
+
+  it("does not treat a missing cookie as enough to save", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      id: 9,
+      slug: "cabin-weekend",
+      adminToken: "host-tok",
+      content: { kind: "trip", trip: { siteName: "Cabin Weekend" } },
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue(undefined);
+
+    const saved = await saveHostDraft("cabin-weekend", {
+      kind: "trip",
+      trip: { siteName: "Cabin Weekend" },
+    });
+    expect(saved).toEqual({ ok: false, error: WRONG_HOST_KEY });
   });
 
   it("sets the host cookie and redirects to the picker", async () => {

@@ -64,6 +64,7 @@ describe("CreateTripForm", () => {
     cleanup();
     sessionStorage.clear();
     push.mockReset();
+    openHost.mockReset();
   });
 
   it("posts notes and the host-picked preset, then lands on the host workspace", async () => {
@@ -89,7 +90,8 @@ describe("CreateTripForm", () => {
       preset: "night-out",
     });
     expect(sessionStorage.getItem(`bp-host-key:${PACKET.slug}`)).toBe(PACKET.adminToken);
-    expect(push).toHaveBeenCalledWith(`/${PACKET.slug}/host`);
+    expect(openHost).toHaveBeenCalledWith(PACKET.slug, PACKET.adminToken);
+    expect(push).not.toHaveBeenCalled();
     expect(screen.queryByText(PACKET.password)).toBeNull();
   });
 

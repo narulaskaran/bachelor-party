@@ -48,6 +48,7 @@ describe("create-from-UI helper", () => {
     const headers = new Headers(init.headers);
     expect(headers.get("authorization")).toBeNull();
     expect(headers.get("content-type")).toBe("application/json");
+    expect(init.credentials).toBe("same-origin");
     expect(JSON.parse(String(init.body))).toMatchObject({
       slug: expect.stringMatching(/^e[0-9a-f]{16}$/),
       content: {
@@ -144,9 +145,11 @@ describe("create-from-UI helper", () => {
 
   it("createTripFromUi POSTs to /api/admin/trips without a bearer token", async () => {
     const auths: (string | null)[] = [];
+    const creds: RequestCredentials[] = [];
     const result = await createTripFromUi({ siteName: "Cabin Weekend" }, async (url, init) => {
       expect(url).toBe(CREATE_TRIP_PATH);
       auths.push(new Headers(init?.headers).get("authorization"));
+      creds.push(init?.credentials as RequestCredentials);
       return jsonResponse(201, {
         url: "http://localhost/cabin-weekend",
         slug: "cabin-weekend",
@@ -156,6 +159,7 @@ describe("create-from-UI helper", () => {
     });
 
     expect(auths[0]).toBeNull();
+    expect(creds[0]).toBe("same-origin");
     expect(result).toEqual({
       ok: true,
       packet: {

@@ -129,3 +129,12 @@ describe("HostScheduleView", () => {
     expect(container.textContent).not.toMatch(/Add days and events/i);
   });
 });
+
+describe("ScheduleSection empty", () => {
+  it("renders nothing when there are no days", () => {
+    const html = renderToStaticMarkup(createElement(ScheduleSection, { schedule: [] }));
+    expect(html).toBe("");
+    expect(html).not.toMatch(/Key events/i);
+    expect(html).not.toMatch(/API, CLI, or an agent/i);
+  });
+});
