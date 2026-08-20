@@ -63,4 +63,13 @@ describe("SiteNav", () => {
     expect(screen.queryByRole("link", { name: /^try demo$/i })).toBeNull();
     expect(screen.getByRole("button", { name: /toggle theme/i })).toBeTruthy();
   });
+
+  it("separates the event title from the date in guest nav", () => {
+    const { container } = render(
+      <SiteNav siteName="Friday drinks" dateLabel="Sep 4, 2026" sections={allVisible} />,
+    );
+    const brand = container.querySelector("a.truncate") ?? screen.getByText(/friday drinks/i);
+    expect(brand.textContent).toMatch(/Friday drinks\s+·\s+Sep 4, 2026/);
+    expect(brand.textContent).not.toMatch(/drinksSep/);
+  });
 });

@@ -180,6 +180,32 @@ describe("submitGuestInfo merge upsert", () => {
     expect(prefill?.nameKey).toBe("alex");
   });
 
+  it("prefills the plus-one name saved by this browser", async () => {
+    const { submitGuestInfo, getRsvpPrefill } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    mockParty(mem, 1, { plusOnePolicy: "allowed" });
+
+    const saved = await submitGuestInfo(
+      null,
+      form({ name: "Alex", attendance: "attending", plusOneName: "Taylor" }),
+    );
+    expect(saved).toEqual({ ok: true });
+    expect(mem.guests[0]).toMatchObject({
+      name: "Alex",
+      plusOneName: "Taylor",
+      partySize: 2,
+      attendanceStatus: "attending",
+    });
+
+    cookieStore.get.mockReturnValue({ value: mem.guests[0].guestToken });
+    const prefill = await getRsvpPrefill();
+    expect(prefill).toMatchObject({
+      name: "Alex",
+      attendanceStatus: "attending",
+      plusOneName: "Taylor",
+    });
+  });
+
   it("does not prefill another guest who shares the same display name", async () => {
     const { getRsvpPrefill } = await import("@/lib/rsvp-actions");
     const mem = createMemoryDb();

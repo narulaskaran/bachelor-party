@@ -57,11 +57,12 @@ export function SiteNav({
           className="min-w-0 truncate text-sm font-semibold tracking-tight"
         >
           {siteName ?? "The Big Send"}
-          {dateLabel && (
-            <span className="ml-2 hidden text-xs font-normal normal-case tracking-normal text-muted-foreground lg:inline">
-              {dateLabel}
+          {dateLabel ? (
+            <span className="hidden text-xs font-normal normal-case tracking-normal text-muted-foreground lg:inline">
+              {" "}
+              · {dateLabel}
             </span>
-          )}
+          ) : null}
         </Link>
         <div className="ml-auto flex shrink-0 items-center gap-1">
           {siteName ? (

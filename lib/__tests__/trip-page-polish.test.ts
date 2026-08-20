@@ -8,6 +8,7 @@ import { Hero } from "@/components/sections/hero";
 import { ScheduleSection } from "@/components/sections/schedule";
 import { VoteActivityGroup } from "@/components/vote-activity-group";
 import { heroMeta } from "@/lib/trip-sections";
+import { formatGuestWhen } from "@/lib/guest-when";
 
 describe("trip page polish", () => {
   it("does not render an orphan THE MENU eyebrow when activities are empty", () => {
@@ -32,19 +33,18 @@ describe("trip page polish", () => {
     expect(html).not.toContain("grid-cols-4");
   });
 
-  it("keeps an extracted clock on the hero When line when timezone is unset", () => {
-    const html = renderToStaticMarkup(
-      createElement(Hero, {
-        trip: {
-          siteName: "Friday drinks",
-          startDate: "2026-09-04",
-          startTime: "7:00 PM",
-          location: "The Dead Rabbit, NYC",
-        },
-      }),
-    );
-    expect(html).toContain("Fri, Sep 4, 7:00 PM · timezone TBD");
-    expect(html).not.toContain("Fri, Sep 4 · time TBD");
+  it("uses the same When line on host preview and the published guest hero", () => {
+    const trip = {
+      siteName: "Friday drinks",
+      startDate: "2026-09-04",
+      startTime: "7:00 PM",
+      location: "The Dead Rabbit, NYC",
+    };
+    const html = renderToStaticMarkup(createElement(Hero, { trip }));
+    expect(html).toContain("Fri, Sep 4 · time TBD");
+    expect(html).not.toContain("7:00 PM");
+    expect(html).not.toContain("timezone TBD");
+    expect(formatGuestWhen(trip)).toBe("Fri, Sep 4 · time TBD");
   });
 
   it("shows hero Where from address or maps without inventing a place name", () => {

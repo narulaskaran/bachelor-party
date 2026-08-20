@@ -139,4 +139,32 @@ describe("RsvpForm", () => {
     fireEvent.click(screen.getByLabelText("Yes"));
     expect((screen.getByLabelText(/plus-one name/i) as HTMLInputElement).value).toBe("Taylor");
   });
+
+  it("prefills plus-one name on reload when Yes is already selected", () => {
+    render(
+      <RsvpForm
+        pollActivities={[]}
+        rsvpConfig={{ plusOnePolicy: "allowed", maxPartySize: 4 }}
+        existing={{
+          name: "Alex",
+          nameKey: "alex",
+          phone: null,
+          arrivalFlight: null,
+          arrivalTime: null,
+          departureFlight: null,
+          departureTime: null,
+          dietary: null,
+          notes: null,
+          activityPrefs: {},
+          attendanceStatus: "attending",
+          partySize: 2,
+          plusOneName: "Taylor",
+        }}
+      />,
+    );
+
+    expect((screen.getByLabelText("Yes") as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText(/^name$/i) as HTMLInputElement).value).toBe("Alex");
+    expect((screen.getByLabelText(/plus-one name/i) as HTMLInputElement).value).toBe("Taylor");
+  });
 });

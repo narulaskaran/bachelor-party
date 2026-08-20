@@ -59,6 +59,7 @@ export function RsvpForm({
   const defaults = rsvpFieldDefaults(existing);
   const allowPlusOne = plusOneAllowed(rsvpConfig);
   const [attendance, setAttendance] = useState<string>(defaults.attendanceStatus ?? "");
+  const [plusOneName, setPlusOneName] = useState(defaults.plusOneName);
 
   useEffect(() => {
     if (state?.ok) {
@@ -124,7 +125,7 @@ export function RsvpForm({
                 type="radio"
                 name="attendance"
                 value={value}
-                defaultChecked={defaults.attendanceStatus === value}
+                checked={attendance === value}
                 required={!sample}
                 onChange={() => setAttendance(value)}
               />
@@ -140,7 +141,8 @@ export function RsvpForm({
               id="plusOneName"
               name="plusOneName"
               placeholder="Optional"
-              defaultValue={defaults.plusOneName}
+              value={plusOneName}
+              onChange={(event) => setPlusOneName(event.target.value)}
               className="min-h-11 h-11"
             />
           </div>
