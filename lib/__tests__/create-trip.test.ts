@@ -71,6 +71,19 @@ describe("create-from-UI helper", () => {
     });
   });
 
+  it("create-from-notes uses a human same-day dateLabel before host save", () => {
+    const init = createTripRequestInit({
+      siteName: "Cabin Weekend",
+      plan: "2026-09-04 7:00 PM — group dinner",
+    });
+    const trip = JSON.parse(String(init.body)).content.trip;
+    expect(trip).toMatchObject({
+      startDate: "2026-09-04",
+      dateLabel: "Sep 4, 2026",
+    });
+    expect(trip.dateLabel).not.toMatch(/2026-09-04/);
+  });
+
   it("turns messy notes into the canonical draft payload while preserving structured overrides", () => {
     const init = createTripRequestInit({
       siteName: "Structured title",
@@ -84,6 +97,7 @@ describe("create-from-UI helper", () => {
           siteName: "Structured title",
           startDate: "2026-10-10",
           endDate: "2026-10-12",
+          dateLabel: "Oct 10, 2026 – Oct 12, 2026",
           location: "Denver, CO",
         },
         draftReview: { acknowledged: false },

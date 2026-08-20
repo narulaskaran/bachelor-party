@@ -1,4 +1,4 @@
-import { isValidCalendarDate } from "@/lib/trip-dates";
+import { formatDateLabel, isValidCalendarDate } from "@/lib/trip-dates";
 import type { DraftFact, DraftFactStatus, DraftReview, PartyContent, ScheduleDay } from "@/lib/party-types";
 
 export type IngestionOverrides = {
@@ -172,13 +172,14 @@ export function ingestEventPlan(planInput: string, overrides: IngestionOverrides
     sourcePlan: plan || undefined,
     facts,
   };
+  const dateLabel = formatDateLabel(startDate, endDate);
   const content: PartyContent = {
     kind: "trip",
     trip: {
       siteName: title ?? "Untitled event",
       ...(startDate ? { startDate } : {}),
       ...(endDate ? { endDate } : {}),
-      ...(startDate || endDate ? { dateLabel: startDate && endDate ? `${startDate} – ${endDate}` : startDate ?? endDate } : {}),
+      ...(dateLabel ? { dateLabel } : {}),
       ...(location.value ? { location: location.value } : {}),
       ...(timezone ? { timezone: String(timezone) } : {}),
     },

@@ -99,6 +99,29 @@ describe("messy event plan ingestion", () => {
     expect(content.schedule?.[0].label).not.toBe("Plan");
   });
 
+  it("formats a one-day ingest as a human dateLabel, not ISO concatenation", () => {
+    const { content } = ingestEventPlan("Cabin weekend\n2026-09-04 7:00 PM — group dinner");
+    expect(content.trip.dateLabel).toBe("Sep 4, 2026");
+    expect(content.trip.dateLabel).not.toMatch(/2026-09-04/);
+  });
+
+  it("formats a same-day start/end override as a single human date", () => {
+    const { content } = ingestEventPlan("Event: Dinner", {
+      startDate: "2026-09-04",
+      endDate: "2026-09-04",
+    });
+    expect(content.trip.dateLabel).toBe("Sep 4, 2026");
+    expect(content.trip.dateLabel).not.toBe("2026-09-04 – 2026-09-04");
+  });
+
+  it("formats a multi-day ingest as a human date range", () => {
+    const { content } = ingestEventPlan("Event: Cabin Weekend", {
+      startDate: "2026-09-04",
+      endDate: "2026-09-06",
+    });
+    expect(content.trip.dateLabel).toBe("Sep 4, 2026 – Sep 6, 2026");
+  });
+
   it("requires explicit review before publishing and strips private review metadata", () => {
     const { content } = ingestEventPlan("Event: Cabin Weekend");
     expect(reviewComplete(content.draftReview)).toBe(false);
