@@ -41,7 +41,8 @@ export function CreateTripForm({
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const siteName = String(form.get("siteName") ?? "");
+    const siteName = String(form.get("siteName") ?? "").trim();
+    const plan = String(form.get("plan") ?? "").trim();
     const startDate = String(form.get("startDate") ?? "").trim();
     const endDate = String(form.get("endDate") ?? "").trim();
     if (isInvertedDateRange(startDate, endDate)) {
@@ -53,6 +54,7 @@ export function CreateTripForm({
     try {
       const result = await create({
         siteName,
+        ...(plan ? { plan } : {}),
         ...(startDate ? { startDate } : {}),
         ...(endDate ? { endDate } : {}),
       });
@@ -72,18 +74,30 @@ export function CreateTripForm({
         Create a trip
       </h2>
       <p id="create-trip-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
-        Name it — that&apos;s enough. Dates are optional. You&apos;ll get an
-        invite link, a guest password, and a host key once. No account
-        required.
+        Paste the rough notes you already have. We&apos;ll turn them into a private
+        draft for you to review. No JSON, API, CLI, or account required. You&apos;ll get a host key after creation.
       </p>
       <form onSubmit={onSubmit} className="mt-6 flex max-w-md flex-col gap-4">
         <div className="flex flex-col gap-2">
+          <Label htmlFor="plan">Your event notes</Label>
+          <textarea
+            id="plan"
+            name="plan"
+            rows={7}
+            placeholder={`Cabin weekend\nLocation: Denver, CO\n2026-09-04 7:00 PM — group dinner\nLodging: still deciding`}
+            aria-describedby="create-trip-hint"
+            disabled={pending}
+            className="min-h-36 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <p className="text-xs text-muted-foreground">Include only facts you know. Missing details stay marked TBD.</p>
+        </div>
+        <div className="flex flex-col gap-2">
           <Label htmlFor="siteName">Trip name</Label>
+          <p className="text-xs text-muted-foreground">Optional when your notes include the event name.</p>
           <Input
             id="siteName"
             name="siteName"
             type="text"
-            required
             autoComplete="off"
             spellCheck={false}
             placeholder="Jackson Hole '26"

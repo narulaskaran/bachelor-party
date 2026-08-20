@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { END_BEFORE_START_MESSAGE, isInvertedDateRange } from "@/lib/trip-dates";
 import { parseScheduleText, rsvpForDraft, scheduleToText } from "@/lib/draft-publish";
-import type { PartyContent } from "@/lib/party-types";
+import type { DraftFact, PartyContent } from "@/lib/party-types";
 
 export type HostEditorAction =
   (slug: string, content: PartyContent, preserveScheduleKeyEvents?: boolean) => Promise<{ ok: boolean; error?: string }>;
@@ -31,14 +31,35 @@ export function HostEditor({
   const [content, setContent] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [reviewAcknowledged, setReviewAcknowledged] = useState(initial.draftReview?.acknowledged === true);
+  const [hasSavedDraft, setHasSavedDraft] = useState(true);
 
   const trip = content.trip;
   const lodging = content.lodging;
   const scheduleText = scheduleToText(content.schedule);
 
   function updateTrip(field: keyof typeof trip, value: string) {
-    setContent((current) => ({ ...current, trip: { ...current.trip, [field]: value || undefined } }));
+    setReviewAcknowledged(false);
+    setHasSavedDraft(false);
+    setContent((current) => ({
+      ...current,
+      trip: { ...current.trip, [field]: value || undefined },
+      draftReview: current.draftReview ? { ...current.draftReview, acknowledged: false } : current.draftReview,
+    }));
+  }
+
+  function reviewFacts(): DraftFact[] {
+    return content.draftReview?.facts ?? [
+      { path: "trip.siteName", label: "Event name", status: trip.siteName ? "confirmed" : "missing", value: trip.siteName },
+      { path: "trip.startDate", label: "Start date", status: trip.startDate ? "confirmed" : "missing", value: trip.startDate },
+      { path: "trip.endDate", label: "End date", status: trip.endDate ? "confirmed" : "missing", value: trip.endDate },
+      { path: "trip.location", label: "Location", status: trip.location ? "confirmed" : "missing", value: trip.location },
+      { path: "trip.timezone", label: "Timezone", status: trip.timezone ? "confirmed" : "missing", value: trip.timezone },
+      { path: "lodging.name", label: "Lodging", status: lodging?.name ? "confirmed" : "missing", value: lodging?.name },
+      { path: "schedule", label: "Schedule", status: content.schedule?.length ? "confirmed" : "missing", value: content.schedule?.length ? `${content.schedule.length} day(s)` : undefined },
+    ];
   }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -75,6 +96,7 @@ export function HostEditor({
         dateLabel: formatDateLabel(startDate, endDate),
         location: String(form.get("location") ?? "").trim() || undefined,
         airport: String(form.get("airport") ?? "").trim() || undefined,
+        timezone: String(form.get("timezone") ?? "").trim() || undefined,
       },
       schedule,
       rsvp: rsvpForDraft(
@@ -82,6 +104,13 @@ export function HostEditor({
         String(form.get("rsvpHeading") ?? ""),
         String(form.get("rsvpDescription") ?? ""),
       ),
+      presentation: {
+        style: String(form.get("presentationStyle") ?? "clean") === "editorial" ? "editorial" : "clean",
+      },
+      draftReview: {
+        ...(content.draftReview ?? { facts: reviewFacts() }),
+        acknowledged: reviewAcknowledged,
+      },
     };
     const lodgingName = String(form.get("lodgingName") ?? "").trim();
     if (lodgingName) {
@@ -120,11 +149,22 @@ export function HostEditor({
         return;
       }
       setContent(next);
+      setHasSavedDraft(true);
       setNotice("Draft saved. Guest view still shows the last published version.");
     });
   }
 
   function publishNow() {
+    if (!reviewAcknowledged) {
+      setError("Review every fact and confirm that no logistics were guessed before publishing.");
+      setNotice(null);
+      return;
+    }
+    if (!hasSavedDraft) {
+      setError("Save the reviewed draft before publishing it.");
+      setNotice(null);
+      return;
+    }
     startTransition(async () => {
       setError(null);
       setNotice(null);
@@ -133,6 +173,7 @@ export function HostEditor({
         setError(result.error ?? "Couldn't publish the draft.");
         return;
       }
+      setPublishedUrl(`/${slug}`);
       setNotice("Published. Guests now see this version.");
     });
   }
@@ -153,6 +194,53 @@ export function HostEditor({
         </div>
       </CardHeader>
       <CardContent>
+        <section aria-labelledby="review-heading" className="mb-8 rounded-lg border border-amber-300/70 bg-amber-50/60 p-4 dark:bg-amber-950/20">
+          <h3 id="review-heading" className="text-lg font-semibold">Review the facts before sharing</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            We only use facts from your notes or fields. Missing, ambiguous, and timezone-free logistics stay TBD — never guessed.
+          </p>
+          {content.draftReview?.sourcePlan ? (
+            <details className="mt-3 text-sm">
+              <summary className="cursor-pointer font-medium">Show original notes</summary>
+              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-md bg-background p-3 text-xs">{content.draftReview.sourcePlan}</pre>
+            </details>
+          ) : null}
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2" aria-label="Draft facts">
+            {reviewFacts().map((item) => (
+              <li key={item.path} className="rounded-md border border-border bg-background/70 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{item.label}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${item.status === "missing" || item.status === "stale" ? "bg-amber-100 text-amber-900" : "bg-emerald-100 text-emerald-900"}`}>
+                    {item.status}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm">{item.value || "TBD — needs confirmation"}</p>
+                {item.note ? <p className="mt-1 text-xs text-muted-foreground">{item.note}</p> : null}
+                {item.source ? <p className="mt-1 truncate text-xs text-muted-foreground">From: {item.source}</p> : null}
+              </li>
+            ))}
+          </ul>
+          <label className="mt-4 flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={reviewAcknowledged}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                setReviewAcknowledged(checked);
+                setHasSavedDraft(false);
+                setContent((current) => ({
+                  ...current,
+                  draftReview: {
+                    ...(current.draftReview ?? { facts: reviewFacts() }),
+                    acknowledged: checked,
+                  },
+                }));
+              }}
+              className="mt-0.5 size-4 accent-primary"
+            />
+            <span>I reviewed every fact, corrected what I know, and confirm no logistics were guessed.</span>
+          </label>
+        </section>
         <form className="space-y-8" onSubmit={submit}>
           <fieldset disabled={isPending || sample} className="space-y-6">
             <legend className="text-lg font-semibold">Trip basics</legend>
@@ -172,6 +260,7 @@ export function HostEditor({
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Location" name="location" value={trip.location ?? ""} onChange={(value) => updateTrip("location", value)} />
               <Field label="Airport" name="airport" value={trip.airport ?? ""} onChange={(value) => updateTrip("airport", value)} />
+              <Field label="Time zone" name="timezone" value={trip.timezone ?? ""} onChange={(value) => updateTrip("timezone", value)} placeholder="e.g. America/Denver" />
             </div>
           </fieldset>
 
@@ -186,10 +275,25 @@ export function HostEditor({
           </fieldset>
 
           <fieldset disabled={isPending || sample} className="space-y-3">
+            <legend className="text-lg font-semibold">Page presentation</legend>
+            <p className="text-sm text-muted-foreground">Choose how the same event facts feel on the guest page. This changes presentation only, not logistics.</p>
+            <Label htmlFor="presentationStyle">Page style</Label>
+            <select
+              id="presentationStyle"
+              name="presentationStyle"
+              defaultValue={content.presentation?.style ?? "clean"}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm sm:max-w-xs"
+            >
+              <option value="clean">Clean and practical</option>
+              <option value="editorial">Editorial and celebratory</option>
+            </select>
+          </fieldset>
+
+          <fieldset disabled={isPending || sample} className="space-y-3">
             <legend className="text-lg font-semibold">Schedule</legend>
             <p className="text-sm text-muted-foreground">One event per line: date | weekday | day label | time | event title | optional note. Leave time out for a loose plan.</p>
-            <Label htmlFor="schedule">Schedule events</Label>
-            <Textarea id="schedule" name="schedule" defaultValue={scheduleText} rows={8} aria-describedby="schedule-help" />
+            <Label htmlFor="schedule-input">Schedule events</Label>
+            <Textarea id="schedule-input" name="schedule" defaultValue={scheduleText} rows={8} aria-describedby="schedule-help" />
             <p id="schedule-help" className="text-xs text-muted-foreground">Example: 2026-09-04 | Friday | Arrival | 7:00 PM | Group dinner</p>
           </fieldset>
 
@@ -203,7 +307,12 @@ export function HostEditor({
           </fieldset>
 
           {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
-          {notice ? <p role="status" className="text-sm text-emerald-700">{notice}</p> : null}
+          {notice ? (
+            <div role="status" className="space-y-1 text-sm text-emerald-700">
+              <p>{notice}</p>
+              {publishedUrl ? <a href={publishedUrl} className="font-medium underline underline-offset-4">Open the guest page: {publishedUrl}</a> : null}
+            </div>
+          ) : null}
           <div className="flex flex-wrap gap-3">
             <Button type="submit" disabled={sample || isPending}>{isPending ? "Saving…" : "Save draft"}</Button>
             <Button type="button" variant="outline" onClick={publishNow} disabled={sample || isPending}>{isPending ? "Working…" : published ? "Publish latest draft" : "Publish for guests"}</Button>
@@ -220,6 +329,7 @@ function Field({
   value,
   defaultValue,
   type = "text",
+  placeholder,
   required,
   onChange,
 }: {
@@ -228,13 +338,14 @@ function Field({
   value?: string;
   defaultValue?: string;
   type?: string;
+  placeholder?: string;
   required?: boolean;
   onChange?: (value: string) => void;
 }) {
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} type={type} value={value} defaultValue={defaultValue} required={required} onChange={onChange ? (event) => onChange(event.target.value) : undefined} />
+      <Input id={name} name={name} type={type} value={value} defaultValue={defaultValue} placeholder={placeholder} required={required} onChange={onChange ? (event) => onChange(event.target.value) : undefined} />
     </div>
   );
 }

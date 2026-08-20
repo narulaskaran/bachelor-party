@@ -59,7 +59,7 @@ export function MobileNav({ links }: { links: MobileNavLink[] }) {
                   href={link.href}
                   focusId={link.focusId}
                   deferFocus
-                  className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="block min-h-11 rounded-md px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   onClick={closeMenu}
                 >
                   {link.label}

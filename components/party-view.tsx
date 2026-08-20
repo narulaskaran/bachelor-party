@@ -32,8 +32,17 @@ export function PartyView({
   ].filter(Boolean);
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-5xl px-4">
+    <div
+      className="mx-auto w-full min-w-0 max-w-5xl px-4"
+      data-presentation={content.presentation?.style ?? "clean"}
+    >
       <Hero trip={content.trip} meta={heroMeta(content.trip)} />
+      {missingGuestFacts(content).length > 0 ? (
+        <aside className="mb-6 rounded-lg border border-amber-300/70 bg-amber-50/70 px-4 py-3 text-sm text-amber-950 dark:bg-amber-950/20 dark:text-amber-100" aria-label="Details to be confirmed">
+          <p className="font-medium">A few details are still being confirmed</p>
+          <p className="mt-1">{missingGuestFacts(content).join(" · ")}</p>
+        </aside>
+      ) : null}
       {sections.glance ? (
         <Glance trip={content.trip} lodging={content.lodging} />
       ) : null}
@@ -70,4 +79,13 @@ export function PartyView({
       ) : null}
     </div>
   );
+}
+
+function missingGuestFacts(content: PartyContent): string[] {
+  return [
+    !content.trip.startDate && "Date TBD",
+    !content.trip.location && "Location TBD",
+    !content.lodging?.name && "Lodging TBD",
+    content.schedule?.some((day) => day.timed) && !content.trip.timezone && "Time zone TBD",
+  ].filter((value): value is string => Boolean(value));
 }

@@ -2,6 +2,7 @@ import {
   END_BEFORE_START_MESSAGE,
   isInvertedDateRange,
 } from "@/lib/trip-dates";
+import { ingestEventPlan } from "@/lib/plan-ingestion";
 
 export { END_BEFORE_START_MESSAGE, isInvertedDateRange };
 
@@ -14,6 +15,7 @@ export type OrganizerPacket = {
 
 export type CreateTripFields = {
   siteName: string;
+  plan?: string;
   startDate?: string;
   endDate?: string;
 };
@@ -62,8 +64,17 @@ export function formatDateLabel(
 /** POST siteName (and optional dates) to the public create API. No Authorization. */
 export function createTripRequestInit(fields: CreateTripFields): RequestInit {
   const siteName = fields.siteName.trim();
+  const plan = fields.plan?.trim();
   const startDate = optionalDate(fields.startDate);
   const endDate = optionalDate(fields.endDate);
+  if (plan) {
+    const ingested = ingestEventPlan(plan, { siteName, startDate, endDate });
+    return {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: ingested.content }),
+    };
+  }
   const trip: {
     siteName: string;
     startDate?: string;
@@ -128,7 +139,8 @@ export async function createTripFromUi(
   fetchImpl: typeof fetch = fetch,
 ): Promise<CreateTripResult> {
   const siteName = fields.siteName.trim();
-  if (!siteName) return { ok: false, error: "Give the trip a name." };
+  const plan = fields.plan?.trim();
+  if (!siteName && !plan) return { ok: false, error: "Give the trip a name." };
   if (isInvertedDateRange(fields.startDate, fields.endDate)) {
     return { ok: false, error: END_BEFORE_START_MESSAGE };
   }
@@ -137,7 +149,7 @@ export async function createTripFromUi(
   try {
     res = await fetchImpl(
       CREATE_TRIP_PATH,
-      createTripRequestInit({ ...fields, siteName }),
+      createTripRequestInit({ ...fields, siteName, plan }),
     );
   } catch {
     return { ok: false, error: "Couldn't reach the server. Try again." };

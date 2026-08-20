@@ -71,6 +71,26 @@ describe("create-from-UI helper", () => {
     });
   });
 
+  it("turns messy notes into the canonical draft payload while preserving structured overrides", () => {
+    const init = createTripRequestInit({
+      siteName: "Structured title",
+      plan: "Event: Notes title\nLocation: Denver, CO\n2026-09-04 7:00 PM — dinner",
+      startDate: "2026-10-10",
+      endDate: "2026-10-12",
+    });
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      content: {
+        trip: {
+          siteName: "Structured title",
+          startDate: "2026-10-10",
+          endDate: "2026-10-12",
+          location: "Denver, CO",
+        },
+        draftReview: { acknowledged: false },
+      },
+    });
+  });
+
   it("parses the 201 organizer packet fields the host needs", () => {
     expect(
       parseOrganizerPacket({

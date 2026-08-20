@@ -105,10 +105,11 @@ export function OrganizerPacketView({
           Trip created
         </h2>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Copy the invite link, guest password, and host key now. The host key
-          will not be shown again. The trip page is just the name and RSVP until
-          you add dates, lodge, and a schedule. Then pick key events so the crew
-          can scan the headlines.
+          Your private draft is ready. Review the extracted facts, correct the
+          copy or presentation, preview it, and publish only when it is right.
+          Copy the invite link and credentials now; the host key will not be
+          shown again. You can add dates, lodge, and a schedule in the review
+          workspace, then pick key events so the crew can scan the headlines.
         </p>
       </div>
 
@@ -146,7 +147,7 @@ export function OrganizerPacketView({
         </form>
         <form action={openHostTools}>
           <Button type="submit" variant="outline">
-            Pick key events
+            Review and publish draft (pick key events)
           </Button>
         </form>
         {onCreateAnother ? (

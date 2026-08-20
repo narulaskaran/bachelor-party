@@ -313,7 +313,14 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
       slug: "cabin-weekend",
       adminToken: "host-tok",
       content: { kind: "trip", trip: { siteName: "Old guest version" } },
-      draftContent: { kind: "trip", trip: { siteName: "Ready to publish" } },
+      draftContent: {
+        kind: "trip",
+        trip: { siteName: "Ready to publish" },
+        draftReview: {
+          acknowledged: true,
+          facts: [{ path: "trip.siteName", label: "Event name", status: "confirmed", value: "Ready to publish" }],
+        },
+      },
       published: true,
     });
     vi.mocked(getDb).mockReturnValue(mem.db as never);
@@ -326,6 +333,27 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
       trip: { siteName: "Ready to publish" },
     });
     expect(mem.parties[0].published).toBe(true);
+    expect((mem.parties[0].content as { draftReview?: unknown }).draftReview).toBeUndefined();
+  });
+
+  it("blocks publishing when the host has not acknowledged the fact review", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      id: 9,
+      slug: "needs-review",
+      adminToken: "host-tok",
+      content: { kind: "trip", trip: { siteName: "Old guest version" } },
+      draftContent: { kind: "trip", trip: { siteName: "Needs review" } },
+      published: false,
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
+
+    await expect(publishHostDraft("needs-review")).resolves.toEqual({
+      ok: false,
+      error: expect.stringMatching(/review every fact/i),
+    });
+    expect((mem.parties[0].content as { trip: { siteName: string } }).trip.siteName).toBe("Old guest version");
   });
 
   it("returns full roster details only with the organizer cookie", async () => {

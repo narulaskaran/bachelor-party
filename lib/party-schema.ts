@@ -30,6 +30,7 @@ const tripSchema = z
     endDate: calendarDateSchema.optional(),
     dateLabel: z.string().min(1).optional(),
     location: z.string().min(1).optional(),
+    timezone: z.string().min(1).optional(),
     coordinates: z.string().min(1).optional(),
     elevation: z.string().min(1).optional(),
     airport: z.string().min(1).optional(),
@@ -104,9 +105,26 @@ const rsvpConfigSchema = z.object({
   maxPartySize: z.number().int().min(1).max(20).optional(),
 });
 
+const draftFactSchema = z.object({
+  path: z.string().min(1),
+  label: z.string().min(1),
+  status: z.enum(["confirmed", "extracted", "inferred", "missing", "stale"]),
+  value: z.string().optional(),
+  note: z.string().optional(),
+  source: z.string().optional(),
+});
+
+const draftReviewSchema = z.object({
+  acknowledged: z.boolean(),
+  sourcePlan: z.string().optional(),
+  facts: z.array(draftFactSchema),
+});
+
 export const partyContentSchema = z.object({
   kind: z.literal("trip").optional(),
   trip: tripSchema,
+  presentation: z.object({ style: z.enum(["clean", "editorial"]) }).optional(),
+  draftReview: draftReviewSchema.optional(),
   rsvp: rsvpConfigSchema.optional(),
   lodging: lodgingSchema.optional(),
   schedule: z.array(scheduleDaySchema).optional(),

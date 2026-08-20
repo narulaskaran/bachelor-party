@@ -90,6 +90,7 @@ export function HostScheduleView({
       <ScheduleSection
         schedule={schedule}
         picker={{ onToggle, busy: pending }}
+        id="key-events"
       />
     </div>
   );

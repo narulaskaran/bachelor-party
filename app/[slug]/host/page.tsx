@@ -47,9 +47,9 @@ export default async function HostPage({ params }: Params) {
       <main className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Private host workspace</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Build the trip your crew will trust</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Review the event your crew will trust</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Edit the details in plain language, save a private draft, preview the guest page, then publish when it is ready.
+            Check every extracted fact, leave unknown logistics as TBD, make copy or presentation changes, preview the same draft, then explicitly publish.
           </p>
         </div>
         <HostEditor

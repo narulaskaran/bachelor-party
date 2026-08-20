@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
+import { reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
 import { cookieAuthenticatesHost, HOST_COOKIE, hostCookieValue } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
 import { parsePartyContentForExisting } from "@/lib/party-schema";
@@ -180,13 +181,17 @@ export async function publishHostDraft(slug: string) {
   const auth = await authenticatedHostParty(slug);
   if (!auth.ok) return auth;
   const next = draftForParty(auth.loaded.party);
+  if (!reviewComplete(next.draftReview)) {
+    return { ok: false as const, error: "Review every fact and confirm that no logistics were guessed before publishing." };
+  }
   const parsed = parsePartyContentForExisting(next, next);
   if (!parsed.success) return { ok: false as const, error: "Fix the draft before publishing." };
   try {
-    const published = { ...parsed.data, kind: "trip" as const };
+    const reviewedDraft = { ...parsed.data, kind: "trip" as const };
+    const published = stripDraftReview(reviewedDraft);
     await auth.loaded.db
       .update(schema.parties)
-      .set({ content: published, draftContent: published, published: true, updatedAt: new Date() })
+      .set({ content: published, draftContent: reviewedDraft, published: true, updatedAt: new Date() })
       .where(eq(schema.parties.slug, slug));
     revalidatePath(`/${slug}`);
     revalidatePath(`/${slug}/host`);

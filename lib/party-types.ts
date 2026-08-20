@@ -5,6 +5,23 @@
 
 export type TripKind = "trip";
 
+export type DraftFactStatus = "confirmed" | "extracted" | "inferred" | "missing" | "stale";
+
+export type DraftFact = {
+  path: string;
+  label: string;
+  status: DraftFactStatus;
+  value?: string;
+  note?: string;
+  source?: string;
+};
+
+export type DraftReview = {
+  acknowledged: boolean;
+  sourcePlan?: string;
+  facts: DraftFact[];
+};
+
 export type Trip = {
   siteName: string; // e.g. "Jackson Hole '26" — shown in nav + hero
   tagline?: string;
@@ -12,6 +29,7 @@ export type Trip = {
   endDate?: string;
   dateLabel?: string; // human form, e.g. "Sep 4–7, 2026"
   location?: string;
+  timezone?: string;
   coordinates?: string;
   elevation?: string;
   airport?: string;
@@ -81,6 +99,8 @@ export type RsvpConfig = {
 export type PartyContent = {
   kind?: TripKind;
   trip: Trip;
+  presentation?: { style: "clean" | "editorial" };
+  draftReview?: DraftReview;
   rsvp?: RsvpConfig;
   lodging?: Lodging;
   schedule?: ScheduleDay[];
