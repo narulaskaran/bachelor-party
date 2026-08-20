@@ -8,6 +8,7 @@ import { getDb, schema } from "@/lib/db";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
 import { reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
+import { sessionCookieOptions } from "@/lib/cookie-hash";
 import { cookieAuthenticatesHost, HOST_COOKIE, hostCookieValue } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
 import { parsePartyContentForExisting } from "@/lib/party-schema";
@@ -17,8 +18,6 @@ import {
 } from "@/lib/roster-visibility";
 import type { ScheduleDay } from "@/lib/party-types";
 
-const NINETY_DAYS = 60 * 60 * 24 * 90;
-
 const WRONG_HOST_KEY = "Wrong host key. It's in the organizer packet — not the guest password.";
 
 export type SetKeyEventResult =
@@ -27,13 +26,11 @@ export type SetKeyEventResult =
 
 async function setHostAccessCookie(partyId: number, adminToken: string) {
   const cookieStore = await cookies();
-  cookieStore.set(HOST_COOKIE, await hostCookieValue(partyId, adminToken), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: NINETY_DAYS,
-    path: "/",
-  });
+  cookieStore.set(
+    HOST_COOKIE,
+    await hostCookieValue(partyId, adminToken),
+    sessionCookieOptions(),
+  );
 }
 
 /** Set the host cookie and send them to the key-event picker. */
@@ -117,8 +114,7 @@ export async function getHostEditorState(slug: string): Promise<HostEditorState>
   const loaded = await loadHostParty(slug);
   if (loaded.status === "unavailable") return { ok: false, error: "Database unavailable." };
   if (loaded.status !== "ok" || !loaded.party.adminToken) return { ok: false, error: "Trip not found." };
-  const raw = (await cookies()).get(HOST_COOKIE)?.value;
-  if (!(await cookieAuthenticatesHost(raw, loaded.party.id, loaded.party.adminToken))) {
+  if (!(await hostCookieMatches(loaded.party))) {
     return { ok: false, error: WRONG_HOST_KEY };
   }
   return {
@@ -129,13 +125,15 @@ export async function getHostEditorState(slug: string): Promise<HostEditorState>
   };
 }
 
+async function hostCookieMatches(party: { id: number; adminToken: string | null }) {
+  if (!party.adminToken) return false;
+  const raw = (await cookies()).get(HOST_COOKIE)?.value;
+  return cookieAuthenticatesHost(raw, party.id, party.adminToken);
+}
+
 async function authenticatedHostParty(slug: string) {
   const loaded = await loadHostParty(slug);
-  if (loaded.status !== "ok" || !loaded.party.adminToken) {
-    return { ok: false as const, error: WRONG_HOST_KEY };
-  }
-  const raw = (await cookies()).get(HOST_COOKIE)?.value;
-  if (!(await cookieAuthenticatesHost(raw, loaded.party.id, loaded.party.adminToken))) {
+  if (loaded.status !== "ok" || !(await hostCookieMatches(loaded.party))) {
     return { ok: false as const, error: WRONG_HOST_KEY };
   }
   return { ok: true as const, loaded };
@@ -205,28 +203,22 @@ export async function publishHostDraft(slug: string) {
 export async function hostSessionForSlug(slug: string): Promise<boolean> {
   if (slug === "demo") return true;
   const loaded = await loadHostParty(slug);
-  if (loaded.status !== "ok" || !loaded.party.adminToken) return false;
-  const raw = (await cookies()).get(HOST_COOKIE)?.value;
-  return cookieAuthenticatesHost(raw, loaded.party.id, loaded.party.adminToken);
+  if (loaded.status !== "ok") return false;
+  return hostCookieMatches(loaded.party);
 }
 
 /** Read the organizer-only roster after verifying the host cookie. */
 export async function getHostGuests(
   slug: string,
 ): Promise<OrganizerVisibleRosterEntry[]> {
-  const loaded = await loadHostParty(slug);
-  if (loaded.status !== "ok" || !loaded.party.adminToken) return [];
-
-  const raw = (await cookies()).get(HOST_COOKIE)?.value;
-  if (!(await cookieAuthenticatesHost(raw, loaded.party.id, loaded.party.adminToken))) {
-    return [];
-  }
+  const auth = await authenticatedHostParty(slug);
+  if (!auth.ok) return [];
 
   try {
-    const guests = await loaded.db
+    const guests = await auth.loaded.db
       .select()
       .from(schema.guests)
-      .where(eq(schema.guests.partyId, loaded.party.id))
+      .where(eq(schema.guests.partyId, auth.loaded.party.id))
       .orderBy(schema.guests.name);
     return organizerVisibleRoster(guests);
   } catch (err) {
@@ -249,12 +241,7 @@ export async function setScheduleKeyEvent(
   if (loaded.status === "unavailable") {
     return { ok: false, error: "Couldn't save that — try again in a minute." };
   }
-  if (loaded.status !== "ok" || !loaded.party.adminToken) {
-    return { ok: false, error: WRONG_HOST_KEY };
-  }
-
-  const raw = (await cookies()).get(HOST_COOKIE)?.value;
-  if (!(await cookieAuthenticatesHost(raw, loaded.party.id, loaded.party.adminToken))) {
+  if (loaded.status !== "ok" || !(await hostCookieMatches(loaded.party))) {
     return { ok: false, error: WRONG_HOST_KEY };
   }
 

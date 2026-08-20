@@ -26,6 +26,7 @@ export function PartyView({
   slug?: string;
 }) {
   const sections = visibleSections(content);
+  const missing = missingGuestFacts(content);
   const footerBits = [
     content.trip.location,
     content.trip.elevation,
@@ -39,10 +40,10 @@ export function PartyView({
         data-presentation={content.presentation?.style ?? "clean"}
       >
         <Hero trip={content.trip} meta={heroMeta(content.trip)} />
-        {missingGuestFacts(content).length > 0 ? (
+        {missing.length > 0 ? (
           <aside className="mb-6 rounded-lg border border-amber-300/70 bg-amber-50/70 px-4 py-3 text-sm text-amber-950 dark:bg-amber-950/20 dark:text-amber-100" aria-label="Details to be confirmed">
             <p className="font-medium">A few details are still being confirmed</p>
-            <p className="mt-1">{missingGuestFacts(content).join(" · ")}</p>
+            <p className="mt-1">{missing.join(" · ")}</p>
           </aside>
         ) : null}
         {sections.glance ? (

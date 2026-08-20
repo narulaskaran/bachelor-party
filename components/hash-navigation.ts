@@ -12,6 +12,47 @@ export function prefersReducedMotion() {
   );
 }
 
+export function hashScrollBehavior(): ScrollBehavior {
+  return prefersReducedMotion() ? "auto" : "smooth";
+}
+
+export function afterNextPaint(callback: () => void): number | undefined {
+  if (typeof requestAnimationFrame === "function") {
+    return requestAnimationFrame(() => callback());
+  }
+  queueMicrotask(callback);
+  return undefined;
+}
+
+export type FrameHandle = { first?: number; second?: number };
+
+export function afterTwoFrames(callback: () => void): FrameHandle {
+  const handle: FrameHandle = {};
+  if (typeof requestAnimationFrame === "function") {
+    handle.first = requestAnimationFrame(() => {
+      handle.second = requestAnimationFrame(callback);
+    });
+  } else {
+    queueMicrotask(callback);
+  }
+  return handle;
+}
+
+export function cancelFrameHandle(handle: FrameHandle) {
+  if (handle.first !== undefined) cancelAnimationFrame(handle.first);
+  if (handle.second !== undefined) cancelAnimationFrame(handle.second);
+}
+
+export function navigateHashDestination(
+  focus: HTMLElement | null,
+  options?: { scrollTo?: HTMLElement | null },
+) {
+  if (focus) focusHashDestination(focus);
+  if (options?.scrollTo) {
+    scrollHashDestination(options.scrollTo, hashScrollBehavior());
+  }
+}
+
 /**
  * Scroll an anchor with a deterministic fallback for browsers that suppress
  * programmatic smooth scrolling while the document requests scroll-smooth.
@@ -31,9 +72,5 @@ export function scrollHashDestination(element: HTMLElement, behavior: ScrollBeha
     root.style.scrollBehavior = previousScrollBehavior;
   };
 
-  if (typeof requestAnimationFrame === "function") {
-    requestAnimationFrame(() => requestAnimationFrame(settle));
-  } else {
-    queueMicrotask(settle);
-  }
+  afterTwoFrames(settle);
 }

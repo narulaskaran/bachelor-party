@@ -51,15 +51,6 @@ export function readGuestToken(value: string | undefined | null): string | null 
   return GUEST_TOKEN_RE.test(token) ? token : null;
 }
 
-export function matchPrefillGuest<T extends { guestToken: string }>(
-  guests: T[],
-  cookieValue: string | undefined | null,
-): T | null {
-  const token = readGuestToken(cookieValue);
-  if (!token) return null;
-  return guests.find((guest) => guest.guestToken === token) ?? null;
-}
-
 export function rsvpFieldDefaults(existing: RsvpPrefill | null | undefined) {
   return {
     name: existing?.name ?? "",

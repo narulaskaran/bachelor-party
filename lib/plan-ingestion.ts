@@ -142,7 +142,8 @@ function scheduleFromPlan(plan: string, dates: string[]): ScheduleDay[] | undefi
 
 export function ingestEventPlan(planInput: string, overrides: IngestionOverrides = {}): IngestionResult {
   const plan = planInput.trim();
-  const title = clean(overrides.siteName) ?? titleFromPlan(plan).value;
+  const titled = titleFromPlan(plan);
+  const title = clean(overrides.siteName) ?? titled.value;
   const dates = explicitDates(plan);
   const startDate = clean(overrides.startDate) ?? dates.dates[0];
   const endDate = clean(overrides.endDate) ?? dates.dates[1];
@@ -158,7 +159,7 @@ export function ingestEventPlan(planInput: string, overrides: IngestionOverrides
   const timezoneStatus: DraftFactStatus = timezone ? "extracted" : "missing";
   const dateNote = dates.malformed.length ? `Could not use ${dates.malformed.join(", ")}; confirm the date.` : !dates.dates.length ? "No complete calendar date found." : undefined;
   const facts: DraftFact[] = [
-    fact("trip.siteName", "Event name", titleStatus, title, title ? undefined : "Add a name before sharing.", titleFromPlan(plan).source),
+    fact("trip.siteName", "Event name", titleStatus, title, title ? undefined : "Add a name before sharing.", titled.source),
     fact("trip.startDate", "Start date", startDateStatus, startDate, dateNote, dates.source),
     fact("trip.endDate", "End date", endDateStatus, endDate, dates.dates.length < 2 ? "A second date is not confirmed." : undefined, dates.source),
     fact("trip.location", "Location", locationStatus, location.value, "Location stays TBD until you confirm it.", location.source),

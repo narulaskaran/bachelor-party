@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  plusOneAllowed,
   parseRsvpSubmission,
+  rsvpMaxPartySize,
   summarizeRsvps,
   type RsvpConfig,
 } from "@/lib/rsvp-contract";
@@ -47,6 +49,17 @@ describe("RSVP readiness contract", () => {
       plusOnePolicy: "not-allowed",
       allowPlusOne: true,
     })).toEqual({ ok: false, error: "This trip does not allow plus-ones." });
+    expect(plusOneAllowed({ plusOnePolicy: "not-allowed", allowPlusOne: true })).toBe(false);
+    expect(plusOneAllowed({ plusOnePolicy: "allowed" })).toBe(true);
+    expect(plusOneAllowed({ allowPlusOne: true })).toBe(true);
+    expect(plusOneAllowed({})).toBe(false);
+  });
+
+  it("clamps party size to the same bounds the RSVP form uses", () => {
+    expect(rsvpMaxPartySize()).toBe(10);
+    expect(rsvpMaxPartySize({ maxPartySize: 4 })).toBe(4);
+    expect(rsvpMaxPartySize({ maxPartySize: 0 })).toBe(1);
+    expect(rsvpMaxPartySize({ maxPartySize: 99 })).toBe(20);
   });
 
   it("clears stale plus-one data when a response becomes not-attending", () => {

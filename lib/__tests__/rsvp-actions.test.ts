@@ -148,7 +148,7 @@ describe("submitGuestInfo merge upsert", () => {
   });
 
   it("prefills the session guest from the guest-token cookie", async () => {
-    const { getGuests, getRsvpPrefill } = await import("@/lib/rsvp-actions");
+    const { getRsvpPrefill } = await import("@/lib/rsvp-actions");
     const mem = createMemoryDb();
     const party = mockParty(mem);
     mem.seedGuest({
@@ -169,8 +169,7 @@ describe("submitGuestInfo merge upsert", () => {
     });
     cookieStore.get.mockReturnValue({ value: TOKEN_ALEX });
 
-    const guests = await getGuests();
-    const prefill = await getRsvpPrefill(guests);
+    const prefill = await getRsvpPrefill();
     expect(prefill).toMatchObject({
       name: "Alex",
       phone: "555-0100",
@@ -181,7 +180,7 @@ describe("submitGuestInfo merge upsert", () => {
   });
 
   it("does not prefill another guest who shares the same display name", async () => {
-    const { getGuests, getRsvpPrefill } = await import("@/lib/rsvp-actions");
+    const { getRsvpPrefill } = await import("@/lib/rsvp-actions");
     const mem = createMemoryDb();
     const party = mockParty(mem);
     mem.seedGuest({
@@ -200,7 +199,7 @@ describe("submitGuestInfo merge upsert", () => {
     });
     cookieStore.get.mockReturnValue({ value: TOKEN_ALEX });
 
-    const prefill = await getRsvpPrefill(await getGuests());
+    const prefill = await getRsvpPrefill();
     expect(prefill?.notes).toBe("original");
   });
 

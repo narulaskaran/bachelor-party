@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { constantTimeEqual, sha256hex } from "@/lib/cookie-hash";
+import { constantTimeEqual, sessionCookieOptions, sha256hex } from "@/lib/cookie-hash";
 import { adminCookieValue } from "@/lib/admin-cookie-auth";
 import { authCookieValue } from "@/lib/auth";
 import { hostCookieValue } from "@/lib/host-auth";
@@ -22,6 +22,18 @@ describe("constantTimeEqual", () => {
     expect(constantTimeEqual("aa", "aa")).toBe(true);
     expect(constantTimeEqual("aa", "ab")).toBe(false);
     expect(constantTimeEqual("aa", "aaa")).toBe(false);
+  });
+});
+
+describe("sessionCookieOptions", () => {
+  it("uses the same httpOnly 90-day options for guest, host, RSVP, and admin cookies", () => {
+    expect(sessionCookieOptions()).toMatchObject({
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 90,
+      path: "/",
+    });
+    expect(typeof sessionCookieOptions().secure).toBe("boolean");
   });
 });
 

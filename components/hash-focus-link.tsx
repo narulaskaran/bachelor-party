@@ -2,31 +2,9 @@
 
 import type { ComponentProps, MouseEvent } from "react";
 import {
-  focusHashDestination,
-  prefersReducedMotion,
-  scrollHashDestination,
+  afterNextPaint,
+  navigateHashDestination,
 } from "@/components/hash-navigation";
-
-function focusIds(focusId: string | string[]): string[] {
-  return Array.isArray(focusId) ? focusId : [focusId];
-}
-
-function firstElement(ids: string[]): HTMLElement | null {
-  for (const id of ids) {
-    const el = document.getElementById(id);
-    if (el) return el;
-  }
-  return null;
-}
-
-/** Let transient UI close and layout settle before moving a lower anchor. */
-function afterLayout(callback: () => void) {
-  if (typeof requestAnimationFrame === "function") {
-    requestAnimationFrame(() => callback());
-  } else {
-    queueMicrotask(callback);
-  }
-}
 
 /** In-page hash link that moves keyboard/AT focus after the target is shown. */
 export function HashFocusLink({
@@ -51,22 +29,26 @@ export function HashFocusLink({
     }
 
     const section = document.getElementById(href.slice(1));
-    const target = firstElement(focusIds(focusId));
+    const ids = Array.isArray(focusId) ? focusId : [focusId];
+    let target: HTMLElement | null = null;
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) {
+        target = el;
+        break;
+      }
+    }
     if (!section && !target) return;
 
     event.preventDefault();
     history.pushState(null, "", href);
     const destination = target ?? section;
     const navigate = () => {
-      if (destination) focusHashDestination(destination);
-      if (scroll) {
-        const scrollTarget = section ?? target;
-        if (scrollTarget) {
-          scrollHashDestination(scrollTarget, prefersReducedMotion() ? "auto" : "smooth");
-        }
-      }
+      navigateHashDestination(destination, {
+        scrollTo: scroll ? section ?? target : null,
+      });
     };
-    if (deferFocus) afterLayout(navigate);
+    if (deferFocus) afterNextPaint(navigate);
     else navigate();
   }
 

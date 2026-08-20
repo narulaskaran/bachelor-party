@@ -92,6 +92,7 @@ export type RsvpConfig = {
   heading?: string;
   description?: string;
   plusOnePolicy?: "not-allowed" | "allowed";
+  /** Backward-compatible shorthand for hosts configuring JSON directly. */
   allowPlusOne?: boolean;
   maxPartySize?: number;
 };

@@ -9,7 +9,7 @@ import { HashFocusLink } from "@/components/hash-focus-link";
 import { LandingPanelSection } from "@/components/landing-panel-section";
 import { TripEntryForm } from "@/components/trip-entry-form";
 import { DEFAULT_INVITE_HOST } from "@/lib/invite-host";
-import { panelFromHash, type LandingPanel } from "@/lib/landing-panel";
+import { landingPanelHash, panelFromHash, type LandingPanel } from "@/lib/landing-panel";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 import { pageTitleClass, quietLinkClass, sectionTitleClass } from "@/lib/type";
 
@@ -52,7 +52,7 @@ export function LandingView({
         <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <Button asChild variant={panel === "enter" ? "outline" : "default"}>
             <HashFocusLink
-              href="#create"
+              href={landingPanelHash("create")}
               focusId={["siteName", "create-trip-heading"]}
               aria-expanded={panel === "create"}
               aria-controls="create"
@@ -63,7 +63,7 @@ export function LandingView({
           </Button>
           <Button asChild variant={panel === "create" ? "outline" : "default"}>
             <HashFocusLink
-              href="#enter"
+              href={landingPanelHash("enter")}
               focusId={["trip-slug", "trip-entry-heading"]}
               aria-expanded={panel === "enter"}
               aria-controls="enter"

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { END_BEFORE_START_MESSAGE, isInvertedDateRange } from "@/lib/trip-dates";
+import { END_BEFORE_START_MESSAGE, formatDateLabel, isInvertedDateRange } from "@/lib/trip-dates";
 import { parseScheduleText, rsvpForDraft, scheduleToText } from "@/lib/draft-publish";
 import { draftFactsForContent } from "@/lib/plan-ingestion";
 import type { DraftFact, PartyContent } from "@/lib/party-types";
@@ -44,22 +44,21 @@ export function HostEditor({
   function updateTrip(field: keyof typeof trip, value: string) {
     setReviewAcknowledged(false);
     setHasSavedDraft(false);
-    setContent((current) => ({
-      ...(current.draftReview
-        ? {
-            ...current,
-            trip: { ...current.trip, [field]: value || undefined },
-            draftReview: {
-              ...current.draftReview,
-              acknowledged: false,
-              facts: draftFactsForContent(
-                { ...current, trip: { ...current.trip, [field]: value || undefined } },
-                current.draftReview.facts,
-              ),
-            },
-          }
-        : { ...current, trip: { ...current.trip, [field]: value || undefined } }),
-    }));
+    setContent((current) => {
+      const next = {
+        ...current,
+        trip: { ...current.trip, [field]: value || undefined },
+      };
+      if (!current.draftReview) return next;
+      return {
+        ...next,
+        draftReview: {
+          ...current.draftReview,
+          acknowledged: false,
+          facts: draftFactsForContent(next, current.draftReview.facts),
+        },
+      };
+    });
   }
 
   function reviewFacts(): DraftFact[] {
@@ -387,10 +386,4 @@ function httpsOrUndefined(value: string): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-function formatDateLabel(start?: string, end?: string): string | undefined {
-  if (!start && !end) return undefined;
-  const format = (value: string) => new Date(`${value}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
-  return start && end && start !== end ? `${format(start)} – ${format(end)}` : format(start ?? end ?? "");
 }

@@ -1,26 +1,14 @@
+import type { RsvpConfig } from "@/lib/party-types";
+
+export type { RsvpConfig };
+
 export const RSVP_ATTENDANCE = ["attending", "maybe", "not-attending"] as const;
 export type RsvpAttendance = (typeof RSVP_ATTENDANCE)[number];
-
-/** Guest identity is the browser-bound person; the response is mutable state. */
-export type GuestIdentity = {
-  id: number;
-  partyId: number;
-  guestToken: string;
-  name: string;
-  nameKey: string;
-};
 
 export type RsvpResponse = {
   attendanceStatus: RsvpAttendance;
   partySize: number;
   plusOneName: string | null;
-};
-
-export type RsvpConfig = {
-  plusOnePolicy?: "not-allowed" | "allowed";
-  /** Backward-compatible shorthand for hosts configuring JSON directly. */
-  allowPlusOne?: boolean;
-  maxPartySize?: number;
 };
 
 export type RsvpSubmission = {
@@ -33,17 +21,25 @@ export type RsvpSubmissionResult =
   | { ok: true; value: RsvpResponse }
   | { ok: false; error: string };
 
-function plusOneAllowed(config?: RsvpConfig): boolean {
+function isRsvpAttendance(value: string): value is RsvpAttendance {
+  return (RSVP_ATTENDANCE as readonly string[]).includes(value);
+}
+
+export function plusOneAllowed(config?: RsvpConfig): boolean {
   if (config?.plusOnePolicy === "not-allowed") return false;
   return config?.plusOnePolicy === "allowed" || config?.allowPlusOne === true;
+}
+
+export function rsvpMaxPartySize(config?: RsvpConfig): number {
+  return Math.max(1, Math.min(20, config?.maxPartySize ?? 10));
 }
 
 export function parseRsvpSubmission(
   input: RsvpSubmission,
   config?: RsvpConfig,
 ): RsvpSubmissionResult {
-  const attendanceStatus = String(input.attendance ?? "attending").trim() as RsvpAttendance;
-  if (!RSVP_ATTENDANCE.includes(attendanceStatus)) {
+  const attendanceStatus = String(input.attendance ?? "attending").trim();
+  if (!isRsvpAttendance(attendanceStatus)) {
     return { ok: false, error: "Choose attending, maybe, or not attending." };
   }
 
@@ -57,7 +53,7 @@ export function parseRsvpSubmission(
     return { ok: false, error: "Attending guests must include at least one person." };
   }
 
-  const maxPartySize = Math.max(1, Math.min(20, config?.maxPartySize ?? 10));
+  const maxPartySize = rsvpMaxPartySize(config);
   if (partySize > maxPartySize) {
     return { ok: false, error: `Party size cannot exceed ${maxPartySize}.` };
   }
