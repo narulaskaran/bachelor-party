@@ -21,6 +21,7 @@ import {
   type PackEditorRow,
   type ScheduleEditorRow,
 } from "@/lib/schedule-rows";
+import { formatGuestWhen } from "@/lib/guest-when";
 import { EVENT_TIMEZONES, formatTimeZoneLabel, settledTimeZone } from "@/lib/timezones";
 import type { DraftFact, PartyContent } from "@/lib/party-types";
 
@@ -346,11 +347,26 @@ export function HostEditor({
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="startDate">Start date</Label>
-                <Input id="startDate" name="startDate" type="date" defaultValue={trip.startDate ?? ""} aria-describedby="date-help" />
+                <Input
+                  id="startDate"
+                  name="startDate"
+                  type="date"
+                  value={trip.startDate ?? ""}
+                  aria-describedby="date-help when-preview"
+                  onChange={(event) => updateTrip("startDate", event.target.value)}
+                />
               </div>
               <div>
                 <Label htmlFor="endDate">End date</Label>
-                <Input id="endDate" name="endDate" type="date" defaultValue={trip.endDate ?? ""} aria-describedby="date-help" aria-invalid={Boolean(error?.includes("End date"))} />
+                <Input
+                  id="endDate"
+                  name="endDate"
+                  type="date"
+                  value={trip.endDate ?? ""}
+                  aria-describedby="date-help when-preview"
+                  aria-invalid={Boolean(error?.includes("End date"))}
+                  onChange={(event) => updateTrip("endDate", event.target.value)}
+                />
               </div>
               <Field label="Start time" name="startTime" value={trip.startTime ?? ""} placeholder="7:00 PM" onChange={(value) => updateTrip("startTime", value)} />
               <div>
@@ -358,8 +374,9 @@ export function HostEditor({
                 <select
                   id="timezone"
                   name="timezone"
-                  defaultValue={settledTimeZone(trip.timezone) ?? ""}
+                  value={settledTimeZone(trip.timezone) ?? ""}
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  onChange={(event) => updateTrip("timezone", event.target.value)}
                 >
                   <option value="">Not set — times stay TBD</option>
                   {EVENT_TIMEZONES.map((zone) => (
@@ -370,6 +387,9 @@ export function HostEditor({
                 </select>
               </div>
             </div>
+            <p id="when-preview" className="text-sm" aria-live="polite">
+              Guests will see: {formatGuestWhen(trip) ?? "When TBD"}
+            </p>
             <p id="date-help" className="text-xs text-muted-foreground">
               Dates are optional. End date cannot be before start date. No timezone means guests see time TBD — we will not guess America/New_York.
             </p>

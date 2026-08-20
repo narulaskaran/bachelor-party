@@ -80,6 +80,15 @@ describe("create-from-UI helper", () => {
     });
   });
 
+  it("does not use a multi-fact dump as the event title", () => {
+    const init = createTripRequestInit({
+      siteName: "",
+      plan: "Cabin weekend in Denver, Sep 4-6, pack layers",
+      preset: "weekend",
+    });
+    expect(JSON.parse(String(init.body)).content.trip.siteName).toBe("Cabin weekend");
+  });
+
   it("create-from-notes uses a human same-day dateLabel before host save", () => {
     const init = createTripRequestInit({
       siteName: "Cabin Weekend",

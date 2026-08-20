@@ -50,7 +50,7 @@ export function formatGuestWhen(trip: Trip): string | undefined {
   const clock = trip.startTime?.trim();
   if (clock && !zone) return `${range} · time TBD`;
   if (clock && zone) {
-    return `${start}, ${formatClockTime(clock)} ${shortTimeZoneName(zone)}`;
+    return `${range}, ${formatClockTime(clock)} ${shortTimeZoneName(zone)}`;
   }
   return range;
 }

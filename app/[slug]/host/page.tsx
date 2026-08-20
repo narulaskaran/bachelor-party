@@ -72,11 +72,13 @@ export default async function HostPage({ params }: Params) {
           <PartyView content={editor.content} sample={true} slug={slug} />
         </section>
       </main>
-      <HostScheduleView
-        slug={slug}
-        schedule={editor.content.schedule ?? []}
-        sample={editor.sample}
-      />
+      {(editor.content.schedule?.length ?? 0) > 0 ? (
+        <HostScheduleView
+          slug={slug}
+          schedule={editor.content.schedule ?? []}
+          sample={editor.sample}
+        />
+      ) : null}
       <OrganizerRoster guests={guests} />
     </>
   );
