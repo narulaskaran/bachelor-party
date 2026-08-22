@@ -92,7 +92,9 @@ describe("homepage trip entry", () => {
     const { container } = render(<LandingView />);
     const html = container.innerHTML;
 
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
+    const title = screen.getByRole("heading", { level: 1 });
+    expect(title.textContent).toBe("The Big Send");
+    expect(title.querySelector(".text-primary")?.textContent).toBe("Send");
     expect(html).toContain("tracking-tight");
     expect(html).toContain("max-w-3xl");
     expect(html).toContain("data-landing-page");

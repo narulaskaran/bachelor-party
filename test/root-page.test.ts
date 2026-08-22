@@ -134,7 +134,7 @@ describe("GET /", () => {
 
     const html = renderToStaticMarkup(await Page());
 
-    expect(html).toContain("The Big Send");
+    expect(html).toMatch(/The Big <span class="text-primary">Send<\/span>/);
     expect(html).toContain("Enter your trip");
     expect(html).not.toContain("Try a sample");
     expect(html).not.toContain("Try Demo");
