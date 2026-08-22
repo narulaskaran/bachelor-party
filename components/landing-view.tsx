@@ -44,7 +44,9 @@ export function LandingView({
       className="mx-auto flex min-h-[calc(100svh-3.75rem)] max-w-3xl flex-col px-6"
     >
       <section className="flex flex-col items-center py-16 text-center sm:py-24">
-        <h1 className={pageTitleClass}>The Big Send</h1>
+        <h1 className={pageTitleClass}>
+          The Big <span className="text-primary">Send</span>
+        </h1>
         <p className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
           Paste a messy plan. Review it on the site. Send a private guest page.
         </p>

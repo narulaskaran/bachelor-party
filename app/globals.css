@@ -164,6 +164,12 @@ body:not(:has([data-landing-page])) #site-nav-marketing [data-demo-link] {
   display: none;
 }
 
+/* Landing fills the viewport with a vertical wash so the transparent
+   marketing nav sits on the same canvas as the hero. */
+body:has([data-landing-page]) {
+  background-image: linear-gradient(to bottom, var(--background), var(--muted));
+}
+
 body:has([data-landing-page]) #site-nav-marketing {
   border-color: transparent;
   background: transparent;
