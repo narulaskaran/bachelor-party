@@ -9,6 +9,7 @@ import { DEMO_PARTY } from "@/lib/demo-party";
 import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
 import { publishedGuestPath } from "@/lib/guest-invite";
 import { guestUpdateForPublish } from "@/lib/guest-update";
+import { constantTimeEqual } from "@/lib/cookie-hash";
 import { reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
 import { cookieAuthenticatesHost, HOST_COOKIE, WRONG_HOST_KEY, hostSessionCookie } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
@@ -62,7 +63,7 @@ export async function establishHostSession(
     return { ok: false, error: "Couldn't check that — try again in a minute." };
   }
 
-  if (!party?.adminToken || attempt !== party.adminToken) {
+  if (!party?.adminToken || !constantTimeEqual(attempt, party.adminToken)) {
     return { ok: false, error: WRONG_HOST_KEY };
   }
 

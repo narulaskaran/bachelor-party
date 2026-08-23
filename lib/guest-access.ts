@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE, authCookieValue } from "@/lib/auth";
-import { sessionCookieOptions } from "@/lib/cookie-hash";
+import { constantTimeEqual, sessionCookieOptions } from "@/lib/cookie-hash";
 import { resolvePartyBySlug, type ResolvedSlugParty } from "@/lib/resolve-party";
 
 export async function setGuestAccessCookie(
@@ -40,7 +40,7 @@ export async function unlockGuestTrip(
     redirect(`/${slug}`);
   }
 
-  if (resolved.status !== "gated" || attempt !== resolved.password) {
+  if (resolved.status !== "gated" || !constantTimeEqual(attempt, resolved.password)) {
     return { error: "Wrong password. Ask the group chat." };
   }
 
