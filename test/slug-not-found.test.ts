@@ -278,4 +278,23 @@ describe("unknown guest slug 404", () => {
     expect(html).toContain("Who goes there");
     expect(html).not.toContain("No trip at this link");
   });
+
+  it("proxy survives a failed slug lookup and falls through to the page instead of 500ing", async () => {
+    vi.mocked(getDb).mockReturnValue({
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: async () => {
+              throw new Error("connection reset");
+            },
+          }),
+        }),
+      }),
+    } as never);
+
+    const res = await proxy(new NextRequest("http://localhost/flaky-slug"));
+    // No middleware 500 / rewrite — request continues so the page renders
+    // its own graceful handling.
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+  });
 });

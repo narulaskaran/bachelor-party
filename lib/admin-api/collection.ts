@@ -48,20 +48,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 
-  const [party] = await db
-    .select()
-    .from(schema.parties)
-    .where(eq(schema.parties.adminToken, token))
-    .limit(1);
+  let party: typeof schema.parties.$inferSelect | undefined;
+  try {
+    [party] = await db
+      .select()
+      .from(schema.parties)
+      .where(eq(schema.parties.adminToken, token))
+      .limit(1);
+  } catch (err) {
+    console.error("list trips failed", err);
+    return NextResponse.json({ error: "Failed to list trips" }, { status: 500 });
+  }
 
   if (!party) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 
-  const guests = await db
-    .select({ id: schema.guests.id })
-    .from(schema.guests)
-    .where(eq(schema.guests.partyId, party.id));
+  let guests;
+  try {
+    guests = await db
+      .select({ id: schema.guests.id })
+      .from(schema.guests)
+      .where(eq(schema.guests.partyId, party.id));
+  } catch (err) {
+    console.error("list trips guest count failed", err);
+    return NextResponse.json({ error: "Failed to list trips" }, { status: 500 });
+  }
 
   const trips = [indexItem(party, guests.length)];
   return NextResponse.json({ trips, parties: trips });
