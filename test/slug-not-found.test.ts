@@ -296,5 +296,11 @@ describe("unknown guest slug 404", () => {
     // No middleware 500 / rewrite — request continues so the page renders
     // its own graceful handling.
     expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+
+    // And the page itself survives the same failed lookup with branded copy,
+    // not an uncaught throw / Next's generic error page.
+    const { status, html } = await pageHttpStatus("flaky-slug");
+    expect(status).toBe(200);
+    expect(html).toContain("Try again in a minute");
   });
 });
