@@ -60,3 +60,11 @@ export async function GET(): Promise<Response> {
     },
   });
 }
+
+// Non-GET requests (e.g. server-action POSTs from the trip login form) are
+// rewritten here too during an outage; they must see 503, not a 405.
+export const POST = GET;
+export const PUT = GET;
+export const PATCH = GET;
+export const DELETE = GET;
+export const HEAD = GET;

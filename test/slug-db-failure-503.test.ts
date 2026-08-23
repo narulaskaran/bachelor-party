@@ -71,6 +71,15 @@ describe("transient DB failure on a guest slug", () => {
     expect(html).not.toContain("__next_error__");
   });
 
+  it("non-GET requests rewritten during an outage get 503, not a 405", async () => {
+    const { POST: unavailablePOST } = await import(
+      "@/app/api/trip-unavailable/route"
+    );
+    const res = await unavailablePOST();
+    expect(res.status).toBe(503);
+    expect(res.headers.get("retry-after")).toBeTruthy();
+  });
+
   it("page-level fallback still renders branded retry UI if its own lookup fails", async () => {
     dbDown();
     const node = await Page({ params: Promise.resolve({ slug: "jackson-hole-26" }) });
