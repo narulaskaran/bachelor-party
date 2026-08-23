@@ -98,6 +98,19 @@ describe("admin item endpoint JSON envelopes", () => {
     await expect(res.json()).resolves.toEqual({ error: "Failed to update trip" });
   });
 
+  it("PATCH returns the JSON envelope when the auth lookup itself throws", async () => {
+    vi.mocked(getDb).mockImplementation(() => {
+      throw new Error("db down");
+    });
+    const res = await PATCH(
+      makeRequest("cabin-tok", { method: "PATCH", body: { password: "x-pass-1" } }),
+      ctx("cabin"),
+    );
+    expect(res.status).toBe(500);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    await expect(res.json()).resolves.toEqual({ error: "Failed to update trip" });
+  });
+
   it("DELETE returns the JSON envelope when the auth lookup throws", async () => {
     vi.mocked(getDb).mockImplementation(() => {
       throw new Error("db down");
