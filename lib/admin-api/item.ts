@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
+import { readBearerToken } from "@/lib/admin-auth";
 import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
 import { authorizePartyBySlug } from "@/lib/authorize-party";
+import { credentialFingerprint, recordContentVersion } from "@/lib/content-versions";
 import { schema } from "@/lib/db";
 import { mergePatch } from "@/lib/merge-patch";
 import { parsePartyContentForExisting, updatePartySchema } from "@/lib/party-schema";
@@ -43,6 +45,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
   if (!auth.ok) return auth.error;
   const { db, party } = auth;
+  const token = readBearerToken(request);
 
   const body = await readJsonBody(request);
   if (!body.ok) return body.response;
@@ -109,6 +112,20 @@ export async function PATCH(request: Request, { params }: Params) {
       .returning();
     if (!updated) {
       return NextResponse.json({ error: "Trip not found" }, { status: 404 });
+    }
+    if (nextContent) {
+      // Audit the content change. The bearer token is recorded only as a
+      // one-way fingerprint, never raw. PATCH publishes content directly,
+      // so the row's state mirrors the party's published flag.
+      await recordContentVersion(db, {
+        partyId: updated.id,
+        state: updated.published === false ? "draft" : "published",
+        content: nextContent,
+        actorType: "admin",
+        actorId: credentialFingerprint(token ?? ""),
+        changeSummary: "content updated via admin API",
+        ...(updated.published === false ? {} : { publishedAt: new Date() }),
+      });
     }
     return NextResponse.json(withRecord(updated));
   } catch (err) {

@@ -69,15 +69,23 @@ function makeQuery(getRows: () => Row[]) {
 export function createMemoryDb() {
   const parties: Row[] = [];
   const guests: Row[] = [];
+  const contentVersions: Row[] = [];
   let partySeq = 1;
   let guestSeq = 1;
+  let versionSeq = 1;
 
   function rowsFor(table: object): Row[] {
-    return tableName(table) === "guests" ? guests : parties;
+    const name = tableName(table);
+    if (name === "guests") return guests;
+    if (name === "content_versions") return contentVersions;
+    return parties;
   }
 
   function nextId(table: object): number {
-    return tableName(table) === "guests" ? guestSeq++ : partySeq++;
+    const name = tableName(table);
+    if (name === "guests") return guestSeq++;
+    if (name === "content_versions") return versionSeq++;
+    return partySeq++;
   }
 
   const db = {
@@ -170,6 +178,7 @@ export function createMemoryDb() {
     db,
     parties,
     guests,
+    contentVersions,
     seedParty(partial: Row) {
       const row: Row = {
         id: partySeq++,

@@ -193,6 +193,51 @@ export function openApiSpec() {
         },
       },
       "/api/admin/trips/{slug}": tripItemPath,
+      "/api/admin/trips/{slug}/versions": {
+        get: {
+          operationId: "listTripVersions",
+          tags: ["trips"],
+          summary:
+            "Immutable content_versions audit trail (full snapshots), newest first",
+          description:
+            "Append-only history of every draft save and publish. Rows are never updated or deleted (enforced by database triggers too). actorId is a one-way credential fingerprint, never a raw token.",
+          security: bearer,
+          parameters: [
+            { $ref: "#/components/parameters/slug" },
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 1, maximum: 500, default: 100 },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Versions for this trip, newest first",
+              ...json({
+                type: "object",
+                properties: {
+                  trip: {
+                    type: "object",
+                    properties: { slug: { type: "string" } },
+                  },
+                  party: {
+                    type: "object",
+                    properties: { slug: { type: "string" } },
+                    description: "Alias of `trip`.",
+                  },
+                  versions: {
+                    type: "array",
+                    items: { $ref: "#/components/schemas/ContentVersion" },
+                  },
+                },
+                required: ["versions"],
+              }),
+            },
+            "401": { description: "Unauthorized", ...json({ $ref: "#/components/schemas/Error" }) },
+          },
+        },
+      },
       "/api/admin/trips/{slug}/guests": {
         get: {
           operationId: "listGuests",
@@ -333,6 +378,29 @@ export function openApiSpec() {
             activityPrefs: { type: "object", additionalProperties: { type: "string" } },
             notes: { type: "string", nullable: true },
           },
+        },
+        ContentVersion: {
+          type: "object",
+          properties: {
+            id: { type: "integer" },
+            version: { type: "integer", description: "Per-party monotonic sequence" },
+            state: { type: "string", enum: ["draft", "published"] },
+            contentSnapshot: {
+              allOf: [{ $ref: "#/components/schemas/PartyContent" }],
+              description: "FULL snapshot, not a diff",
+            },
+            baseVersion: { type: "integer", nullable: true },
+            actorType: { type: "string", enum: ["host", "admin", "agent"] },
+            actorId: {
+              type: "string",
+              nullable: true,
+              description: "One-way credential fingerprint (sha256:<12 hex>), never a raw token",
+            },
+            changeSummary: { type: "string", nullable: true },
+            createdAt: { type: "string" },
+            publishedAt: { type: "string", nullable: true },
+          },
+          required: ["id", "version", "state", "contentSnapshot", "actorType", "createdAt"],
         },
       },
     },

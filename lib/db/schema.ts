@@ -61,6 +61,44 @@ export const guests = pgTable(
   ]
 );
 
+// Immutable audit trail for trip content. One append-only row per draft save
+// or publish, storing a FULL content snapshot (not a diff). Rows are never
+// updated or deleted by application code, and the 0006 migration installs a
+// trigger that rejects UPDATE/DELETE at the database level so published
+// history survives forever.
+export type ContentVersionState = "draft" | "published";
+export type ContentVersionActorType = "host" | "admin" | "agent";
+export const contentVersions = pgTable(
+  "content_versions",
+  {
+    id: serial("id").primaryKey(),
+    partyId: integer("party_id")
+      .notNull()
+      .references(() => parties.id),
+    /** Per-party monotonic sequence: 1, 2, 3, ... in insert order. */
+    version: integer("version").notNull(),
+    state: text("state").$type<ContentVersionState>().notNull(),
+    contentSnapshot: jsonb("content_snapshot").$type<PartyContent>().notNull(),
+    /** Version this snapshot was derived from (the prior head), when known. */
+    baseVersion: integer("base_version"),
+    actorType: text("actor_type").$type<ContentVersionActorType>().notNull(),
+    /**
+     * Credential identifier for the actor — e.g. a short hash prefix of the
+     * admin token. NEVER the raw secret itself.
+     */
+    actorId: text("actor_id"),
+    changeSummary: text("change_summary"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    /** Set only on 'published' rows. */
+    publishedAt: timestamp("published_at"),
+  },
+  (table) => [
+    uniqueIndex("content_versions_party_version_idx").on(table.partyId, table.version),
+  ]
+);
+
 export type Party = typeof parties.$inferSelect;
 export type Guest = typeof guests.$inferSelect;
 export type NewGuest = typeof guests.$inferInsert;
+export type ContentVersion = typeof contentVersions.$inferSelect;
+export type NewContentVersion = typeof contentVersions.$inferInsert;

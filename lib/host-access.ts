@@ -10,6 +10,7 @@ import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
 import { publishedGuestPath } from "@/lib/guest-invite";
 import { guestUpdateForPublish } from "@/lib/guest-update";
 import { constantTimeEqual } from "@/lib/cookie-hash";
+import { recordContentVersion } from "@/lib/content-versions";
 import { reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
 import { cookieAuthenticatesHost, HOST_COOKIE, WRONG_HOST_KEY, hostSessionCookie } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
@@ -196,6 +197,13 @@ export async function saveHostDraft(
       .update(schema.parties)
       .set({ draftContent: next, updatedAt: new Date() })
       .where(eq(schema.parties.slug, slug));
+    await recordContentVersion(auth.loaded.db, {
+      partyId: auth.loaded.party.id,
+      state: "draft",
+      content: next,
+      actorType: "host",
+      changeSummary: "draft saved",
+    });
     revalidatePath(`/${slug}`);
     revalidatePath(`/${slug}/host`);
     return { ok: true as const, content: next };
@@ -229,6 +237,14 @@ export async function publishHostDraft(slug: string, hostKey?: string) {
       .update(schema.parties)
       .set({ content: published, draftContent: reviewedDraft, published: true, updatedAt: new Date() })
       .where(eq(schema.parties.slug, slug));
+    await recordContentVersion(auth.loaded.db, {
+      partyId: auth.loaded.party.id,
+      state: "published",
+      content: published,
+      actorType: "host",
+      changeSummary: "draft published",
+      publishedAt: new Date(),
+    });
     revalidatePath(`/${slug}`);
     revalidatePath(`/${slug}/host`);
     const guestUrl = publishedGuestPath({

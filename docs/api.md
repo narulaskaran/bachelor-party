@@ -28,6 +28,30 @@ works. Validation errors return `{ error, issues: [{ path, message, hint }] }`.
 List/create/get responses include both `trips`/`trip` (canonical) and
 `parties`/`party` (alias).
 
+## Content version history (P2-3 audit trail)
+
+Every content change appends one immutable row to the `content_versions`
+table with a **full content snapshot** (not a diff): draft saves and
+publishes from the host editor (`actorType: "host"`) and content PATCHes
+via the admin API (`actorType: "admin"`). Rows are never updated or
+deleted — enforced in application code and again by `BEFORE UPDATE/DELETE`
+triggers in migration `0006_content_versions.sql`, so published history
+survives forever. The bearer/admin credential is stored only as a one-way
+fingerprint (`sha256:<12 hex>`), never raw.
+
+Read it back with:
+
+```
+GET /api/admin/trips/:slug/versions?limit=100
+Authorization: Bearer <adminToken>
+```
+
+Returns `{ trip: { slug }, party: { slug }, versions: [...] }`, newest
+first. Each version: `id`, `version` (per-party 1, 2, 3, …), `state`
+(`draft` | `published`), `contentSnapshot`, `baseVersion`, `actorType`,
+`actorId`, `changeSummary`, `createdAt`, `publishedAt` (published rows
+only). There is intentionally no restore endpoint yet.
+
 ```bash
 # Sparse create — name is enough; no deploy secret
 curl https://your-deploy.vercel.app/api/admin/trips \

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { readBearerToken } from "@/lib/admin-auth";
 import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
+import { recordContentVersion } from "@/lib/content-versions";
 import { getDb, schema } from "@/lib/db";
 import { hostSessionCookie } from "@/lib/host-auth";
 import { organizerPacket } from "@/lib/organizer-packet";
@@ -185,6 +186,13 @@ export async function POST(request: Request) {
         guestToken,
       })
       .returning();
+    await recordContentVersion(db, {
+      partyId: party.id,
+      state: "draft",
+      content,
+      actorType: "host",
+      changeSummary: "trip created",
+    });
     const response = NextResponse.json(
       {
         trip: { id: party.id, slug: party.slug, adminToken: party.adminToken },
