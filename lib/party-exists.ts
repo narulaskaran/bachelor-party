@@ -8,6 +8,13 @@ import { isGuestInviteToken } from "@/lib/guest-invite";
  */
 export const MISSING_GUEST_REWRITE = "/_not-found/guest";
 
+/**
+ * Rewrite target served by `app/api/trip-unavailable/route.ts`: real
+ * HTTP 503 + Retry-After with branded copy for transient DB failures.
+ * Lives under `/api` so no guest slug can ever collide with it.
+ */
+export const TRIP_UNAVAILABLE_REWRITE = "/api/trip-unavailable";
+
 /** Single-segment guest slug, or null if this path isn't a trip URL. */
 export function guestSlugFromPathname(pathname: string): string | null {
   if (pathname === "/" || pathname === "/_not-found" || pathname === MISSING_GUEST_REWRITE) {

@@ -10,7 +10,10 @@ import {
 } from "next/dist/client/components/http-access-fallback/http-access-fallback";
 import { tryToParsePath } from "next/dist/lib/try-to-parse-path";
 import { getDb } from "@/lib/db";
-import { MISSING_GUEST_REWRITE } from "@/lib/party-exists";
+import {
+  MISSING_GUEST_REWRITE,
+  TRIP_UNAVAILABLE_REWRITE,
+} from "@/lib/party-exists";
 import { TripNotFound } from "@/components/trip-not-found";
 import RootNotFound from "@/app/not-found";
 import SlugNotFound from "@/app/[slug]/not-found";
@@ -279,7 +282,7 @@ describe("unknown guest slug 404", () => {
     expect(html).not.toContain("No trip at this link");
   });
 
-  it("proxy survives a failed slug lookup and falls through to the page instead of 500ing", async () => {
+  it("proxy rewrites a failed slug lookup to the 503 handler instead of 500ing", async () => {
     vi.mocked(getDb).mockReturnValue({
       select: () => ({
         from: () => ({
@@ -293,9 +296,11 @@ describe("unknown guest slug 404", () => {
     } as never);
 
     const res = await proxy(new NextRequest("http://localhost/flaky-slug"));
-    // No middleware 500 / rewrite — request continues so the page renders
-    // its own graceful handling.
-    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+    // No middleware 500 — the failed lookup is rewritten to the real HTTP 503
+    // handler so caches and monitors see Retry-After, not an error page.
+    const rewritten = new URL(res.headers.get("x-middleware-rewrite") ?? "");
+    expect(rewritten.pathname).toBe(TRIP_UNAVAILABLE_REWRITE);
+    expect(rewritten.pathname).not.toBe(MISSING_GUEST_REWRITE);
 
     // And the page itself survives the same failed lookup with branded copy,
     // not an uncaught throw / Next's generic error page.

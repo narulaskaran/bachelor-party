@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PartyView } from "@/components/party-view";
+import { TripUnavailable } from "@/components/trip-unavailable";
 import { AUTH_COOKIE } from "@/lib/auth";
 import { cookieAuthenticatesParty } from "@/lib/party-auth";
 import { resolvePartyBySlug } from "@/lib/resolve-party";
@@ -16,26 +17,15 @@ export default async function Page({ params }: Params) {
   const { slug } = await params;
 
   // A transient DB failure here would otherwise surface as Next's generic
-  // unstyled error page. Show a branded retry message instead.
+  // unstyled error page. The proxy normally rewrites failed lookups to the
+  // real HTTP 503 handler (/api/trip-unavailable); this branded retry state
+  // is the in-page fallback for failures after that lookup passed.
   let resolved: Awaited<ReturnType<typeof resolvePartyBySlug>>;
   try {
     resolved = await resolvePartyBySlug(slug);
   } catch (err) {
     console.error("trip page lookup failed", err);
-    return (
-      <div className="mx-auto flex min-h-[70vh] max-w-5xl items-center justify-center px-4 py-16">
-        <Card className="w-full max-w-sm">
-          <CardHeader className="items-center text-center">
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">One sec</h1>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center text-sm text-muted-foreground">
-              We couldn&rsquo;t load this trip just now. Try again in a minute.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <TripUnavailable />;
   }
 
   // Fallback if proxy didn't rewrite this missing slug first.
