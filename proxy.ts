@@ -100,7 +100,18 @@ export async function proxy(request: NextRequest) {
   }
 
   const slug = guestSlugFromPathname(pathname);
-  if (!slug || (await partyExists(slug))) return nextWithPathname(request);
+  if (!slug) return nextWithPathname(request);
+  // A transient DB failure must not 500 in middleware — fall through and let
+  // `app/[slug]/page.tsx` catch the failed lookup and render its branded
+  // retry message (same shape as the /g/ branch's error rewrite).
+  let exists: boolean;
+  try {
+    exists = await partyExists(slug);
+  } catch (err) {
+    console.error("proxy partyExists lookup failed", err);
+    return nextWithPathname(request);
+  }
+  if (exists) return nextWithPathname(request);
 
   const url = request.nextUrl.clone();
   url.pathname = MISSING_GUEST_REWRITE;

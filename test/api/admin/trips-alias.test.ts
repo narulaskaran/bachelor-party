@@ -113,6 +113,25 @@ describe("trips / parties dual-mount", () => {
     expect(index.parties).toEqual(index.trips);
     expect(index.trips[0].slug).toBe("jackson-hole-26");
   });
+
+  it("collection GET returns the JSON error envelope when a query fails, not an HTML 500", async () => {
+    vi.mocked(getDb).mockReturnValue({
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: async () => {
+              throw new Error("neon connection reset");
+            },
+          }),
+        }),
+      }),
+    } as never);
+
+    const res = await collectionGET(makeRequest("some-token"));
+    expect(res.status).toBe(500);
+    expect(res.headers.get("content-type")).toMatch(/application\/json/);
+    expect(await res.json()).toEqual({ error: "Failed to list trips" });
+  });
 });
 
 describe("OpenAPI", () => {
