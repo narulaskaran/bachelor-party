@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   ADMIN_LOGIN_ERROR,
   ADMIN_UI_UNAVAILABLE_HEADING,
+  adminPasswordMatches,
   getAdminUiPassword,
   logAdminUiUnconfigured,
 } from "@/lib/admin-ui";
@@ -62,5 +63,28 @@ describe("admin UI public copy", () => {
     logAdminUiUnconfigured();
     expect(error).toHaveBeenCalledTimes(1);
     expect(String(error.mock.calls[0]?.[0])).toContain("ADMIN_UI_PASSWORD");
+  });
+});
+
+describe("admin UI password compare", () => {
+  it("accepts the exact password and rejects wrong ones", () => {
+    expect(adminPasswordMatches("secret", "secret")).toBe(true);
+    expect(adminPasswordMatches("wrong", "secret")).toBe(false);
+    expect(adminPasswordMatches("secre", "secret")).toBe(false);
+    expect(adminPasswordMatches("secrets", "secret")).toBe(false);
+    expect(adminPasswordMatches("", "secret")).toBe(false);
+  });
+
+  it("uses constantTimeEqual, not a plain string compare (timing parity with guest/host paths)", async () => {
+    // Same helper the guest password and host adminToken compares use.
+    const { constantTimeEqual } = await import("@/lib/cookie-hash");
+    const attempt = "secret";
+    const expected = "secret";
+    expect(adminPasswordMatches(attempt, expected)).toBe(
+      constantTimeEqual(attempt, expected),
+    );
+    expect(adminPasswordMatches("nope", expected)).toBe(
+      constantTimeEqual("nope", expected),
+    );
   });
 });
