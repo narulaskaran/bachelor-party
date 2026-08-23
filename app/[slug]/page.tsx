@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PartyView } from "@/components/party-view";
+import { TripUnavailable } from "@/components/trip-unavailable";
 import { AUTH_COOKIE } from "@/lib/auth";
 import { cookieAuthenticatesParty } from "@/lib/party-auth";
 import { resolvePartyBySlug } from "@/lib/resolve-party";
@@ -14,7 +15,18 @@ type Params = { params: Promise<{ slug: string }> };
 
 export default async function Page({ params }: Params) {
   const { slug } = await params;
-  const resolved = await resolvePartyBySlug(slug);
+
+  // A transient DB failure here would otherwise surface as Next's generic
+  // unstyled error page. The proxy normally rewrites failed lookups to the
+  // real HTTP 503 handler (/api/trip-unavailable); this branded retry state
+  // is the in-page fallback for failures after that lookup passed.
+  let resolved: Awaited<ReturnType<typeof resolvePartyBySlug>>;
+  try {
+    resolved = await resolvePartyBySlug(slug);
+  } catch (err) {
+    console.error("trip page lookup failed", err);
+    return <TripUnavailable />;
+  }
 
   // Fallback if proxy didn't rewrite this missing slug first.
   if (resolved.status === "missing") notFound();
