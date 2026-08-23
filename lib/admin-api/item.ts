@@ -19,14 +19,28 @@ function withRecord<T extends Record<string, unknown>>(party: T) {
 // GET /api/admin/trips/:slug — full record, including password and content.
 export async function GET(request: Request, ctx: Params) {
   const { slug }: { slug: string } = await ctx.params;
-  const auth = await authorizePartyBySlug(request, slug);
+  // authorizePartyBySlug queries the DB unguarded; wrap so clients get the
+  // JSON envelope, never an HTML 500 (same contract as collection.ts).
+  let auth: Awaited<ReturnType<typeof authorizePartyBySlug>>;
+  try {
+    auth = await authorizePartyBySlug(request, slug);
+  } catch (err) {
+    console.error("get trip failed", err);
+    return NextResponse.json({ error: "Failed to get trip" }, { status: 500 });
+  }
   if (!auth.ok) return auth.error;
   return NextResponse.json(withRecord(auth.party));
 }
 
 export async function PATCH(request: Request, { params }: Params) {
   const { slug }: { slug: string } = await params;
-  const auth = await authorizePartyBySlug(request, slug);
+  let auth: Awaited<ReturnType<typeof authorizePartyBySlug>>;
+  try {
+    auth = await authorizePartyBySlug(request, slug);
+  } catch (err) {
+    console.error("update trip failed", err);
+    return NextResponse.json({ error: "Failed to update trip" }, { status: 500 });
+  }
   if (!auth.ok) return auth.error;
   const { db, party } = auth;
 
@@ -58,11 +72,23 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   if (parsed.data.password) {
-    const [conflict] = await db
-      .select({ slug: schema.parties.slug })
-      .from(schema.parties)
-      .where(eq(schema.parties.password, parsed.data.password))
-      .limit(1);
+    // Conflict check races with concurrent PATCHes; the full lost-update fix
+    // is out of scope — here we only guarantee the JSON error envelope when
+    // this lookup itself fails, matching collection.ts's try/catch pattern.
+    let conflict: { slug: string } | undefined;
+    try {
+      [conflict] = await db
+        .select({ slug: schema.parties.slug })
+        .from(schema.parties)
+        .where(eq(schema.parties.password, parsed.data.password))
+        .limit(1);
+    } catch (err) {
+      console.error("trip password conflict check failed", err);
+      return NextResponse.json(
+        { error: "Failed to update trip" },
+        { status: 500 },
+      );
+    }
     if (conflict && conflict.slug !== slug) {
       return NextResponse.json(
         { error: "Password already in use by another trip" },
@@ -93,7 +119,13 @@ export async function PATCH(request: Request, { params }: Params) {
 
 export async function DELETE(request: Request, ctx: Params) {
   const { slug }: { slug: string } = await ctx.params;
-  const auth = await authorizePartyBySlug(request, slug);
+  let auth: Awaited<ReturnType<typeof authorizePartyBySlug>>;
+  try {
+    auth = await authorizePartyBySlug(request, slug);
+  } catch (err) {
+    console.error("delete trip failed", err);
+    return NextResponse.json({ error: "Failed to delete trip" }, { status: 500 });
+  }
   if (!auth.ok) return auth.error;
   const { db, party } = auth;
 
