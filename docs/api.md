@@ -75,6 +75,7 @@ hides the Pack section and nav link.
 | `/api/admin/trips/:slug` | PATCH | Merge-patch `content` and/or replace `password` |
 | `/api/admin/trips/:slug` | DELETE | Delete the trip and its guest RSVPs |
 | `/api/admin/trips/:slug/guests` | GET | List that trip's RSVPs |
+| `/api/admin/trips/:slug/guests/export` | GET | Download the full-detail guest roster as CSV (organizer token only) |
 | `/api/admin/trips/:slug/guests/:id` | DELETE | Remove one guest RSVP |
 | `/api/openapi.json` | GET | OpenAPI 3.1 (from the Zod schemas) |
 
