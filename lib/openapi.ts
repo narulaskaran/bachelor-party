@@ -213,6 +213,27 @@ export function openApiSpec() {
           },
         },
       },
+      "/api/admin/trips/{slug}/guests/export": {
+        get: {
+          operationId: "exportGuestRosterCsv",
+          tags: ["guests"],
+          summary: "Download the full-detail guest roster as CSV",
+          description:
+            "Organizer-only CSV (name, phone, flights, dietary, activity votes, notes). " +
+            "Requires the trip's admin bearer token; guest passwords and guest tokens are rejected.",
+          security: bearer,
+          parameters: [{ $ref: "#/components/parameters/slug" }],
+          responses: {
+            "200": {
+              description: "CSV attachment",
+              content: {
+                "text/csv": { schema: { type: "string" } },
+              },
+            },
+            "401": { description: "Unauthorized", ...json({ $ref: "#/components/schemas/Error" }) },
+          },
+        },
+      },
       "/api/admin/trips/{slug}/guests/{id}": {
         delete: {
           operationId: "deleteGuest",
