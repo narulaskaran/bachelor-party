@@ -3,12 +3,13 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ADMIN_COOKIE, adminCookieValue } from "@/lib/admin-cookie-auth";
+import { sessionCookieOptions } from "@/lib/cookie-hash";
 import {
   ADMIN_LOGIN_ERROR,
+  adminPasswordMatches,
   getAdminUiPassword,
   logAdminUiUnconfigured,
 } from "@/lib/admin-ui";
-import { sessionCookieOptions } from "@/lib/cookie-hash";
 
 export async function adminLogin(
   _prevState: { error?: string },
@@ -23,7 +24,7 @@ export async function adminLogin(
     return { error: ADMIN_LOGIN_ERROR };
   }
 
-  if (attempt !== expected) {
+  if (!adminPasswordMatches(attempt, expected)) {
     return { error: ADMIN_LOGIN_ERROR };
   }
 
