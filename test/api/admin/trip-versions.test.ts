@@ -46,7 +46,7 @@ describe("content_versions audit trail via the admin API", () => {
     vi.mocked(getDb).mockReset();
   });
 
-  it("PATCH with content records an immutable published version row", async () => {
+  it("PATCH with content records an immutable draft version row", async () => {
     const mem = createMemoryDb();
     mem.seedParty({
       slug: "cabin",
@@ -66,13 +66,13 @@ describe("content_versions audit trail via the admin API", () => {
     expect(mem.contentVersions).toHaveLength(1);
     const row = mem.contentVersions[0];
     expect(row.version).toBe(1);
-    expect(row.state).toBe("published");
+    expect(row.state).toBe("draft");
     // FULL snapshot, not a diff.
     expect(row.contentSnapshot).toEqual(content("Cabin Weekend v2"));
     expect(row.actorType).toBe("admin");
     // Credential identifier only — the raw token never lands in the audit row.
     expect(JSON.stringify(mem.contentVersions)).not.toContain("cabin-tok");
-    expect(String(row.publishedAt)).toBeTruthy();
+    expect(row.publishedAt).toBeFalsy();
   });
 
   it("versions list is admin-token gated", async () => {

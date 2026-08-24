@@ -12,7 +12,10 @@ export class BigsendApiError extends Error {
 export type CreateTripBody = {
   slug?: string;
   password?: string;
-  content: { trip: { siteName: string }; [key: string]: unknown };
+  plan?: string;
+  preset?: "night-out" | "weekend";
+  siteName?: string;
+  content?: { trip: { siteName: string }; [key: string]: unknown };
 };
 
 export type PatchTripBody = {
@@ -24,6 +27,7 @@ export type BigsendClient = {
   create: (body: CreateTripBody) => Promise<Record<string, unknown>>;
   get: (slug: string) => Promise<Record<string, unknown>>;
   patch: (slug: string, body: PatchTripBody) => Promise<Record<string, unknown>>;
+  publish: (slug: string) => Promise<Record<string, unknown>>;
   delete: (slug: string) => Promise<Record<string, unknown>>;
   guests: (slug: string) => Promise<Record<string, unknown>>;
   deleteGuest: (slug: string, id: number) => Promise<Record<string, unknown>>;
@@ -65,6 +69,8 @@ export function createBigsendClient(opts: {
     get: (slug) => request("GET", `/api/admin/trips/${encodeURIComponent(slug)}`),
     patch: (slug, body) =>
       request("PATCH", `/api/admin/trips/${encodeURIComponent(slug)}`, body),
+    publish: (slug) =>
+      request("POST", `/api/admin/trips/${encodeURIComponent(slug)}/publish`),
     delete: (slug) => request("DELETE", `/api/admin/trips/${encodeURIComponent(slug)}`),
     guests: (slug) => request("GET", `/api/admin/trips/${encodeURIComponent(slug)}/guests`),
     deleteGuest: (slug, id) =>

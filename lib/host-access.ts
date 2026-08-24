@@ -8,10 +8,9 @@ import { getDb, schema } from "@/lib/db";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
 import { publishedGuestPath } from "@/lib/guest-invite";
-import { guestUpdateForPublish } from "@/lib/guest-update";
 import { constantTimeEqual } from "@/lib/cookie-hash";
 import { recordContentVersion } from "@/lib/content-versions";
-import { reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
+import { persistPublishedParty, preparePublish } from "@/lib/publish-party";
 import { cookieAuthenticatesHost, HOST_COOKIE, WRONG_HOST_KEY, hostSessionCookie } from "@/lib/host-auth";
 import { setDayKeyEvent } from "@/lib/key-events";
 import { parsePartyContentForExisting } from "@/lib/party-schema";
@@ -217,40 +216,14 @@ export async function publishHostDraft(slug: string, hostKey?: string) {
   if (slug === "demo") return { ok: false as const, error: "The sample trip cannot be published." };
   const auth = await authenticateHostParty(slug, hostKey);
   if (!auth.ok) return auth;
-  const next = draftForParty(auth.loaded.party);
-  if (!reviewComplete(next.draftReview)) {
-    return { ok: false as const, error: "Review every fact and confirm that no logistics were guessed before publishing." };
-  }
-  const parsed = parsePartyContentForExisting(next, next);
-  if (!parsed.success) return { ok: false as const, error: "Fix the draft before publishing." };
+  const prepared = preparePublish(auth.loaded.party);
+  if (!prepared.ok) return { ok: false as const, error: prepared.error };
   try {
-    const reviewedDraft = { ...parsed.data, kind: "trip" as const };
-    const published = {
-      ...stripDraftReview(reviewedDraft),
-      guestUpdate: guestUpdateForPublish(
-        auth.loaded.party.content,
-        reviewedDraft,
-        auth.loaded.party.published !== false,
-      ),
-    };
-    await auth.loaded.db
-      .update(schema.parties)
-      .set({ content: published, draftContent: reviewedDraft, published: true, updatedAt: new Date() })
-      .where(eq(schema.parties.slug, slug));
-    await recordContentVersion(auth.loaded.db, {
-      partyId: auth.loaded.party.id,
-      state: "published",
-      content: published,
+    const guestUrl = await persistPublishedParty(auth.loaded.db, auth.loaded.party, prepared, {
       actorType: "host",
-      changeSummary: "draft published",
-      publishedAt: new Date(),
     });
     revalidatePath(`/${slug}`);
     revalidatePath(`/${slug}/host`);
-    const guestUrl = publishedGuestPath({
-      guestToken: auth.loaded.party.guestToken,
-      slug,
-    });
     return { ok: true as const, guestUrl };
   } catch (err) {
     console.error("publishHostDraft failed", err);

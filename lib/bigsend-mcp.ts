@@ -8,6 +8,7 @@ export const BIGSEND_TOOL_NAMES = [
   "create",
   "get",
   "set",
+  "publish",
   "lodging_set",
   "schedule_add",
   "activities_add",
@@ -28,9 +29,12 @@ export const BIGSEND_TOOLS: ToolDef[] = [
   {
     name: "create",
     description:
-      'Create a trip (no token required). Returns an organizer packet; store adminToken as BIGSEND_TOKEN for later calls. Example: { "name": "E2E Smoke" }',
+      'Create an unpublished draft (no token required). Never publishes. Dump a plan with { "plan": "..." } or a name with { "name": "E2E Smoke" }. Store adminToken as BIGSEND_TOKEN. Example: { "plan": "Cabin weekend in Denver", "preset": "weekend" }',
     inputSchema: {
       name: z.string().optional().describe("Trip name (siteName)"),
+      plan: z.string().optional().describe("Messy event plan dump; ingested into a draft"),
+      preset: z.enum(["night-out", "weekend"]).optional(),
+      siteName: z.string().optional().describe("Optional name override when dumping a plan"),
       file: z.string().optional().describe("Path to a create JSON file"),
       slug: z.string().optional(),
       password: z.string().optional(),
@@ -43,7 +47,8 @@ export const BIGSEND_TOOLS: ToolDef[] = [
   },
   {
     name: "set",
-    description: 'Merge-patch trip content. Example: { "slug": "e2e-smoke", "patch": "{\\"trip\\":{\\"airport\\":\\"JAC\\"}}" }',
+    description:
+      'Merge-patch the working DRAFT only. Does not publish; guests keep the last published snapshot. Publish is a separate host action. Example: { "slug": "e2e-smoke", "patch": "{\\"trip\\":{\\"airport\\":\\"JAC\\"}}" }',
     inputSchema: {
       slug: z.string(),
       patch: z
@@ -52,6 +57,12 @@ export const BIGSEND_TOOLS: ToolDef[] = [
         .describe("Merge patch as an object or JSON string"),
       file: z.string().optional(),
     },
+  },
+  {
+    name: "publish",
+    description:
+      'Explicit host publish. Never implied by create or set. Requires the trip adminToken (host key). Returns guestUrl after publish. Example: { "slug": "e2e-smoke" }',
+    inputSchema: { slug: z.string() },
   },
   {
     name: "lodging_set",
@@ -136,7 +147,9 @@ export function argvForTool(name: BigsendToolName, args: ToolArgs): string[] {
   switch (name) {
     case "create": {
       const argv = ["create"];
-      pushFlag(argv, "name", args.name);
+      pushFlag(argv, "name", args.name ?? args.siteName);
+      pushFlag(argv, "plan", args.plan);
+      pushFlag(argv, "preset", args.preset);
       pushFlag(argv, "file", args.file);
       pushFlag(argv, "slug", args.slug);
       pushFlag(argv, "password", args.password);
@@ -150,6 +163,8 @@ export function argvForTool(name: BigsendToolName, args: ToolArgs): string[] {
       pushFlag(argv, "file", args.file);
       return argv;
     }
+    case "publish":
+      return ["publish", String(args.slug ?? "")];
     case "lodging_set": {
       const argv = ["lodging", String(args.slug ?? "")];
       pushFlag(argv, "name", args.name);

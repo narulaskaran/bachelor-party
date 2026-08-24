@@ -33,6 +33,7 @@ describe("bigsend MCP tools", () => {
       "create",
       "get",
       "set",
+      "publish",
       "lodging_set",
       "schedule_add",
       "activities_add",
@@ -77,6 +78,20 @@ describe("bigsend MCP tools", () => {
       },
     ]);
     expect(JSON.parse(result.text).slug).toBe("e2e-smoke");
+  });
+
+  it("create with a plan dump maps onto CLI --plan", () => {
+    expect(argvForTool("create", { plan: "Cabin weekend", preset: "weekend" })).toEqual([
+      "create",
+      "--plan",
+      "Cabin weekend",
+      "--preset",
+      "weekend",
+    ]);
+  });
+
+  it("publish argv is the explicit host verb", () => {
+    expect(argvForTool("publish", { slug: "cabin" })).toEqual(["publish", "cabin"]);
   });
 
   it("set accepts a patch object (not only a JSON string)", () => {

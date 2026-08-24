@@ -143,6 +143,8 @@ describe("OpenAPI", () => {
     expect(spec.paths["/api/admin/trips"].post).toBeTruthy();
     expect(spec.paths["/api/admin/trips"].post.security).toEqual([]);
     expect(spec.paths["/api/admin/trips/{slug}"].patch).toBeTruthy();
+    expect(spec.paths["/api/admin/trips/{slug}/publish"].post).toBeTruthy();
+    expect(spec.info.description).toMatch(/cannot silently publish/i);
     expect(spec.paths["/api/admin/trips/{slug}"].delete).toBeTruthy();
     expect(spec.paths["/api/admin/trips/{slug}/guests"].get).toBeTruthy();
     expect(spec.paths["/api/admin/trips/{slug}/guests/{id}"].delete).toBeTruthy();

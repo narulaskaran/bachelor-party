@@ -22,9 +22,14 @@ Env: BIGSEND_API_URL  BIGSEND_TOKEN (trip adminToken after create)  BIGSEND_CONF
 Create needs no token. The 201 organizer packet's adminToken is stored in
 ~/.bigsend.json (or BIGSEND_CONFIG) so follow-up commands work.
 
+Create and set never publish. Guests keep the last published snapshot until
+an explicit host publish (site Publish button, or bigsend publish).
+
   bigsend create --name "E2E Smoke"
+  bigsend create --plan "Cabin weekend in Denver" --preset weekend
   bigsend get <slug>
   bigsend set <slug> --patch '{"trip":{"airport":"JAC"}}'
+  bigsend publish <slug>
   bigsend lodging <slug> --name "Cabin"
   bigsend schedule add <slug> --day 2026-09-05 --title "Dinner" --key-event
   bigsend activities add <slug> --name "Hike"
@@ -129,6 +134,8 @@ export async function runBigsend(argv: string[], io: RunIO): Promise<number> {
         slug: { type: "string" },
         password: { type: "string" },
         file: { type: "string" },
+        plan: { type: "string" },
+        preset: { type: "string" },
         patch: { type: "string" },
         yes: { type: "boolean", short: "y" },
         day: { type: "string" },
@@ -171,11 +178,15 @@ export async function runBigsend(argv: string[], io: RunIO): Promise<number> {
           slug: flagStr("slug"),
           password: flagStr("password"),
           file: flagStr("file"),
+          plan: flagStr("plan"),
+          preset: flagStr("preset"),
         });
       case "get":
         return await cmdGet(io, rest[0]);
       case "set":
         return await cmdSet(io, rest[0], { patch: flagStr("patch"), file: flagStr("file") });
+      case "publish":
+        return await cmdPublish(io, rest[0]);
       case "lodging":
         return await cmdLodging(io, rest[0], flags as Record<string, string | boolean | undefined>);
       case "schedule":
@@ -204,7 +215,14 @@ export async function runBigsend(argv: string[], io: RunIO): Promise<number> {
 
 async function cmdCreate(
   io: RunIO,
-  flags: { name?: string; slug?: string; password?: string; file?: string },
+  flags: {
+    name?: string;
+    slug?: string;
+    password?: string;
+    file?: string;
+    plan?: string;
+    preset?: string;
+  },
 ): Promise<number> {
   const apiUrl = io.env.BIGSEND_API_URL;
   if (!apiUrl) return fail(io, "BIGSEND_API_URL is not set");
@@ -213,17 +231,23 @@ async function cmdCreate(
   let body: CreateTripBody;
   if (flags.file) {
     const file = JSON.parse(io.readFile(flags.file)) as Record<string, unknown>;
-    if (file.content) {
+    if (file.content || file.plan) {
       body = file as CreateTripBody;
     } else if (file.trip) {
       body = { content: file as CreateTripBody["content"] };
     } else {
-      return fail(io, "--file needs content.trip or a full create payload");
+      return fail(io, "--file needs content.trip, plan, or a full create payload");
+    }
+  } else if (flags.plan) {
+    body = { plan: flags.plan };
+    if (flags.name) body.siteName = flags.name;
+    if (flags.preset === "night-out" || flags.preset === "weekend") {
+      body.preset = flags.preset;
     }
   } else if (flags.name) {
     body = { content: { trip: { siteName: flags.name } } };
   } else {
-    return fail(io, "create requires --name or --file");
+    return fail(io, "create requires --name, --plan, or --file");
   }
   if (flags.slug) body.slug = flags.slug;
   if (flags.password) body.password = flags.password;
@@ -234,9 +258,14 @@ async function cmdCreate(
   saveToken(io, slug, typeof adminToken === "string" ? adminToken : undefined);
   printJson(io, {
     url: result.url,
+    hostUrl: result.hostUrl,
+    guestUrl: result.guestUrl,
     slug: result.slug,
     password: result.password,
     adminToken: result.adminToken,
+    published: result.published,
+    content: result.content,
+    draftReview: result.draftReview,
   });
   return 0;
 }
@@ -247,6 +276,14 @@ async function cmdGet(io: RunIO, slug?: string): Promise<number> {
   if (typeof api === "string") return fail(io, api);
   const result = await api.get(slug);
   printJson(io, tripFrom(result));
+  return 0;
+}
+
+async function cmdPublish(io: RunIO, slug?: string): Promise<number> {
+  if (!slug) return fail(io, "Usage: bigsend publish <slug>");
+  const api = clientFor(io, slug);
+  if (typeof api === "string") return fail(io, api);
+  printJson(io, await api.publish(slug));
   return 0;
 }
 

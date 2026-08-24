@@ -7,7 +7,9 @@ import { recordContentVersion } from "@/lib/content-versions";
 import { getDb, schema } from "@/lib/db";
 import { hostSessionCookie } from "@/lib/host-auth";
 import { organizerPacket } from "@/lib/organizer-packet";
+import { ingestEventPlan } from "@/lib/plan-ingestion";
 import { createPartySchema } from "@/lib/party-schema";
+import type { PartyContent } from "@/lib/party-types";
 import { rateLimitCreate } from "@/lib/rate-limit";
 import { slugFromName, uniqueSlug } from "@/lib/slug";
 import { unguessableGuestToken } from "@/lib/guest-invite";
@@ -102,11 +104,30 @@ export async function POST(request: Request) {
     );
   }
 
-  const content = {
-    ...parsed.data.content,
-    kind: "trip" as const,
-    presentation: parsed.data.content.presentation ?? { style: "clean" as const },
-  };
+  let content: PartyContent;
+  if (parsed.data.plan?.trim()) {
+    const ingested = ingestEventPlan(parsed.data.plan, {
+      siteName: parsed.data.siteName,
+      preset: parsed.data.preset,
+    });
+    content = {
+      ...ingested.content,
+      kind: "trip",
+      presentation: ingested.content.presentation ?? { style: "clean" },
+    };
+  } else {
+    const provided = parsed.data.content ?? {
+      trip: { siteName: parsed.data.siteName! },
+    };
+    content = {
+      ...provided,
+      kind: "trip",
+      presentation: provided.presentation ?? { style: "clean" },
+      trip: parsed.data.siteName
+        ? { ...provided.trip, siteName: parsed.data.siteName }
+        : provided.trip,
+    };
+  }
 
   const taken = async (candidate: string) => {
     const [row] = await db
@@ -201,6 +222,9 @@ export async function POST(request: Request) {
           slug: party.slug,
           password: party.password,
           adminToken: party.adminToken,
+          content,
+          published: false,
+          guestToken: party.guestToken,
         }),
       },
       { status: 201 },

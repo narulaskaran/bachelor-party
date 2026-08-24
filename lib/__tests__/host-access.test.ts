@@ -534,7 +534,14 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
       slug: "needs-review",
       adminToken: "host-tok",
       content: { kind: "trip", trip: { siteName: "Old guest version" } },
-      draftContent: { kind: "trip", trip: { siteName: "Needs review" } },
+      draftContent: {
+        kind: "trip",
+        trip: { siteName: "Needs review" },
+        draftReview: {
+          acknowledged: false,
+          facts: [{ path: "trip.siteName", label: "Event name", status: "extracted", value: "Needs review" }],
+        },
+      },
       published: false,
     });
     vi.mocked(getDb).mockReturnValue(mem.db as never);

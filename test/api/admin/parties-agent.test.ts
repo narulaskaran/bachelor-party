@@ -3,6 +3,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { GET as listGET, POST } from "@/app/api/admin/trips/route";
 import { GET, PATCH, DELETE } from "@/app/api/admin/trips/[slug]/route";
+import { POST as PUBLISH } from "@/app/api/admin/trips/[slug]/publish/route";
 import { GET as guestsGET } from "@/app/api/admin/trips/[slug]/guests/route";
 import { DELETE as guestDELETE } from "@/app/api/admin/trips/[slug]/guests/[id]/route";
 import { AUTH_COOKIE } from "@/lib/auth";
@@ -18,14 +19,19 @@ vi.mock("@/lib/db", async (importOriginal) => {
   return { ...actual, getDb: vi.fn() };
 });
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
 function makeRequest(
   token: string | null,
-  init: { method?: string; body?: unknown; url?: string; ip?: string } = {},
+  init: { method?: string; body?: unknown; url?: string; ip?: string; cookie?: string } = {},
 ): Request {
   const headers = new Headers();
   if (token) headers.set("authorization", `Bearer ${token}`);
   if (init.body !== undefined) headers.set("content-type", "application/json");
   if (init.ip) headers.set("x-forwarded-for", init.ip);
+  if (init.cookie) headers.set("cookie", init.cookie);
   return new Request(init.url ?? "http://localhost/api/admin/parties", {
     method: init.method ?? "GET",
     headers,
@@ -66,6 +72,10 @@ describe("agent API (create / patch / guests)", () => {
     expect(body.password.length).toBeGreaterThanOrEqual(8);
     expect(body.adminToken).toEqual(expect.any(String));
     expect(body.party.slug).toBe("jackson-hole-26");
+    expect(body.published).toBe(false);
+    expect(body.guestUrl).toBeNull();
+    expect(body.hostUrl).toBe("/jackson-hole-26/host");
+    expect(mem.parties[0].published).toBe(false);
     expect(mem.parties[0].content).toMatchObject({
       kind: "trip",
       trip: { siteName: "Jackson Hole '26" },
@@ -145,9 +155,15 @@ describe("agent API (create / patch / guests)", () => {
 
     expect(patched.status).toBe(200);
     expect(mem.parties[0].content).toMatchObject({
+      trip: { siteName: "Cabin Weekend" },
+    });
+    expect("tagline" in (mem.parties[0].content as { trip: Record<string, unknown> }).trip).toBe(false);
+    expect(mem.parties[0].draftContent).toMatchObject({
       trip: { siteName: "Cabin Weekend", tagline: "Let's go" },
     });
-    expect(mem.parties[0].draftContent).toEqual(mem.parties[0].content);
+    const body = await patched.json();
+    expect(body.trip.content.trip.tagline).toBe("Let's go");
+    expect(body.trip.published).toBe(true);
   });
 
   it("preserves legacy HTTP URLs for unrelated edits but rejects HTTP URL edits", async () => {
@@ -774,5 +790,132 @@ describe("agent API (create / patch / guests)", () => {
     const body = await res.json();
     expect(body.trip.content.packing).toEqual(packing);
     expect(body.trip.content.trip.siteName).toBe("Cabin");
+  });
+
+  it("plan dump lifts only written facts and stays unpublished", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: {
+          plan: "Cabin weekend\nLocation: Denver, CO\nLet's maybe get 20 people downtown around 7 if we can",
+          preset: "weekend",
+        },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.published).toBe(false);
+    expect(body.guestUrl).toBeNull();
+    expect(body.hostUrl).toBe(`/${body.slug}/host`);
+    expect(body.content.trip.siteName).toBe("Cabin weekend");
+    expect(body.content.trip.location).toBe("Denver, CO");
+    expect(body.content.trip.startTime).toBeUndefined();
+    expect(body.content.rsvp?.maxPartySize).toBeUndefined();
+    expect(body.draftReview.acknowledged).toBe(false);
+    const tz = body.draftReview.facts.find((f: { path: string }) => f.path === "trip.timezone");
+    expect(tz?.status).toBe("missing");
+    expect(mem.parties[0].published).toBe(false);
+  });
+
+  it("dump create cannot publish until the host acknowledges the fact review", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const created = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: { plan: "Cabin weekend\nLocation: Denver, CO", preset: "weekend" },
+      }),
+    );
+    const packet = await created.json();
+    const blocked = await PUBLISH(
+      makeRequest(packet.adminToken, { method: "POST" }),
+      ctx(packet.slug),
+    );
+    expect(blocked.status).toBe(409);
+    expect(mem.parties[0].published).toBe(false);
+    expect((await blocked.json()).error).toMatch(/review every fact/i);
+  });
+
+  it("abbreviation timezones stay missing/TBD on dump create", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: { plan: "Dinner\nTimezone: ET\n2026-09-04 7:00 PM — dinner", preset: "night-out" },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.content.trip.timezone).toBeUndefined();
+    expect(
+      body.draftReview.facts.find((f: { path: string }) => f.path === "trip.timezone")?.status,
+    ).toBe("missing");
+  });
+
+  it("PATCH of a published trip does not publish the draft or change guest content", async () => {
+    const mem = createMemoryDb();
+    const published = { kind: "trip" as const, trip: { siteName: "Cabin Weekend" } };
+    mem.seedParty({
+      slug: "cabin",
+      adminToken: "cabin-tok",
+      content: published,
+      draftContent: published,
+      published: true,
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const patched = await PATCH(
+      makeRequest("cabin-tok", {
+        method: "PATCH",
+        body: { content: { trip: { tagline: "Secret rewrite" } } },
+      }),
+      ctx("cabin"),
+    );
+    expect(patched.status).toBe(200);
+    const body = await patched.json();
+    expect(body.trip.published).toBe(true);
+    expect(body.trip.content.trip.tagline).toBe("Secret rewrite");
+    expect(mem.parties[0].published).toBe(true);
+    expect(mem.parties[0].content).toEqual(published);
+  });
+
+  it("publish requires host auth and returns guestUrl after review", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const created = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: { content: { trip: { siteName: "Cabin Weekend" } } },
+      }),
+    );
+    const packet = await created.json();
+    const slug = packet.slug as string;
+    const token = packet.adminToken as string;
+
+    const unauth = await PUBLISH(makeRequest(null, { method: "POST" }), ctx(slug));
+    expect(unauth.status).toBe(401);
+
+    const published = await PUBLISH(makeRequest(token, { method: "POST" }), ctx(slug));
+    expect(published.status).toBe(200);
+    const body = await published.json();
+    expect(body.published).toBe(true);
+    expect(body.guestUrl).toMatch(/^\/g\/[0-9a-f]{32}$/);
+    expect(mem.parties[0].published).toBe(true);
+
+    const cookie = (created as NextResponse).cookies.get(HOST_COOKIE);
+    mem.parties[0].published = false;
+    const viaCookie = await PUBLISH(
+      makeRequest(null, { method: "POST", cookie: `${HOST_COOKIE}=${cookie?.value}` }),
+      ctx(slug),
+    );
+    expect(viaCookie.status).toBe(200);
+    expect((await viaCookie.json()).guestUrl).toMatch(/^\/g\/[0-9a-f]{32}$/);
   });
 });

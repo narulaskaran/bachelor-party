@@ -12,9 +12,12 @@ describe("organizerPacket", () => {
       }),
     ).toEqual({
       url: "https://preview.example/jackson-hole-26/host",
+      hostUrl: "/jackson-hole-26/host",
+      guestUrl: null,
       slug: "jackson-hole-26",
       password: "secret-pw",
       adminToken: "tok",
+      published: false,
     });
   });
 

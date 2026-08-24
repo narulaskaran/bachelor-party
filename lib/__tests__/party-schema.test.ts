@@ -75,6 +75,18 @@ describe("partyContentSchema", () => {
     expect(parsed.success).toBe(true);
   });
 
+  it("accepts a plan dump without structured content", () => {
+    const parsed = createPartySchema.safeParse({
+      plan: "Cabin weekend\nLocation: Denver, CO",
+      preset: "weekend",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects create with neither a plan nor a siteName", () => {
+    expect(createPartySchema.safeParse({}).success).toBe(false);
+  });
+
   it("accepts packing items and strips unknown keys so they survive the admin gate", () => {
     const parsed = partyContentSchema.parse({
       trip: { siteName: "Cabin" },
