@@ -72,6 +72,41 @@ describe("bigsend CLI", () => {
     expect(JSON.parse(files["/tmp/bigsend-test.json"]).tokens["e2e-smoke"]).toBe("party-tok");
   });
 
+  it("create --plan POSTs a dump payload and never implies publish", async () => {
+    const calls: Call[] = [];
+    const { io, stdout } = ioHarness({
+      fetchImpl: async (url, init) => {
+        const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+        calls.push({ method: init?.method ?? "GET", url, body });
+        return jsonResponse(201, {
+          url: "https://preview.example/cabin-weekend/host",
+          hostUrl: "/cabin-weekend/host",
+          guestUrl: null,
+          slug: "cabin-weekend",
+          password: "guest-pw",
+          adminToken: "party-tok",
+          published: false,
+        });
+      },
+    });
+
+    const code = await runBigsend(
+      ["create", "--plan", "Cabin weekend in Denver", "--preset", "weekend"],
+      io,
+    );
+    expect(code).toBe(0);
+    expect(calls[0].body).toEqual({
+      plan: "Cabin weekend in Denver",
+      preset: "weekend",
+    });
+    expect(JSON.parse(stdout.join(""))).toMatchObject({
+      slug: "cabin-weekend",
+      guestUrl: null,
+      published: false,
+      hostUrl: "/cabin-weekend/host",
+    });
+  });
+
   it("schedule add GETs then PATCHes with the stored slug token, not a leftover env token", async () => {
     const auths: string[] = [];
     const calls: Call[] = [];

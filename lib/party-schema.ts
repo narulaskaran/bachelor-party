@@ -5,6 +5,7 @@ import {
   isInvertedDateRange,
   isValidCalendarDate,
 } from "@/lib/trip-dates";
+import { EVENT_PRESETS } from "@/lib/event-preset";
 import { isReservedSlug, RESERVED_SLUG_MESSAGE, RESERVED_SLUGS } from "@/lib/slug";
 import { isIanaTimeZone } from "@/lib/timezones";
 
@@ -251,11 +252,26 @@ const slugSchema = z
     `Lowercase kebab-case. Cannot be a reserved app route: ${RESERVED_SLUGS.join(", ")}.`,
   );
 
-export const createPartySchema = z.object({
-  slug: slugSchema.optional(),
-  password: z.string().min(4).max(200).optional(),
-  content: partyContentSchema,
-});
+export const createPartySchema = z
+  .object({
+    slug: slugSchema.optional(),
+    password: z.string().min(4).max(200).optional(),
+    plan: z.string().trim().min(1).optional(),
+    preset: z.enum(EVENT_PRESETS).optional(),
+    siteName: z.string().trim().min(1).optional(),
+    content: partyContentSchema.optional(),
+  })
+  .superRefine((value, ctx) => {
+    const hasPlan = Boolean(value.plan?.trim());
+    const hasName = Boolean(value.siteName?.trim() || value.content?.trip?.siteName?.trim());
+    if (!hasPlan && !hasName) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Provide a plan dump or content.trip.siteName",
+        path: ["plan"],
+      });
+    }
+  });
 
 export const updatePartySchema = z.object({
   password: z.string().min(4).max(200).optional(),

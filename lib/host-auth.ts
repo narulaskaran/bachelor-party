@@ -34,3 +34,22 @@ export async function cookieAuthenticatesHost(
   if (!rawCookie || !adminToken) return false;
   return constantTimeEqual(rawCookie, await hostCookieValue(partyId, adminToken));
 }
+
+/** Read the host session cookie off an incoming Request (API routes). */
+export function hostCookieFromRequest(request: Request): string | undefined {
+  const header = request.headers.get("cookie");
+  if (!header) return undefined;
+  for (const part of header.split(";")) {
+    const trimmed = part.trim();
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    if (trimmed.slice(0, eq).trim() !== HOST_COOKIE) continue;
+    const value = trimmed.slice(eq + 1);
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+  return undefined;
+}

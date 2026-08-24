@@ -48,9 +48,17 @@ const organizerPacketSchema = {
   type: "object",
   properties: {
     url: { type: "string" },
+    hostUrl: { type: "string", description: "Relative host editor path, /{slug}/host" },
+    guestUrl: {
+      type: ["string", "null"],
+      description: "Guest invite path /g/{token}. Null until an explicit host publish.",
+    },
     slug: { type: "string" },
     password: { type: "string" },
     adminToken: { type: "string", nullable: true },
+    published: { type: "boolean" },
+    content: { $ref: "#/components/schemas/PartyContent" },
+    draftReview: { type: "object", nullable: true },
     trip: {
       type: "object",
       properties: {
@@ -94,7 +102,7 @@ const tripItemPath = {
   patch: {
     operationId: "patchTrip",
     tags: ["trips"],
-    summary: "JSON Merge Patch content and/or replace password",
+    summary: "JSON Merge Patch the working DRAFT and/or replace password. Does not publish.",
     security: bearer,
     parameters: [{ $ref: "#/components/parameters/slug" }],
     requestBody: {
@@ -133,11 +141,11 @@ export function openApiSpec() {
     openapi: "3.1.0",
     info: {
       title: "The Big Send admin API",
-      version: "0.3.0",
+      version: "0.4.0",
       description:
         "Headless group-trip HQ. Canonical paths are `/api/admin/trips`. `/api/admin/parties/**` rewrites to the same handlers. Create needs no Authorization; the 201 organizer packet's adminToken is the only credential for that trip. JSON keys `trip` and `party` (and `trips`/`parties`) are both returned. Trip slugs cannot be reserved app routes: " +
         RESERVED_SLUGS.join(", ") +
-        ".",
+        ". HARD RULE: agents cannot silently publish. POST create and PATCH edit the working draft only (`published: false`). Guests keep the last published snapshot until an explicit host action: the site Publish button, or POST `/api/admin/trips/{slug}/publish` with the host session cookie or host key (adminToken). Create never returns a guest URL.",
     },
     servers: [{ url: "/", description: "This deployment" }],
     tags: [
@@ -172,7 +180,7 @@ export function openApiSpec() {
         post: {
           operationId: "createTrip",
           tags: ["trips"],
-          summary: "Create a trip — siteName is enough; no Authorization required",
+          summary: "Create an unpublished draft — plan dump or siteName; no Authorization required",
           security: [],
           requestBody: {
             required: true,
@@ -193,6 +201,28 @@ export function openApiSpec() {
         },
       },
       "/api/admin/trips/{slug}": tripItemPath,
+      "/api/admin/trips/{slug}/publish": {
+        post: {
+          operationId: "publishTrip",
+          tags: ["trips"],
+          summary: "Publish the working draft (host-only; never implied by create or PATCH)",
+          description:
+            "Copies the working draft to the guest snapshot and returns guestUrl `/g/{token}`. Auth is the trip adminToken (host key) as Bearer, or the host session cookie. Agents must not treat create or PATCH as publish.",
+          security: bearer,
+          parameters: [{ $ref: "#/components/parameters/slug" }],
+          responses: {
+            "200": {
+              description: "Published; guestUrl is now `/g/{token}`",
+              ...json({ $ref: "#/components/schemas/OrganizerPacket" }),
+            },
+            "401": { description: "Unauthorized", ...json({ $ref: "#/components/schemas/Error" }) },
+            "409": {
+              description: "Draft review incomplete",
+              ...json({ $ref: "#/components/schemas/Error" }),
+            },
+          },
+        },
+      },
       "/api/admin/trips/{slug}/versions": {
         get: {
           operationId: "listTripVersions",
@@ -358,6 +388,9 @@ export function openApiSpec() {
             password: { type: "string" },
             adminToken: { type: "string", nullable: true },
             content: { $ref: "#/components/schemas/PartyContent" },
+            published: { type: "boolean" },
+            hostUrl: { type: "string" },
+            guestUrl: { type: ["string", "null"] },
             createdAt: { type: "string" },
             updatedAt: { type: "string" },
           },

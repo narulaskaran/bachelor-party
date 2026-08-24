@@ -6,6 +6,7 @@ import { authorizePartyBySlug } from "@/lib/authorize-party";
 import { credentialFingerprint, recordContentVersion } from "@/lib/content-versions";
 import { schema } from "@/lib/db";
 import { mergePatch } from "@/lib/merge-patch";
+import { adminPartyView } from "@/lib/admin-party-view";
 import { parsePartyContentForExisting, updatePartySchema } from "@/lib/party-schema";
 import type { PartyContent } from "@/lib/party-types";
 
@@ -31,7 +32,7 @@ export async function GET(request: Request, ctx: Params) {
     return NextResponse.json({ error: "Failed to get trip" }, { status: 500 });
   }
   if (!auth.ok) return auth.error;
-  return NextResponse.json(withRecord(auth.party));
+  return NextResponse.json(withRecord(adminPartyView(auth.party)));
 }
 
 export async function PATCH(request: Request, { params }: Params) {
@@ -105,7 +106,7 @@ export async function PATCH(request: Request, { params }: Params) {
       .update(schema.parties)
       .set({
         ...(parsed.data.password ? { password: parsed.data.password } : {}),
-        ...(nextContent ? { content: nextContent, draftContent: nextContent } : {}),
+        ...(nextContent ? { draftContent: nextContent } : {}),
         updatedAt: new Date(),
       })
       .where(eq(schema.parties.slug, slug))
@@ -114,20 +115,18 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: "Trip not found" }, { status: 404 });
     }
     if (nextContent) {
-      // Audit the content change. The bearer token is recorded only as a
-      // one-way fingerprint, never raw. PATCH publishes content directly,
-      // so the row's state mirrors the party's published flag.
+      // Draft only. Guests keep the last published snapshot until an explicit
+      // host publish. The version row is always `draft`.
       await recordContentVersion(db, {
         partyId: updated.id,
-        state: updated.published === false ? "draft" : "published",
+        state: "draft",
         content: nextContent,
         actorType: "admin",
         actorId: credentialFingerprint(token ?? ""),
-        changeSummary: "content updated via admin API",
-        ...(updated.published === false ? {} : { publishedAt: new Date() }),
+        changeSummary: "draft updated via admin API",
       });
     }
-    return NextResponse.json(withRecord(updated));
+    return NextResponse.json(withRecord(adminPartyView(updated)));
   } catch (err) {
     console.error("update trip failed", err);
     return NextResponse.json({ error: "Failed to update trip" }, { status: 500 });
