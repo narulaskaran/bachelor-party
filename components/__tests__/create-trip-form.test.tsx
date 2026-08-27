@@ -78,6 +78,22 @@ describe("CreateTripForm", () => {
     expect(screen.queryByLabelText(/event name/i)).toBeNull();
     expect(screen.queryByLabelText(/start date/i)).toBeNull();
     expect(screen.getByText(/won.t invent a time, place, or headcount/i)).toBeTruthy();
+    expect(container.querySelector("legend")).toBeNull();
+    expect(screen.queryByText(/^i.m hosting$/i)).toBeNull();
+    expect(screen.getByRole("radio", { name: /night out/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /weekend trip/i })).toBeTruthy();
+
+    const notes = screen.getByLabelText(/your event notes/i);
+    expect(notes.getAttribute("placeholder")).toBe("Friday drinks\nRita's on 6th\n7-ish");
+    expect(notes.getAttribute("placeholder")).not.toMatch(/\bor\b/);
+    expect(notes.getAttribute("placeholder")).not.toMatch(/Cabin weekend/);
+    expect(notes.className).toMatch(/placeholder:text-muted-foreground/);
+
+    const draft = screen.getByRole("button", { name: /turn into a draft/i });
+    expect(draft.className).toMatch(/min-h-11/);
+    expect(draft.className).toMatch(/self-start/);
+    expect(draft.className).toMatch(/w-fit/);
+    expect(draft.className).not.toMatch(/(?:^|\s)w-full(?:\s|$)/);
 
     await user.click(screen.getByRole("radio", { name: /night out/i }));
     await user.type(screen.getByLabelText(/your event notes/i), "Thursday dinner\nRita's");

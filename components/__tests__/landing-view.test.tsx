@@ -86,6 +86,8 @@ describe("homepage trip entry", () => {
     expect(container.innerHTML).not.toContain("password-gated");
     expect(container.innerHTML).not.toMatch(/#rsvp"/);
     expect(invite.getAttribute("href")).not.toBe("#rsvp");
+    expect(container.querySelector("legend")).toBeNull();
+    expect(screen.getAllByRole("link", { name: /^i.m hosting$/i })).toHaveLength(1);
   });
 
   it("is a quiet centered tool page, not a poster", () => {
@@ -104,6 +106,8 @@ describe("homepage trip entry", () => {
     expect(html).not.toContain("One Password");
     expect(html).not.toContain("Every Trip Detail");
     expect(html).toContain("Paste a messy plan");
+    expect(html).toContain("py-16");
+    expect(html).toContain("sm:py-24");
   });
 
   it("renders a trip-entry form on every legacy hash the old pages 307 to", () => {
@@ -117,9 +121,11 @@ describe("homepage trip entry", () => {
     expect(screen.getByRole("button", { name: /open trip/i, hidden: true }).className).toMatch(
       /min-h-11/,
     );
-    expect(screen.getByRole("button", { name: /turn into a draft/i, hidden: true }).className).toMatch(
-      /min-h-11/,
-    );
+    const draft = screen.getByRole("button", { name: /turn into a draft/i, hidden: true });
+    expect(draft.className).toMatch(/min-h-11/);
+    expect(draft.className).toMatch(/self-start/);
+    expect(draft.className).toMatch(/w-fit/);
+    expect(draft.className).not.toMatch(/(?:^|\s)w-full(?:\s|$)/);
     expect(screen.getByText(/party\.narula\.xyz/i)).toBeTruthy();
     expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
   });
@@ -225,10 +231,15 @@ describe("homepage trip entry", () => {
 
   it("opens the create form when the URL hash is #create", () => {
     window.history.replaceState(null, "", "/#create");
-    render(<LandingView />);
+    const { container } = render(<LandingView />);
+    const hero = container.querySelector("h1")?.closest("section");
 
     expectPanel("create", true);
     expect(screen.getByRole("heading", { name: /^create an event$/i })).toBeTruthy();
+    expect(hero?.className).toMatch(/py-4/);
+    expect(hero?.className).not.toMatch(/py-16/);
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(screen.getByRole("link", { name: /^i.m hosting$/i })).toBeTruthy();
   });
 
   it("opens the invite form from a legacy page hash", () => {
@@ -253,16 +264,19 @@ describe("homepage trip entry", () => {
 
     expectPanel("create", false);
     expect(screen.queryByRole("heading", { name: /^create an event$/i })).toBeNull();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
   });
 
-  it("keeps the hero still and animates the panel open", async () => {
+  it("collapses the hero while create or enter is open and still animates the panel", async () => {
     const user = userEvent.setup();
     const { container } = render(<LandingView />);
     const hero = container.querySelector("h1")?.closest("section");
-    const heroClass = hero?.className;
 
-    expect(heroClass).not.toMatch(/justify-center/);
-    expect(heroClass).toMatch(/py-16/);
+    expect(hero?.className).not.toMatch(/justify-center/);
+    expect(hero?.className).toMatch(/py-16/);
+    expect(hero?.className).toMatch(/sm:py-24/);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
+    expect(screen.getByText(/paste a messy plan/i)).toBeTruthy();
 
     await act(async () => {
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -270,10 +284,26 @@ describe("homepage trip entry", () => {
 
     await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
 
-    expect(hero?.className).toBe(heroClass);
+    expect(hero?.className).not.toMatch(/py-16/);
+    expect(hero?.className).not.toMatch(/sm:py-24/);
+    expect(hero?.className).toMatch(/py-4/);
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(container.querySelector("h1")?.className).toMatch(/\bhidden\b/);
+    expect(screen.getByText(/paste a messy plan/i).className).toMatch(/\bhidden\b/);
+    expect(container.querySelector("legend")).toBeNull();
+    expect(screen.getAllByRole("link", { name: /^i.m hosting$/i })).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /^i.m hosting$/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /^i have an invite$/i })).toBeTruthy();
     expect(panelEl("create")?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
     expect(panelEl("create")?.className).toMatch(/motion-reduce:transition-none/);
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+
+    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
+
+    expect(hero?.className).toMatch(/py-4/);
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(screen.getByRole("link", { name: /^i.m hosting$/i })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
   });
 
   it("wires enter errors to the invite field", async () => {
