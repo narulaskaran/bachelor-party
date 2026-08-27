@@ -145,18 +145,18 @@ export function LandingView() {
           inert={compact || undefined}
         >
           <h1 className={pageTitleClass} hidden={posterHidden}>
-            The Big <span className="text-primary">Send</span>
+            Party <span className="text-primary">Time</span>
           </h1>
           <p
             hidden={posterHidden}
             className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base"
           >
-            Paste a messy plan. Review it on the site. Send a private guest page.
+            Dump the plan. Send the page.
           </p>
         </LandingFold>
 
         <div className="flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
-          <Button asChild variant={panel === "create" ? "default" : "outline"}>
+          <Button asChild>
             <HashFocusLink
               href={landingPanelHash("create")}
               focusId={["plan", "create-trip-heading"]}

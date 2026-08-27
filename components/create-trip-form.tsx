@@ -19,6 +19,7 @@ import {
 import { openAsHost } from "@/lib/host-access";
 import { rememberHostKey } from "@/lib/host-key-storage";
 import { sectionTitleClass } from "@/lib/type";
+import { cn } from "@/lib/utils";
 
 export { hostKeyStorageKey } from "@/lib/host-key-storage";
 
@@ -61,7 +62,11 @@ export function CreateTripForm({
 
   return (
     <>
-      <h2 id="create-trip-heading" tabIndex={-1} className={sectionTitleClass}>
+      <h2
+        id="create-trip-heading"
+        tabIndex={-1}
+        className={cn(sectionTitleClass, "outline-none")}
+      >
         Create an event
       </h2>
       <form onSubmit={onSubmit} className="mt-6 flex max-w-xl flex-col gap-4">

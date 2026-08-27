@@ -125,6 +125,7 @@ describe("GET /", () => {
   });
 
   it("root meta description is private-link product copy, not a group-chat password", () => {
+    expect(metadata.title).toBe("The Big Send");
     expect(metadata.description).toMatch(/messy plan/i);
     expect(metadata.description).toMatch(/private link/i);
     expect(metadata.description).not.toMatch(/password's in the group chat/i);
@@ -141,7 +142,9 @@ describe("GET /", () => {
 
     const html = renderToStaticMarkup(await Page());
 
-    expect(html).toMatch(/The Big <span class="text-primary">Send<\/span>/);
+    expect(html).toMatch(/Party <span class="text-primary">Time<\/span>/);
+    expect(html).toContain("Dump the plan. Send the page.");
+    expect(html).not.toContain("Paste a messy plan. Review it on the site.");
     expect(html).not.toContain("Enter your trip");
     expect(html).not.toContain("Enter your event");
     expect(html).not.toContain("Try a sample");
