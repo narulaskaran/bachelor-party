@@ -1,6 +1,7 @@
 import type { Lodging, Trip } from "@/lib/party-types";
 import { glanceFacts } from "@/lib/trip-sections";
 import { kickerClass, sectionTitleClass } from "@/lib/type";
+import { cn } from "@/lib/utils";
 
 export function Glance({ trip, lodging }: { trip: Trip; lodging?: Lodging }) {
   const facts = glanceFacts(trip, lodging);
@@ -16,7 +17,7 @@ export function Glance({ trip, lodging }: { trip: Trip; lodging?: Lodging }) {
             <p className={kickerClass}>{fact.label}</p>
             <p className="mt-1 break-words text-base font-medium sm:text-lg">{fact.value}</p>
             {fact.note && (
-              <p className="mt-0.5 break-words text-xs text-muted-foreground">{fact.note}</p>
+              <p className={cn("mt-0.5 break-words", kickerClass)}>{fact.note}</p>
             )}
           </div>
         ))}

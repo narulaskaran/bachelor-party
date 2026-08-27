@@ -52,10 +52,14 @@ describe("ScheduleSection", () => {
     expect(html).toContain("bg-primary");
     expect(html).toContain("11:00 AM");
     expect(html).toContain("font-mono text-sm");
+    expect(html).toContain("w-14 shrink-0 break-words font-mono text-sm sm:w-20");
     expect(html).not.toMatch(/font-mono text-xs/);
+    expect(html).toContain("sticky top-[3.75rem]");
+    expect(html).not.toContain("sticky top-14");
     expect(html).toMatch(/text-sm text-muted-foreground[^>]*>Aug 30/);
     expect(html).toContain("text-sm text-muted-foreground");
     expect(html).not.toContain("text-muted-foreground/80");
+    expect(html).toContain("mr-2 text-xs font-medium");
   });
 
   it("keeps a human day label and omits Plan or a weekday duplicate", () => {

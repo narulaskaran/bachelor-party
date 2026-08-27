@@ -2,7 +2,7 @@ import type { GuestUpdate, Trip } from "@/lib/party-types";
 import { Countdown } from "@/components/countdown";
 import { formatGuestWhen, formatGuestWhere } from "@/lib/guest-when";
 import { guestUpdateRelativeLabel } from "@/lib/guest-update";
-import { pageTitleClass } from "@/lib/type";
+import { kickerClass, pageTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
 
 export function Hero({
@@ -46,7 +46,7 @@ export function Hero({
       ) : null}
 
       {guestUpdate ? (
-        <p className="mt-2 text-xs text-muted-foreground">{guestUpdateRelativeLabel(guestUpdate)}</p>
+        <p className={cn("mt-2", kickerClass)}>{guestUpdateRelativeLabel(guestUpdate)}</p>
       ) : null}
 
       {trip.startDate ? (

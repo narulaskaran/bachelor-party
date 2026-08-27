@@ -7,8 +7,10 @@ import { Glance } from "@/components/sections/glance";
 import { Hero } from "@/components/sections/hero";
 import { ScheduleSection } from "@/components/sections/schedule";
 import { VoteActivityGroup } from "@/components/vote-activity-group";
+import { BasecampSection } from "@/components/sections/basecamp";
 import { heroMeta } from "@/lib/trip-sections";
 import { formatGuestWhen } from "@/lib/guest-when";
+import { kickerClass } from "@/lib/type";
 
 describe("trip page polish", () => {
   it("does not render an orphan THE MENU eyebrow when activities are empty", () => {
@@ -123,6 +125,87 @@ describe("trip page polish", () => {
     expect(html).toContain("text-sm text-muted-foreground");
     expect(html).not.toMatch(/text-xs text-muted-foreground[\s\S]*Order is set/);
     expect(html).not.toContain("Order locked, times loose");
+  });
+
+  it("keeps guest-readable meta at text-sm and never quieter than muted-foreground", () => {
+    expect(kickerClass).toBe("text-sm text-muted-foreground");
+    expect(kickerClass).not.toContain("text-xs");
+
+    const glance = renderToStaticMarkup(
+      createElement(Glance, {
+        trip: {
+          siteName: "X",
+          dateLabel: "Sep 4–7",
+          location: "Alpine Meadows, CO",
+          airport: "DEN",
+        },
+        lodging: {
+          name: "Lodge",
+          bedrooms: 4,
+          beds: 8,
+          bathrooms: 3,
+          totalCost: "$2,400.00",
+        },
+      }),
+    );
+    expect(glance).toContain("When");
+    expect(glance).toContain("Fly into DEN");
+    expect(glance).not.toMatch(/text-xs/);
+    expect(glance).not.toContain("text-muted-foreground/80");
+
+    const activities = renderToStaticMarkup(
+      createElement(ActivitiesSection, {
+        activities: {
+          core: [],
+          ifTimeAllows: [],
+          backups: [
+            { slug: "hike", name: "Backup hike", description: "If the trail is closed" },
+          ],
+        },
+      }),
+    );
+    expect(activities).toContain("If the trail is closed");
+    expect(activities).toContain("Backups");
+    expect(activities).not.toContain("text-muted-foreground/80");
+    expect(activities).toContain("text-sm text-muted-foreground");
+
+    const lodge = renderToStaticMarkup(
+      createElement(BasecampSection, {
+        trip: { siteName: "X", location: "CO" },
+        lodging: {
+          name: "Pinewood Lodge",
+          bedrooms: 4,
+          beds: 8,
+          bathrooms: 3,
+          totalCost: "$100",
+          address: "1 Lodge Rd",
+        },
+      }),
+    );
+    expect(lodge).toContain("Bedrooms");
+    expect(lodge).toContain("Address");
+    expect(lodge).not.toMatch(/text-xs text-muted-foreground/);
+
+    const schedule = renderToStaticMarkup(
+      createElement(ScheduleSection, {
+        schedule: [
+          {
+            key: "saturday",
+            date: "2026-09-05",
+            weekday: "Saturday",
+            label: "Main day",
+            timed: false,
+            entries: [{ title: "Hike", note: "Bring layers" }],
+          },
+        ],
+      }),
+    );
+    expect(schedule).toContain("sticky top-[3.75rem]");
+    expect(schedule).not.toContain("sticky top-14");
+    expect(schedule).toContain("w-14 shrink-0 break-words font-mono text-sm sm:w-20");
+    expect(schedule).toContain("Bring layers");
+    expect(schedule).toContain("Order is set — times may slip.");
+    expect(schedule).not.toContain("text-muted-foreground/80");
   });
 
   it("exposes RSVP vote groups as a labeled radiogroup with clickable pills", () => {

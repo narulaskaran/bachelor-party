@@ -58,7 +58,7 @@ export function SiteNav({
         >
           {siteName ?? "The Big Send"}
           {dateLabel ? (
-            <span className="hidden text-xs font-normal normal-case tracking-normal text-muted-foreground lg:inline">
+            <span className="hidden text-sm font-normal normal-case tracking-normal text-muted-foreground lg:inline">
               {" "}
               · {dateLabel}
             </span>
