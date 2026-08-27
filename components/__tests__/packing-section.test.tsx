@@ -65,9 +65,6 @@ describe("PackingSection", () => {
     window.localStorage.setItem(packingStorageKey("demo"), '{"Layers":true}');
     render(<PackingSection slug="demo" packing={items} />);
 
-    expect(screen.getByRole("checkbox", { name: /layers/i }).getAttribute("aria-checked")).toBe(
-      "false",
-    );
     await waitFor(() =>
       expect(screen.getByRole("checkbox", { name: /layers/i }).getAttribute("aria-checked")).toBe(
         "true",

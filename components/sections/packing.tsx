@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,19 +21,12 @@ export function PackingSection({
   slug: string;
 }) {
   const items = nonemptyPacking(packing);
-  // getServerSnapshot is already null, but the first client paint can still
-  // call getSnapshot (window exists) when this fiber is not hydrating. Keep
-  // checks empty until mount so Checkbox HTML matches the server.
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
   const raw = useSyncExternalStore(
     subscribePackingChecks,
     () => getPackingChecksSnapshot(slug),
     () => null,
   );
-  const checked = parsePackingChecks(hydrated ? raw : null);
+  const checked = parsePackingChecks(raw);
 
   function setItemChecked(title: string, value: boolean) {
     const next = { ...checked };

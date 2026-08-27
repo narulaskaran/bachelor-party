@@ -2,6 +2,9 @@
 
 const listeners = new Set<() => void>();
 
+/** False until subscribe runs so the first client snapshot matches SSR (null). */
+let clientSnapshotEnabled = false;
+
 export function packingStorageKey(slug: string): string {
   return `bigsend:pack:${slug}`;
 }
@@ -33,17 +36,19 @@ export function subscribePackingChecks(onStoreChange: () => void): () => void {
   listeners.add(onStoreChange);
   if (typeof window !== "undefined") {
     window.addEventListener("storage", onStoreChange);
+    clientSnapshotEnabled = true;
   }
   return () => {
     listeners.delete(onStoreChange);
     if (typeof window !== "undefined") {
       window.removeEventListener("storage", onStoreChange);
     }
+    if (listeners.size === 0) clientSnapshotEnabled = false;
   };
 }
 
 export function getPackingChecksSnapshot(slug: string): string | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined" || !clientSnapshotEnabled) return null;
   try {
     return window.localStorage.getItem(packingStorageKey(slug));
   } catch {
