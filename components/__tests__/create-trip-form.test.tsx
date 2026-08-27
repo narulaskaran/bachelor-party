@@ -83,6 +83,10 @@ describe("CreateTripForm", () => {
     expect(document.getElementById("create-trip-hint")).toBeNull();
     expect(container.querySelector("legend")).toBeNull();
     expect(screen.queryByText(/^i.m hosting$/i)).toBeNull();
+    const heading = screen.getByRole("heading", { name: /^create an event$/i });
+    expect(heading.getAttribute("tabindex")).toBe("-1");
+    expect(heading.className).toMatch(/outline-none/);
+    expect(heading.className).not.toMatch(/ring-3/);
     expect(screen.getByRole("radio", { name: /party/i })).toBeTruthy();
     expect(screen.getByRole("radio", { name: /group trip/i })).toBeTruthy();
     expect(screen.getByText("Details + RSVP")).toBeTruthy();

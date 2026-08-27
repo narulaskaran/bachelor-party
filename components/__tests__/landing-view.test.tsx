@@ -99,7 +99,8 @@ describe("homepage create", () => {
     expect(start.closest("[data-slot=button]")).toBeTruthy();
     expect(start.closest("[data-slot=button]")!.className).toMatch(/min-h-11/);
     expect(start.getAttribute("aria-expanded")).toBe("false");
-    expect(start.closest("[data-slot=button]")?.getAttribute("data-variant")).toBe("outline");
+    expect(start.closest("[data-slot=button]")?.getAttribute("data-variant")).toBe("default");
+    expect(start.closest("[data-slot=button]")!.className).toMatch(/bg-primary/);
     expect(screen.getAllByRole("link", { name: /^get started$/i })).toHaveLength(1);
     expect(screen.queryByRole("link", { name: /^i.m hosting$/i })).toBeNull();
     expect(screen.queryByRole("link", { name: /^i have an invite$/i })).toBeNull();
@@ -124,8 +125,8 @@ describe("homepage create", () => {
     const html = container.innerHTML;
 
     const title = screen.getByRole("heading", { level: 1 });
-    expect(title.textContent).toBe("The Big Send");
-    expect(title.querySelector(".text-primary")?.textContent).toBe("Send");
+    expect(title.textContent).toBe("Party Time");
+    expect(title.querySelector(".text-primary")?.textContent).toBe("Time");
     expect(html).toContain("tracking-tight");
     expect(html).toContain("max-w-3xl");
     expect(html).toContain("data-landing-page");
@@ -134,11 +135,12 @@ describe("homepage create", () => {
     expect(html).not.toContain("Trip Logistics, Handled");
     expect(html).not.toContain("One Password");
     expect(html).not.toContain("Every Trip Detail");
-    expect(html).toContain("Paste a messy plan");
+    expect(html).toContain("Dump the plan. Send the page.");
+    expect(html).not.toContain("Paste a messy plan");
     expect(html).toContain("py-16");
     expect(html).toContain("sm:py-24");
 
-    const tagline = screen.getByText(/paste a messy plan/i);
+    const tagline = screen.getByText(/dump the plan\. send the page\./i);
     expect(tagline.className).toMatch(/max-w-xl/);
     expect(tagline.className).toMatch(/mx-auto/);
     const posterInner = container.querySelector("[data-landing-poster] > div > div");
@@ -149,6 +151,8 @@ describe("homepage create", () => {
     render(<LandingView />);
 
     const draft = screen.getByRole("button", { name: /^create draft$/i, hidden: true });
+    expect(draft.getAttribute("data-variant")).toBe("default");
+    expect(draft.className).toMatch(/bg-primary/);
     expect(draft.className).toMatch(/min-h-11/);
     expect(draft.className).toMatch(/self-start/);
     expect(draft.className).toMatch(/w-fit/);
@@ -178,6 +182,9 @@ describe("homepage create", () => {
     );
     expect(screen.getByRole("heading", { name: /^create an event$/i })).toBeTruthy();
     expect(document.activeElement).toBe(screen.getByLabelText(/^describe your event$/i));
+    expect(screen.getByRole("link", { name: /^get started$/i }).closest("[data-slot=button]")?.getAttribute("data-variant")).toBe(
+      "default",
+    );
   });
 
   it("opens create on a phone without focusing the notes field", async () => {
@@ -199,7 +206,11 @@ describe("homepage create", () => {
     expectPanel("create", true);
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
     expect(document.activeElement).not.toBe(screen.getByLabelText(/^describe your event$/i));
-    expect(document.activeElement).toBe(screen.getByRole("heading", { name: /^create an event$/i }));
+    const heading = screen.getByRole("heading", { name: /^create an event$/i });
+    expect(document.activeElement).toBe(heading);
+    expect(heading.className).toMatch(/outline-none/);
+    expect(heading.className).not.toMatch(/ring-3/);
+    expect(heading.className).not.toMatch(/focus-visible:ring/);
   });
 
   it("opens the create form when the URL hash is #create", () => {
@@ -222,7 +233,7 @@ describe("homepage create", () => {
     expectPanel("create", false);
     expect(panelEl("enter")).toBeNull();
     expect(screen.queryByRole("heading", { name: /enter your (trip|event)/i })).toBeNull();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Party Time");
   });
 
   it("hides the form again when the hash is cleared", async () => {
@@ -239,7 +250,7 @@ describe("homepage create", () => {
 
     expectPanel("create", false);
     expect(screen.queryByRole("heading", { name: /^create an event$/i })).toBeNull();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Party Time");
   });
 
   it("collapses the hero while create is open and still animates the panel", async () => {
@@ -252,8 +263,8 @@ describe("homepage create", () => {
     expect(hero?.className).not.toMatch(/justify-center/);
     expect(hero?.className).toMatch(/py-16/);
     expect(hero?.className).toMatch(/sm:py-24/);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
-    expect(screen.getByText(/paste a messy plan/i)).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Party Time");
+    expect(screen.getByText(/dump the plan\. send the page\./i)).toBeTruthy();
 
     await waitForLandingMotion();
 
@@ -272,7 +283,7 @@ describe("homepage create", () => {
     expect(posterInner?.className).toMatch(/transition-transform/);
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
     expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(false);
-    expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(false);
+    expect(screen.getByText(/dump the plan\. send the page\./i).hasAttribute("hidden")).toBe(false);
     expect(container.querySelector("legend")).toBeNull();
     expect(screen.getAllByRole("link", { name: /^get started$/i })).toHaveLength(1);
     expect(panelFold("create")?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
@@ -286,7 +297,7 @@ describe("homepage create", () => {
     await settlePosterHide();
 
     expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(true);
-    expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(true);
+    expect(screen.getByText(/dump the plan\. send the page\./i).hasAttribute("hidden")).toBe(true);
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
   });
 
@@ -341,7 +352,7 @@ describe("homepage create", () => {
     expect(poster?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
     expect(posterInner?.className).toMatch(/translate-y-0/);
     expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(false);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Party Time");
   });
 
   it("snaps the poster away when prefers-reduced-motion is set", async () => {
@@ -361,7 +372,7 @@ describe("homepage create", () => {
     await user.click(screen.getByRole("link", { name: /^get started$/i }));
 
     expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(true);
-    expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(true);
+    expect(screen.getByText(/dump the plan\. send the page\./i).hasAttribute("hidden")).toBe(true);
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
     expect(container.querySelector("[data-landing-poster]")?.className).toMatch(
       /motion-reduce:transition-none/,
