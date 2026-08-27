@@ -19,7 +19,8 @@ const geistMono = Geist_Mono({
 // Generic pre-auth metadata: no names, dates, or places.
 export const metadata: Metadata = {
   title: "The Big Send",
-  description: "Private trip site. Password's in the group chat.",
+  description:
+    "Paste a messy plan. Guests get a private link, not a group-chat password.",
   robots: { index: false, follow: false },
 };
 

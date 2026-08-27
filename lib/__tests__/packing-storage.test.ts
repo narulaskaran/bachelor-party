@@ -1,8 +1,12 @@
+/** @vitest-environment jsdom */
+
 import { describe, expect, it } from "vitest";
 import {
+  getPackingChecksSnapshot,
   packingStorageKey,
   parsePackingChecks,
   serializePackingChecks,
+  subscribePackingChecks,
 } from "@/lib/packing-storage";
 
 describe("packingStorageKey", () => {
@@ -28,5 +32,18 @@ describe("serializePackingChecks", () => {
     expect(serializePackingChecks({ "Government ID": true, Layers: false })).toBe(
       '{"Government ID":true}',
     );
+  });
+});
+
+describe("getPackingChecksSnapshot", () => {
+  it("stays empty until a subscriber attaches, then reads this slug", () => {
+    window.localStorage.clear();
+    window.localStorage.setItem(packingStorageKey("demo"), '{"Government ID":true}');
+    expect(getPackingChecksSnapshot("demo")).toBeNull();
+
+    const unsub = subscribePackingChecks(() => {});
+    expect(getPackingChecksSnapshot("demo")).toBe('{"Government ID":true}');
+    unsub();
+    expect(getPackingChecksSnapshot("demo")).toBeNull();
   });
 });
