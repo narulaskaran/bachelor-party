@@ -7,6 +7,8 @@ import { recordContentVersion } from "@/lib/content-versions";
 import { getDb, schema } from "@/lib/db";
 import { hostSessionCookie } from "@/lib/host-auth";
 import { organizerPacket } from "@/lib/organizer-packet";
+import { extractPlanWithOpenRouter } from "@/lib/plan-extract";
+import { isPlanExtractionUnavailable, NOTES_UNAVAILABLE_MESSAGE } from "@/lib/plan-ingest-errors";
 import { ingestEventPlan } from "@/lib/plan-ingestion";
 import { createPartySchema } from "@/lib/party-schema";
 import type { PartyContent } from "@/lib/party-types";
@@ -106,10 +108,24 @@ export async function POST(request: Request) {
 
   let content: PartyContent;
   if (parsed.data.plan?.trim()) {
-    const ingested = ingestEventPlan(parsed.data.plan, {
-      siteName: parsed.data.siteName,
-      preset: parsed.data.preset,
-    });
+    let ingested;
+    try {
+      ingested = await ingestEventPlan(
+        parsed.data.plan,
+        {
+          siteName: parsed.data.siteName,
+          startDate: parsed.data.startDate,
+          endDate: parsed.data.endDate,
+          preset: parsed.data.preset,
+        },
+        { extract: extractPlanWithOpenRouter },
+      );
+    } catch (err) {
+      if (isPlanExtractionUnavailable(err)) {
+        return NextResponse.json({ error: NOTES_UNAVAILABLE_MESSAGE }, { status: 503 });
+      }
+      throw err;
+    }
     content = {
       ...ingested.content,
       kind: "trip",

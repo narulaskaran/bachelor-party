@@ -2,6 +2,7 @@ import { GET as getCollection, POST as postCollection } from "@/lib/admin-api/co
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 export async function GET(request: Request) {
   return getCollection(request);

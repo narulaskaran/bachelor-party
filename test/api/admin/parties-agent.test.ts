@@ -9,6 +9,7 @@ import { DELETE as guestDELETE } from "@/app/api/admin/trips/[slug]/guests/[id]/
 import { AUTH_COOKIE } from "@/lib/auth";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { getDb } from "@/lib/db";
+import { extractPlanWithOpenRouter } from "@/lib/plan-extract";
 import { cookieAuthenticatesHost, HOST_COOKIE } from "@/lib/host-auth";
 import { CREATE_RATE_LIMIT, consumeRateLimit, createRateLimitKey, resetRateLimitStore } from "@/lib/rate-limit";
 import { createMemoryDb } from "../memory-db";
@@ -17,6 +18,11 @@ import type { NextResponse } from "next/server";
 vi.mock("@/lib/db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/db")>();
   return { ...actual, getDb: vi.fn() };
+});
+
+vi.mock("@/lib/plan-extract", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/plan-extract")>();
+  return { ...actual, extractPlanWithOpenRouter: vi.fn(actual.extractPlanWithOpenRouter) };
 });
 
 vi.mock("next/cache", () => ({
@@ -52,6 +58,7 @@ describe("agent API (create / patch / guests)", () => {
     delete process.env.ADMIN_API_TOKEN;
     resetRateLimitStore();
     vi.mocked(getDb).mockReset();
+    vi.mocked(extractPlanWithOpenRouter).mockClear();
   });
 
   it("unauthenticated POST siteName-only → 201 organizer packet", async () => {
@@ -817,6 +824,43 @@ describe("agent API (create / patch / guests)", () => {
     expect(body.draftReview.acknowledged).toBe(false);
     const tz = body.draftReview.facts.find((f: { path: string }) => f.path === "trip.timezone");
     expect(tz?.status).toBe("missing");
+    expect(mem.parties[0].published).toBe(false);
+  });
+
+  it("messy unlabeled paragraph extracts stated facts, stays unpublished, and does not invent headcount", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    vi.mocked(extractPlanWithOpenRouter).mockResolvedValueOnce({
+      siteName: "Friday drinks",
+      startDate: "2026-09-04",
+      startTime: "7:00 PM",
+      location: "The Dead Rabbit, NYC",
+    });
+
+    const res = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: {
+          plan: "yeah so friday drinks at the dead rabbit in nyc september 4 around seven we should get there early I don't know the address yet maybe 12 people",
+          preset: "night-out",
+        },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.published).toBe(false);
+    expect(body.guestUrl).toBeNull();
+    expect(body.content.trip.siteName).toBe("Friday drinks");
+    expect(body.content.trip.startDate).toBe("2026-09-04");
+    expect(body.content.trip.startTime).toBe("7:00 PM");
+    expect(body.content.trip.location).toBe("The Dead Rabbit, NYC");
+    expect(body.content.trip.timezone).toBeUndefined();
+    expect(body.content.trip.address).toBeUndefined();
+    expect(body.content.rsvp?.maxPartySize).toBeUndefined();
+    expect(body.draftReview.acknowledged).toBe(false);
+    expect(
+      body.draftReview.facts.find((f: { path: string }) => f.path === "trip.timezone")?.status,
+    ).toBe("missing");
     expect(mem.parties[0].published).toBe(false);
   });
 

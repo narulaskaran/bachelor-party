@@ -6,7 +6,8 @@ amber primary). Tests: Vitest.
 
 ## Human product
 
-Landing dump → host editor at `/{slug}/host` → inert PartyView preview on
+Landing dump (server extracts facts via OpenRouter `z-ai/glm-5.3-flash`) →
+host editor at `/{slug}/host` → inert PartyView preview on
 that same page → publish → guest page at `/g/{token}`. Two presets, one
 Event: Night out (hero + RSVP) and Weekend trip (optional glance, schedule,
 lodge, activities, pack). Empty blocks stay hidden. Pack checkoff is local

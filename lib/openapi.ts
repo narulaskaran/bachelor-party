@@ -197,6 +197,11 @@ export function openApiSpec() {
             },
             "409": { description: "Slug or password taken", ...json({ $ref: "#/components/schemas/Error" }) },
             "429": { description: "Rate limited (per IP)", ...json({ $ref: "#/components/schemas/Error" }) },
+            "503": {
+              description:
+                "Notes reader unavailable (OpenRouter). Labeled dumps still parse; unlabeled prose fails instead of creating an empty Untitled draft.",
+              ...json({ $ref: "#/components/schemas/Error" }),
+            },
           },
         },
       },

@@ -87,23 +87,28 @@ describe("create-from-UI helper", () => {
       plan: "Cabin weekend in Denver, Sep 4-6, pack layers",
       preset: "weekend",
     });
-    expect(JSON.parse(String(init.body)).content.trip.siteName).toBe("Cabin weekend");
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      plan: "Cabin weekend in Denver, Sep 4-6, pack layers",
+      preset: "weekend",
+    });
+    expect(JSON.parse(String(init.body)).content).toBeUndefined();
   });
 
-  it("create-from-notes uses a human same-day dateLabel before host save", () => {
+  it("posts the plan dump for the shared server ingest path", () => {
     const init = createTripRequestInit({
       siteName: "Cabin Weekend",
       plan: "2026-09-04 7:00 PM — group dinner",
     });
-    const trip = JSON.parse(String(init.body)).content.trip;
-    expect(trip).toMatchObject({
-      startDate: "2026-09-04",
-      dateLabel: "Sep 4, 2026",
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      slug: expect.stringMatching(/^e[0-9a-f]{16}$/),
+      siteName: "Cabin Weekend",
+      plan: "2026-09-04 7:00 PM — group dinner",
+      preset: "weekend",
     });
-    expect(trip.dateLabel).not.toMatch(/2026-09-04/);
+    expect(JSON.parse(String(init.body)).content).toBeUndefined();
   });
 
-  it("turns messy notes into the canonical draft payload while preserving structured overrides", () => {
+  it("sends structured overrides with the plan instead of ingesting in the browser", () => {
     const init = createTripRequestInit({
       siteName: "Structured title",
       plan: "Event: Notes title\nLocation: Denver, CO\n2026-09-04 7:00 PM — dinner",
@@ -112,18 +117,13 @@ describe("create-from-UI helper", () => {
     });
     expect(JSON.parse(String(init.body))).toMatchObject({
       slug: expect.stringMatching(/^e[0-9a-f]{16}$/),
-      content: {
-        preset: "weekend",
-        trip: {
-          siteName: "Structured title",
-          startDate: "2026-10-10",
-          endDate: "2026-10-12",
-          dateLabel: "Oct 10, 2026 – Oct 12, 2026",
-          location: "Denver, CO",
-        },
-        draftReview: { acknowledged: false },
-      },
+      siteName: "Structured title",
+      plan: "Event: Notes title\nLocation: Denver, CO\n2026-09-04 7:00 PM — dinner",
+      startDate: "2026-10-10",
+      endDate: "2026-10-12",
+      preset: "weekend",
     });
+    expect(JSON.parse(String(init.body)).draftReview).toBeUndefined();
   });
 
   it("parses the 201 organizer packet fields the host needs", () => {
@@ -203,6 +203,11 @@ describe("create-from-UI helper", () => {
       /try again/i,
     );
     expect(
+      visitorSafeCreateError(503, {
+        error: "Couldn't read your notes right now. Try again in a minute.",
+      }),
+    ).toMatch(/read your notes/i);
+    expect(
       visitorSafeCreateError(400, {
         error: "Invalid trip payload",
         issues: [
@@ -222,6 +227,9 @@ describe("create-from-UI helper", () => {
     });
     expect(leaked).toBe("Couldn't create that trip.");
     expect(leaked).not.toContain("ADMIN_API_TOKEN");
+    expect(
+      visitorSafeCreateError(500, { error: "Set OPENROUTER_API_KEY in the environment" }),
+    ).toBe("Couldn't create that trip.");
   });
 
   it("create-from-UI path: helper → public POST handler → packet (no deploy secret)", async () => {
@@ -248,5 +256,69 @@ describe("create-from-UI helper", () => {
     expect(result.packet.password.length).toBeGreaterThanOrEqual(8);
     expect(result.packet.adminToken.length).toBeGreaterThanOrEqual(16);
     expect(mem.parties).toHaveLength(1);
+  });
+
+  it("create-from-notes ingest runs on the server and stays unpublished", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const result = await createTripFromUi(
+      {
+        siteName: "Cabin Weekend",
+        plan: "2026-09-04 7:00 PM — group dinner",
+        preset: "weekend",
+      },
+      async (_url, init) => {
+        expect(JSON.parse(String(init?.body))).toMatchObject({
+          plan: "2026-09-04 7:00 PM — group dinner",
+          siteName: "Cabin Weekend",
+        });
+        return POST(
+          new Request("http://localhost/api/admin/trips", {
+            method: init?.method ?? "POST",
+            headers: init?.headers,
+            body: init?.body as BodyInit,
+          }),
+        );
+      },
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const stored = mem.parties[0].content as {
+      trip: { startDate?: string; dateLabel?: string };
+      draftReview?: { acknowledged?: boolean };
+    };
+    expect(stored.trip.startDate).toBe("2026-09-04");
+    expect(stored.trip.dateLabel).toBe("Sep 4, 2026");
+    expect(stored.draftReview?.acknowledged).toBe(false);
+    expect(mem.parties[0].published).toBe(false);
+  });
+
+  it("create-from-notes fails clearly when the model is down for unlabeled prose", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const result = await createTripFromUi(
+      {
+        siteName: "",
+        plan: "yeah so friday drinks at the dead rabbit in nyc september 4 around seven",
+        preset: "night-out",
+      },
+      async (_url, init) => {
+        return POST(
+          new Request("http://localhost/api/admin/trips", {
+            method: init?.method ?? "POST",
+            headers: init?.headers,
+            body: init?.body as BodyInit,
+          }),
+        );
+      },
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/read your notes/i);
+    expect(mem.parties).toHaveLength(0);
   });
 });

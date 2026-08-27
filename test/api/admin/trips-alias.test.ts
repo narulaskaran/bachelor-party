@@ -140,7 +140,7 @@ describe("OpenAPI", () => {
     expect(res.status).toBe(200);
     const spec = await res.json();
     expect(spec.openapi).toBe("3.1.0");
-    expect(spec.paths["/api/admin/trips"].post).toBeTruthy();
+    expect(spec.paths["/api/admin/trips"].post.responses["503"]).toBeTruthy();
     expect(spec.paths["/api/admin/trips"].post.security).toEqual([]);
     expect(spec.paths["/api/admin/trips/{slug}"].patch).toBeTruthy();
     expect(spec.paths["/api/admin/trips/{slug}/publish"].post).toBeTruthy();
