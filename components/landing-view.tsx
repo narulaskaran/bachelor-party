@@ -52,14 +52,12 @@ export function LandingView({
           compact ? "py-4 sm:py-5" : "py-16 sm:py-24",
         )}
       >
-        <h1 className={cn(pageTitleClass, compact && "hidden")}>
+        <h1 className={pageTitleClass} hidden={compact}>
           The Big <span className="text-primary">Send</span>
         </h1>
         <p
-          className={cn(
-            "mt-4 max-w-xl text-sm text-muted-foreground sm:text-base",
-            compact && "hidden",
-          )}
+          hidden={compact}
+          className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base"
         >
           Paste a messy plan. Review it on the site. Send a private guest page.
         </p>

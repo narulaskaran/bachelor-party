@@ -288,8 +288,8 @@ describe("homepage trip entry", () => {
     expect(hero?.className).not.toMatch(/sm:py-24/);
     expect(hero?.className).toMatch(/py-4/);
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
-    expect(container.querySelector("h1")?.className).toMatch(/\bhidden\b/);
-    expect(screen.getByText(/paste a messy plan/i).className).toMatch(/\bhidden\b/);
+    expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(true);
+    expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(true);
     expect(container.querySelector("legend")).toBeNull();
     expect(screen.getAllByRole("link", { name: /^i.m hosting$/i })).toHaveLength(1);
     expect(screen.getByRole("link", { name: /^i.m hosting$/i })).toBeTruthy();
