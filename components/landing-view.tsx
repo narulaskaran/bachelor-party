@@ -1,12 +1,18 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CreateTripForm } from "@/components/create-trip-form";
 import { HashFocusLink } from "@/components/hash-focus-link";
-import { LandingPanelSection } from "@/components/landing-panel-section";
+import { prefersReducedMotion } from "@/components/hash-navigation";
+import {
+  LANDING_PANEL_MOTION_MS,
+  LandingFold,
+  LandingPanelSection,
+  landingPanelMotionClass,
+} from "@/components/landing-panel-section";
 import { TripEntryForm } from "@/components/trip-entry-form";
 import { DEFAULT_INVITE_HOST } from "@/lib/invite-host";
 import { landingPanelHash, panelFromHash, type LandingPanel } from "@/lib/landing-panel";
@@ -50,25 +56,78 @@ export function LandingView({
 }) {
   const [panel, setPanel] = useState<LandingPanel | null>(null);
   const [animate, setAnimate] = useState(false);
+  const [hidePoster, setHidePoster] = useState(false);
+  const panelRef = useRef<LandingPanel | null>(null);
+  const animateRef = useRef(false);
+  const hidePosterRef = useRef(false);
+  const hideTimerRef = useRef<number>(undefined);
+  const applyPanelRef = useRef<(next: LandingPanel | null) => void>(() => {});
 
   useLayoutEffect(() => {
-    const sync = () => setPanel(panelFromHash(window.location.hash));
-    sync();
-    const motion = requestAnimationFrame(() => setAnimate(true));
+    function clearHideTimer() {
+      if (hideTimerRef.current === undefined) return;
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = undefined;
+    }
+
+    function applyPanel(next: LandingPanel | null) {
+      const wasCompact = panelRef.current !== null;
+      const nextCompact = next !== null;
+      panelRef.current = next;
+      setPanel(next);
+
+      if (!nextCompact) {
+        clearHideTimer();
+        if (hidePosterRef.current) setHidePoster(false);
+        hidePosterRef.current = false;
+        return;
+      }
+      if (wasCompact) return;
+      if (!animateRef.current) return;
+      if (prefersReducedMotion()) {
+        clearHideTimer();
+        hidePosterRef.current = true;
+        setHidePoster(true);
+        return;
+      }
+      hidePosterRef.current = false;
+      setHidePoster(false);
+      clearHideTimer();
+      hideTimerRef.current = window.setTimeout(() => {
+        hidePosterRef.current = true;
+        setHidePoster(true);
+        hideTimerRef.current = undefined;
+      }, LANDING_PANEL_MOTION_MS);
+    }
+
+    applyPanelRef.current = applyPanel;
+    applyPanel(panelFromHash(window.location.hash));
+    const motion = requestAnimationFrame(() => {
+      animateRef.current = true;
+      setAnimate(true);
+      if (panelRef.current !== null) {
+        clearHideTimer();
+        hidePosterRef.current = true;
+        setHidePoster(true);
+      }
+    });
+    const sync = () => applyPanelRef.current(panelFromHash(window.location.hash));
     window.addEventListener("hashchange", sync);
     window.addEventListener("popstate", sync);
     return () => {
       cancelAnimationFrame(motion);
+      clearHideTimer();
       window.removeEventListener("hashchange", sync);
       window.removeEventListener("popstate", sync);
     };
   }, []);
 
   function reveal(next: LandingPanel) {
-    flushSync(() => setPanel(next));
+    flushSync(() => applyPanelRef.current(next));
   }
 
   const compact = panel !== null;
+  const posterHidden = compact && (!animate || hidePoster);
 
   return (
     <div
@@ -79,24 +138,31 @@ export function LandingView({
         className={cn(
           "flex flex-col items-center text-center",
           compact ? "py-4 sm:py-5" : "py-16 sm:py-24",
+          animate && cn("transition-[padding]", landingPanelMotionClass),
         )}
       >
-        <h1 className={pageTitleClass} hidden={compact}>
-          The Big <span className="text-primary">Send</span>
-        </h1>
-        <p
-          hidden={compact}
-          className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base"
+        <LandingFold
+          data-landing-poster=""
+          open={!compact}
+          animate={animate}
+          closedTranslateClass="-translate-y-2"
+          className="w-full"
+          innerClassName="mb-10"
+          aria-hidden={compact || undefined}
+          inert={compact || undefined}
         >
-          Paste a messy plan. Review it on the site. Send a private guest page.
-        </p>
+          <h1 className={pageTitleClass} hidden={posterHidden}>
+            The Big <span className="text-primary">Send</span>
+          </h1>
+          <p
+            hidden={posterHidden}
+            className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base"
+          >
+            Paste a messy plan. Review it on the site. Send a private guest page.
+          </p>
+        </LandingFold>
 
-        <div
-          className={cn(
-            "flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center",
-            compact ? "mt-0" : "mt-10",
-          )}
-        >
+        <div className="flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <Button asChild variant={panel === null || panel === "enter" ? "outline" : "default"}>
             <HashFocusLink
               href={landingPanelHash("create")}
