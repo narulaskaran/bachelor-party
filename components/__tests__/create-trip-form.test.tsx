@@ -78,6 +78,11 @@ describe("CreateTripForm", () => {
     expect(screen.queryByLabelText(/event name/i)).toBeNull();
     expect(screen.queryByLabelText(/start date/i)).toBeNull();
     expect(screen.getByText(/won.t invent a time, place, or headcount/i)).toBeTruthy();
+    expect(document.getElementById("create-trip-facts-hint")?.className).toMatch(/\btext-sm\b/);
+    expect(document.getElementById("create-trip-facts-hint")?.className).toMatch(
+      /text-muted-foreground/,
+    );
+    expect(document.getElementById("create-trip-facts-hint")?.className).not.toMatch(/\btext-xs\b/);
     expect(container.querySelector("legend")).toBeNull();
     expect(screen.queryByText(/^i.m hosting$/i)).toBeNull();
     expect(screen.getByRole("radio", { name: /night out/i })).toBeTruthy();

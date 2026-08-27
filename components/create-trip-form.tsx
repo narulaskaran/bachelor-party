@@ -111,7 +111,7 @@ export function CreateTripForm({
             disabled={pending}
             className="min-h-48"
           />
-          <p id="create-trip-facts-hint" className="text-xs text-muted-foreground">
+          <p id="create-trip-facts-hint" className="text-sm text-muted-foreground">
             Only facts you know. We won&apos;t invent a time, place, or headcount.
           </p>
         </div>
