@@ -259,6 +259,8 @@ export const createPartySchema = z
     plan: z.string().trim().min(1).optional(),
     preset: z.enum(EVENT_PRESETS).optional(),
     siteName: z.string().trim().min(1).optional(),
+    startDate: calendarDateSchema.optional(),
+    endDate: calendarDateSchema.optional(),
     content: partyContentSchema.optional(),
   })
   .superRefine((value, ctx) => {
@@ -269,6 +271,13 @@ export const createPartySchema = z
         code: "custom",
         message: "Provide a plan dump or content.trip.siteName",
         path: ["plan"],
+      });
+    }
+    if (isInvertedDateRange(value.startDate, value.endDate)) {
+      ctx.addIssue({
+        code: "custom",
+        message: END_BEFORE_START_MESSAGE,
+        path: ["endDate"],
       });
     }
   });

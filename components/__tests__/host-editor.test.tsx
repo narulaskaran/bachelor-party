@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HostEditor } from "@/components/host-editor";
 import { hostKeyStorageKey, rememberHostKey } from "@/lib/host-key-storage";
-import { ingestEventPlan } from "@/lib/plan-ingestion";
+import { ingestEventPlanFromHeuristics } from "@/lib/plan-ingestion";
 import type { PartyContent } from "@/lib/party-types";
 
 const initial: PartyContent = {
@@ -118,7 +118,7 @@ describe("HostEditor draft review safety", () => {
   });
 
   it("marks an extracted timezone-free clock as needing timezone confirmation", () => {
-    const { content } = ingestEventPlan("Event: Dinner\n2026-09-04 7:00 PM — dinner");
+    const { content } = ingestEventPlanFromHeuristics("Event: Dinner\n2026-09-04 7:00 PM — dinner");
     render(
       <HostEditor
         slug="dinner"

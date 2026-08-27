@@ -1,3 +1,7 @@
+import {
+  isPlanExtractionUnavailable,
+  PlanExtractionUnavailableError,
+} from "@/lib/plan-ingest-errors";
 import { formatDateLabel, isValidCalendarDate } from "@/lib/trip-dates";
 import { parseEventPreset, type EventPreset } from "@/lib/event-preset";
 import type { DraftFact, DraftFactStatus, DraftReview, PackingItem, PartyContent, ScheduleDay } from "@/lib/party-types";
@@ -13,6 +17,45 @@ export type IngestionOverrides = {
 export type IngestionResult = {
   content: PartyContent;
   review: DraftReview;
+};
+
+export type ExtractedScheduleEntry = {
+  date: string;
+  time?: string;
+  title: string;
+};
+
+/** Facts lifted from a plan dump. Empty fields stay empty — never invent. */
+export type ExtractedPlanFacts = {
+  siteName?: string;
+  siteNameSource?: string;
+  startDate?: string;
+  endDate?: string;
+  startTime?: string;
+  datesSource?: string;
+  malformedDates?: string[];
+  tagline?: string;
+  taglineSource?: string;
+  location?: string;
+  locationSource?: string;
+  address?: string;
+  timezoneRaw?: string;
+  timezoneSource?: string;
+  lodging?: string;
+  lodgingSource?: string;
+  packing?: PackingItem[];
+  schedule?: ScheduleDay[];
+  scheduleEntries?: ExtractedScheduleEntry[];
+};
+
+export type PlanExtractFn = (
+  plan: string,
+  ctx: { preset?: EventPreset; now: Date },
+) => Promise<ExtractedPlanFacts>;
+
+export type IngestEventPlanOptions = {
+  extract?: PlanExtractFn;
+  now?: Date;
 };
 
 const CORE_FACTS = [
@@ -144,12 +187,14 @@ function validIso(value: string): string | undefined {
 function explicitDates(plan: string): { dates: string[]; malformed: string[]; source?: string } {
   const dates: string[] = [];
   const malformed: string[] = [];
+  ISO_DATE_RE.lastIndex = 0;
   for (const match of plan.matchAll(ISO_DATE_RE)) {
     const raw = match[0];
     const value = validIso(raw);
     if (value) dates.push(value);
     else malformed.push(raw);
   }
+  NATURAL_DATE_RE.lastIndex = 0;
   for (const match of plan.matchAll(NATURAL_DATE_RE)) {
     const month = MONTHS.get(match[1].toLowerCase());
     const day = Number(match[2]);
@@ -168,6 +213,7 @@ const ISO_RANGE_RE =
 
 function explicitIsoRanges(plan: string): { start: string; end: string }[] {
   const ranges: { start: string; end: string }[] = [];
+  ISO_RANGE_RE.lastIndex = 0;
   for (const match of plan.matchAll(ISO_RANGE_RE)) {
     const start = validIso(match[1]);
     const end = validIso(match[2]);
@@ -256,29 +302,86 @@ function scheduleFromPlan(plan: string, dates: string[]): ScheduleDay[] | undefi
   return [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export function ingestEventPlan(planInput: string, overrides: IngestionOverrides = {}): IngestionResult {
-  const plan = planInput.trim();
+function scheduleDaysFromEntries(entries: ExtractedScheduleEntry[]): ScheduleDay[] | undefined {
+  if (!entries.length) return undefined;
+  const days = new Map<string, ScheduleDay>();
+  for (const entry of entries) {
+    const date = validIso(entry.date);
+    const title = settledText(entry.title);
+    if (!date || !title) continue;
+    const existing = days.get(date);
+    const weekday = new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
+    const day = existing ?? { key: date, date, weekday, label: weekday, timed: true, entries: [] };
+    day.entries.push({ ...(entry.time ? { time: entry.time } : {}), title });
+    days.set(date, day);
+  }
+  return days.size ? [...days.values()].sort((a, b) => a.date.localeCompare(b.date)) : undefined;
+}
+
+function extractPlanHeuristically(plan: string): ExtractedPlanFacts {
   const titled = titleFromPlan(plan);
-  const title = clean(overrides.siteName) ?? titled.value;
   const dates = explicitDates(plan);
   const span = spanFromPlan(plan);
-  const startDate = clean(overrides.startDate) ?? span.start;
-  const endDate = clean(overrides.endDate) ?? span.end;
   const labeledLocation = labeled(plan, ["location", "where"]);
   const labeledLodging = labeled(plan, ["lodging", "lodge", "hotel", "cabin", "stay"]);
-  const locationValue = settledText(labeledLocation.value);
-  const lodgingValue = settledText(labeledLodging.value);
   const labeledTimezone = labeled(plan, ["timezone", "time zone"]);
-  const rawTimezone = labeledTimezone.value ?? plan.match(TIMEZONE_RE)?.[0];
-  const timezone = settledTimeZone(rawTimezone);
-  const packing = packingFromPlan(plan);
-  const schedule = scheduleFromPlan(plan, dates.dates);
-  const preset = parseEventPreset(overrides.preset);
   const labeledWhat = labeled(plan, ["what", "tagline", "description"]);
-  const tagline = settledText(labeledWhat.value);
   const labeledAddress = labeled(plan, ["address"]);
-  const address = settledText(labeledAddress.value);
-  const startTime = firstClockTime(plan);
+  const facts: ExtractedPlanFacts = {
+    siteName: titled.value,
+    siteNameSource: titled.source,
+    startDate: span.start,
+    endDate: span.end,
+    startTime: firstClockTime(plan),
+    datesSource: dates.source,
+    malformedDates: dates.malformed,
+    tagline: settledText(labeledWhat.value),
+    taglineSource: labeledWhat.source,
+    location: settledText(labeledLocation.value),
+    locationSource: labeledLocation.source,
+    address: settledText(labeledAddress.value),
+    timezoneRaw: labeledTimezone.value ?? plan.match(TIMEZONE_RE)?.[0],
+    timezoneSource: labeledTimezone.source,
+    lodging: settledText(labeledLodging.value),
+    lodgingSource: labeledLodging.source,
+    packing: packingFromPlan(plan),
+    schedule: scheduleFromPlan(plan, dates.dates),
+  };
+  if (!facts.timezoneSource && facts.timezoneRaw) facts.timezoneSource = facts.timezoneRaw;
+  return facts;
+}
+
+/** Labeled lines or complete calendar dates — the regex parser can still help. */
+export function heuristicFallbackUseful(plan: string): boolean {
+  if (plan.split(/\r?\n/).some((line) => isLabeledFactLine(line.trim()))) return true;
+  ISO_DATE_RE.lastIndex = 0;
+  if (ISO_DATE_RE.test(plan)) return true;
+  NATURAL_DATE_RE.lastIndex = 0;
+  for (const match of plan.matchAll(NATURAL_DATE_RE)) {
+    if (match[3]) return true;
+  }
+  return false;
+}
+
+export function assembleIngestion(
+  plan: string,
+  extracted: ExtractedPlanFacts,
+  overrides: IngestionOverrides = {},
+): IngestionResult {
+  const titled = { value: extracted.siteName, source: extracted.siteNameSource };
+  const title = clean(overrides.siteName) ?? titled.value;
+  const startDate = clean(overrides.startDate) ?? extracted.startDate;
+  const endDate = clean(overrides.endDate) ?? extracted.endDate;
+  const locationValue = settledText(extracted.location);
+  const lodgingValue = settledText(extracted.lodging);
+  const rawTimezone = extracted.timezoneRaw;
+  const timezone = settledTimeZone(rawTimezone);
+  const packing = extracted.packing;
+  const schedule = extracted.schedule ?? scheduleDaysFromEntries(extracted.scheduleEntries ?? []);
+  const preset = parseEventPreset(overrides.preset);
+  const tagline = settledText(extracted.tagline);
+  const address = settledText(extracted.address);
+  const startTime = extracted.startTime;
   const nightOut = preset === "night-out";
   const lodgingForContent = nightOut ? undefined : lodgingValue;
   const scheduleForContent = nightOut ? undefined : schedule;
@@ -294,19 +397,24 @@ export function ingestEventPlan(planInput: string, overrides: IngestionOverrides
     : rawTimezone
       ? `Saw ${rawTimezone}; pick an IANA time zone. Abbreviations are not settled logistics.`
       : "Times without a timezone are not settled logistics.";
-  const dateNote = dates.malformed.length ? `Could not use ${dates.malformed.join(", ")}; confirm the date.` : !dates.dates.length ? "No complete calendar date found." : undefined;
+  const malformed = extracted.malformedDates ?? [];
+  const dateNote = malformed.length
+    ? `Could not use ${malformed.join(", ")}; confirm the date.`
+    : !startDate && !endDate
+      ? "No complete calendar date found."
+      : undefined;
   const whenValue = [startDate, nightOut ? startTime : undefined].filter(Boolean).join(" ") || undefined;
   const facts: DraftFact[] = [
     fact("trip.siteName", "Event name", titleStatus, title, title ? undefined : "Add a name before sharing.", titled.source),
-    fact("trip.startDate", "When", startDateStatus, whenValue, dateNote, dates.source),
-    fact("trip.endDate", "End date", endDateStatus, endDate, endDate ? undefined : "A second date is not confirmed.", dates.source),
-    fact("trip.tagline", "What", tagline ? "extracted" : "missing", tagline, "Add a one-line description when you know it.", labeledWhat.source),
-    fact("trip.location", "Where", locationStatus, [locationValue, address].filter(Boolean).join(" · ") || undefined, "Location stays TBD until you confirm it.", labeledLocation.source),
-    fact("trip.timezone", "Timezone", timezoneStatus, timezone, timezoneNote, labeledTimezone.source ?? rawTimezone),
+    fact("trip.startDate", "When", startDateStatus, whenValue, dateNote, extracted.datesSource),
+    fact("trip.endDate", "End date", endDateStatus, endDate, endDate ? undefined : "A second date is not confirmed.", extracted.datesSource),
+    fact("trip.tagline", "What", tagline ? "extracted" : "missing", tagline, "Add a one-line description when you know it.", extracted.taglineSource),
+    fact("trip.location", "Where", locationStatus, [locationValue, address].filter(Boolean).join(" · ") || undefined, "Location stays TBD until you confirm it.", extracted.locationSource),
+    fact("trip.timezone", "Timezone", timezoneStatus, timezone, timezoneNote, extracted.timezoneSource ?? rawTimezone),
   ];
   if (!nightOut) {
     facts.push(
-      fact("lodging.name", "Lodging", lodgingStatus, lodgingForContent, "Lodging stays TBD until you confirm it.", labeledLodging.source),
+      fact("lodging.name", "Lodging", lodgingStatus, lodgingForContent, "Lodging stays TBD until you confirm it.", extracted.lodgingSource),
       fact("schedule", "Schedule", scheduleForContent ? "extracted" : "missing", scheduleForContent ? `${scheduleForContent.reduce((count, day) => count + day.entries.length, 0)} item(s)` : undefined, scheduleForContent ? undefined : "Add dated times only when they are explicit in the plan."),
     );
   }
@@ -338,6 +446,44 @@ export function ingestEventPlan(planInput: string, overrides: IngestionOverrides
     draftReview: review,
   };
   return { content, review };
+}
+
+/** Last-resort labeled/ISO parser. Never invents. */
+export function ingestEventPlanFromHeuristics(
+  planInput: string,
+  overrides: IngestionOverrides = {},
+): IngestionResult {
+  const plan = planInput.trim();
+  return assembleIngestion(plan, extractPlanHeuristically(plan), overrides);
+}
+
+/**
+ * Shared dump → draft path for landing and agent create.
+ * Tries the model extractor first; falls back to the regex parser only when
+ * that parser can still read labeled lines or complete dates.
+ */
+export async function ingestEventPlan(
+  planInput: string,
+  overrides: IngestionOverrides = {},
+  options: IngestEventPlanOptions = {},
+): Promise<IngestionResult> {
+  const plan = planInput.trim();
+  if (!plan) return ingestEventPlanFromHeuristics(planInput, overrides);
+
+  const now = options.now ?? new Date();
+  try {
+    if (!options.extract) throw new PlanExtractionUnavailableError();
+    const facts = await options.extract(plan, { preset: overrides.preset, now });
+    return assembleIngestion(plan, facts, overrides);
+  } catch (error) {
+    if (!isPlanExtractionUnavailable(error)) throw error;
+    if (heuristicFallbackUseful(plan)) {
+      return ingestEventPlanFromHeuristics(planInput, overrides);
+    }
+    throw error instanceof PlanExtractionUnavailableError
+      ? error
+      : new PlanExtractionUnavailableError();
+  }
 }
 
 export function reviewComplete(review: DraftReview | undefined): boolean {

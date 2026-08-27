@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { draftFactsForContent, ingestEventPlan, reviewComplete, stripDraftReview } from "@/lib/plan-ingestion";
+import { PlanExtractionUnavailableError } from "@/lib/plan-ingest-errors";
+import {
+  draftFactsForContent,
+  heuristicFallbackUseful,
+  ingestEventPlan,
+  ingestEventPlanFromHeuristics as ingestEventPlanHeuristics,
+  reviewComplete,
+  stripDraftReview,
+} from "@/lib/plan-ingestion";
 
 describe("messy event plan ingestion", () => {
+  const ingestEventPlan = ingestEventPlanHeuristics;
   it("rejects empty input as an unreviewed draft with no invented logistics", () => {
     const { content, review } = ingestEventPlan("   ");
     expect(content.trip.siteName).toBe("Untitled event");
@@ -266,5 +275,155 @@ describe("messy event plan ingestion", () => {
     expect(content.trip.startDate).toBe("2026-10-02");
     expect(content.trip.endDate).toBeUndefined();
     expect(review.facts.find((item) => item.path === "trip.endDate")?.status).toBe("missing");
+  });
+});
+
+const MESSY_VOICE =
+  "yeah so friday drinks at the dead rabbit in nyc september 4 around seven we should get there early I don't know the address yet maybe 12 people";
+
+describe("model-backed event plan ingestion", () => {
+  it("extracts stated facts from a messy unlabeled paragraph and leaves the rest TBD", async () => {
+    const { content, review } = await ingestEventPlan(
+      MESSY_VOICE,
+      { preset: "night-out" },
+      {
+        now: new Date("2026-08-27T12:00:00Z"),
+        extract: async () => ({
+          siteName: "Friday drinks",
+          startDate: "2026-09-04",
+          startTime: "7:00 PM",
+          location: "The Dead Rabbit, NYC",
+        }),
+      },
+    );
+    expect(content.trip.siteName).toBe("Friday drinks");
+    expect(content.trip.startDate).toBe("2026-09-04");
+    expect(content.trip.startTime).toBe("7:00 PM");
+    expect(content.trip.location).toBe("The Dead Rabbit, NYC");
+    expect(content.trip.timezone).toBeUndefined();
+    expect(content.trip.address).toBeUndefined();
+    expect(content.rsvp?.maxPartySize).toBeUndefined();
+    expect(content.draftReview?.acknowledged).toBe(false);
+    expect(review.acknowledged).toBe(false);
+    expect(review.facts.find((item) => item.path === "trip.timezone")?.status).toBe("missing");
+    expect(review.facts.find((item) => item.path === "trip.location")?.status).toBe("extracted");
+    expect(review.facts.find((item) => item.path === "trip.startDate")).toMatchObject({
+      status: "extracted",
+      value: "2026-09-04 7:00 PM",
+    });
+  });
+
+  it("does not invent a date, place, address, or headcount from an unlabeled dump", async () => {
+    const { content, review } = await ingestEventPlan(
+      "Let's do something fun, maybe 20 people at a place downtown around 7 if we can find a table",
+      {},
+      { extract: async () => ({}) },
+    );
+    expect(content.trip.startDate).toBeUndefined();
+    expect(content.trip.location).toBeUndefined();
+    expect(content.trip.address).toBeUndefined();
+    expect(content.trip.startTime).toBeUndefined();
+    expect(content.lodging).toBeUndefined();
+    expect(content.schedule).toBeUndefined();
+    expect(content.rsvp?.maxPartySize).toBeUndefined();
+    expect(review.facts.find((item) => item.path === "trip.startDate")?.status).toBe("missing");
+    expect(review.facts.find((item) => item.path === "trip.location")?.status).toBe("missing");
+  });
+
+  it("treats a non-IANA timezone as missing even if the model returned one", async () => {
+    const { content, review } = await ingestEventPlan(
+      "Dinner\nTimezone: ET\n2026-09-04 7:00 PM — dinner",
+      { preset: "night-out" },
+      {
+        extract: async () => ({
+          siteName: "Dinner",
+          startDate: "2026-09-04",
+          startTime: "7:00 PM",
+          timezoneRaw: "ET",
+        }),
+      },
+    );
+    expect(content.trip.timezone).toBeUndefined();
+    expect(review.facts.find((item) => item.path === "trip.timezone")).toMatchObject({
+      status: "missing",
+    });
+    expect(review.facts.find((item) => item.path === "trip.timezone")?.note).toMatch(/IANA/);
+  });
+
+  it("still reads labeled-line dumps through the shared ingest path", async () => {
+    const { content, review } = await ingestEventPlan(
+      "Event: Cabin Weekend\nLocation: Denver, CO\n2026-09-04 7:00 PM — arrive",
+      { preset: "weekend" },
+      {
+        extract: async () => ({
+          siteName: "Cabin Weekend",
+          location: "Denver, CO",
+          startDate: "2026-09-04",
+          startTime: "7:00 PM",
+          scheduleEntries: [{ date: "2026-09-04", time: "7:00 PM", title: "arrive" }],
+        }),
+      },
+    );
+    expect(content.trip.siteName).toBe("Cabin Weekend");
+    expect(content.trip.location).toBe("Denver, CO");
+    expect(content.trip.startDate).toBe("2026-09-04");
+    expect(content.schedule?.[0].entries[0].title).toBe("arrive");
+    expect(review.acknowledged).toBe(false);
+  });
+
+  it("falls back to the labeled parser when the model is down", async () => {
+    const { content } = await ingestEventPlan(
+      "Event: Dinner\nLocation: Rita's\n2026-09-04 7:00 PM — drinks",
+      { preset: "night-out" },
+      {
+        extract: async () => {
+          throw new PlanExtractionUnavailableError();
+        },
+      },
+    );
+    expect(content.trip.siteName).toBe("Dinner");
+    expect(content.trip.location).toBe("Rita's");
+    expect(content.trip.startDate).toBe("2026-09-04");
+  });
+
+  it("fails clearly on unlabeled prose when the model is down instead of an empty Untitled draft", async () => {
+    await expect(
+      ingestEventPlan(MESSY_VOICE, { preset: "night-out" }, {
+        extract: async () => {
+          throw new PlanExtractionUnavailableError();
+        },
+      }),
+    ).rejects.toBeInstanceOf(PlanExtractionUnavailableError);
+    expect(heuristicFallbackUseful(MESSY_VOICE)).toBe(false);
+  });
+
+  it("never copies a timezone the host did not write", async () => {
+    const { content, review } = await ingestEventPlan(
+      MESSY_VOICE,
+      { preset: "night-out" },
+      {
+        extract: async (plan) => {
+          const { factsFromModelOutput } = await import("@/lib/plan-extract");
+          return factsFromModelOutput(
+            {
+              siteName: "Friday drinks",
+              tagline: null,
+              startDate: "2026-09-04",
+              endDate: null,
+              startTime: "7:00 PM",
+              location: "The Dead Rabbit, NYC",
+              address: null,
+              timezone: "America/New_York",
+              lodgingName: null,
+              packing: null,
+              schedule: null,
+            },
+            plan,
+          );
+        },
+      },
+    );
+    expect(content.trip.timezone).toBeUndefined();
+    expect(review.facts.find((item) => item.path === "trip.timezone")?.status).toBe("missing");
   });
 });

@@ -15,12 +15,19 @@ is `url`, `hostUrl` (`/{slug}/host`), `guestUrl` (always `null` until publish),
 use `hostUrl` + `adminToken`. Create never mints a guest URL.
 
 Create accepts either a **plan dump** (`plan`, optional `preset` of
-`night-out` | `weekend`, optional `siteName`) or structured `content` (the only
-required structured field is `content.trip.siteName`). A plan dump reuses
-`ingestEventPlan` — the same path as the landing “Turn into a draft” button.
-It never invents time, place, or headcount. Missing, ambiguous, or non-IANA
-timezones stay empty with fact status `missing` (TBD). The first unlabeled line
-can supply the name when `siteName` is omitted.
+`night-out` | `weekend`, optional `siteName`, optional `startDate` /
+`endDate` overrides) or structured `content` (the only required structured
+field is `content.trip.siteName`). A plan dump reuses `ingestEventPlan` —
+the same path as the landing “Turn into a draft” button. The server asks
+OpenRouter (`z-ai/glm-5.3-flash`, `OPENROUTER_API_KEY`) to extract only
+facts the host wrote, then maps that JSON into `PartyContent` +
+`draftReview`. It never invents time, place, address, or headcount.
+Missing, ambiguous, or non-IANA timezones stay empty with fact status
+`missing` (TBD). If the model is down, labeled-line / ISO dumps fall back
+to the regex parser (still never invents). An unlabeled messy paragraph
+returns **503** instead of an empty Untitled event. The first unlabeled
+line can still supply the name on the fallback parser when `siteName` is
+omitted.
 
 **Agents cannot silently publish.** `POST` create and `PATCH` / CLI `set` / MCP
 `set` edit the working draft only. Guests keep the last published snapshot.

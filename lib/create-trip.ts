@@ -5,7 +5,7 @@ import {
   optionalDate,
 } from "@/lib/trip-dates";
 import { parseEventPreset, type EventPreset } from "@/lib/event-preset";
-import { ingestEventPlan } from "@/lib/plan-ingestion";
+import { NOTES_UNAVAILABLE_MESSAGE } from "@/lib/plan-ingest-errors";
 import { unguessableEventSlug } from "@/lib/slug";
 
 export { END_BEFORE_START_MESSAGE, formatDateLabel, isInvertedDateRange };
@@ -34,7 +34,7 @@ export type CreateTripResult =
 export const CREATE_TRIP_PATH = "/api/admin/trips";
 
 const ENV_NAME_RE =
-  /\b(ADMIN_UI_PASSWORD|ADMIN_API_TOKEN|DATABASE_URL|PARTY_PASSWORD)\b/;
+  /\b(ADMIN_UI_PASSWORD|ADMIN_API_TOKEN|DATABASE_URL|PARTY_PASSWORD|OPENROUTER_API_KEY)\b/;
 
 /** POST siteName (and optional dates) to the public create API. No Authorization. */
 export function createTripRequestInit(fields: CreateTripFields): RequestInit {
@@ -45,12 +45,15 @@ export function createTripRequestInit(fields: CreateTripFields): RequestInit {
   const preset = parseEventPreset(fields.preset);
   const slug = fields.slug?.trim() || unguessableEventSlug();
   if (plan) {
-    const ingested = ingestEventPlan(plan, { siteName, startDate, endDate, preset });
+    const body: Record<string, unknown> = { slug, plan, preset };
+    if (siteName) body.siteName = siteName;
+    if (startDate) body.startDate = startDate;
+    if (endDate) body.endDate = endDate;
     return {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug, content: ingested.content }),
+      body: JSON.stringify(body),
     };
   }
   const trip: {
@@ -108,6 +111,11 @@ export function visitorSafeCreateError(status: number, body: unknown): string {
     return "Too many trips created just now. Try again in a few minutes.";
   }
   if (status === 503) {
+    const rec = body && typeof body === "object" ? (body as Record<string, unknown>) : null;
+    const error = typeof rec?.error === "string" ? rec.error : "";
+    if (error === NOTES_UNAVAILABLE_MESSAGE || (/notes/i.test(error) && !ENV_NAME_RE.test(error))) {
+      return error;
+    }
     return "Couldn't create a trip right now. Try again in a minute.";
   }
 

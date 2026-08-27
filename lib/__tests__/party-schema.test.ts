@@ -83,6 +83,22 @@ describe("partyContentSchema", () => {
     expect(parsed.success).toBe(true);
   });
 
+  it("accepts plan dump date overrides and rejects an inverted range", () => {
+    expect(
+      createPartySchema.safeParse({
+        plan: "Cabin weekend",
+        startDate: "2026-10-10",
+        endDate: "2026-10-12",
+      }).success,
+    ).toBe(true);
+    const inverted = createPartySchema.safeParse({
+      plan: "Cabin weekend",
+      startDate: "2026-10-12",
+      endDate: "2026-10-10",
+    });
+    expect(inverted.success).toBe(false);
+  });
+
   it("rejects create with neither a plan nor a siteName", () => {
     expect(createPartySchema.safeParse({}).success).toBe(false);
   });
