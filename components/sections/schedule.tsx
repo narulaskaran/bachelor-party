@@ -36,16 +36,16 @@ export function ScheduleSection({
             <section key={day.key} aria-labelledby={`${day.key}-heading`}>
               <div
                 id={`${day.key}-heading`}
-                className="sticky top-14 z-10 -mx-4 border-b border-border bg-background px-4 py-3 sm:mx-0 sm:rounded-md sm:border"
+                className="sticky top-[3.75rem] z-10 -mx-4 border-b border-border bg-background px-4 py-3 sm:mx-0 sm:rounded-md sm:border"
               >
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="text-xs text-primary">
+                  <span className="text-sm text-primary">
                     Day {String(dayIndex + 1).padStart(2, "0")}
                   </span>
                   <span className="text-lg font-semibold tracking-tight">{day.weekday}</span>
                   <span className={kickerClass}>{formatDate(day.date)}</span>
                   {headingLabel ? (
-                    <span className="text-sm text-muted-foreground">{headingLabel}</span>
+                    <span className={kickerClass}>{headingLabel}</span>
                   ) : null}
                   {picker && marked > 0 ? (
                     <span className="text-xs text-muted-foreground">
@@ -73,7 +73,7 @@ export function ScheduleSection({
                       <div className="flex gap-4">
                         <div
                           className={
-                            "w-14 shrink-0 font-mono text-xs sm:w-20 " +
+                            "w-14 shrink-0 break-words font-mono text-sm sm:w-20 " +
                             (key ? "text-primary" : "text-muted-foreground")
                           }
                         >

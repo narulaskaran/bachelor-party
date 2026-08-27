@@ -113,7 +113,7 @@ function SimpleActivityRow({ activity }: { activity: Activity }) {
     <li className="border-b border-border pb-3 last:border-b-0 last:pb-0">
       <p className="font-medium text-muted-foreground">{activity.name}</p>
       {activity.description && (
-        <p className="mt-0.5 text-sm text-muted-foreground/80">{activity.description}</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">{activity.description}</p>
       )}
     </li>
   );

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AUTH_COOKIE, authCookieValue } from "@/lib/auth";
@@ -144,6 +145,7 @@ describe("GET /", () => {
     expect(html).toContain('href="#enter"');
     expect(html).toContain("I have an invite");
     expect(html).toContain("I&#x27;m hosting");
+    expect(html.match(/I&#x27;m hosting/g)).toHaveLength(1);
     expect(html).not.toContain("password-gated");
     expect(html).not.toMatch(/href="#rsvp"/);
     expect(html).not.toContain("ADMIN_UI_PASSWORD");
@@ -232,6 +234,23 @@ describe("GET /", () => {
     expect(html).toContain('href="#create"');
     expect(html).not.toContain('href="/#create"');
     expect(html).not.toContain("Create a trip</a>");
+  });
+
+  it("does not punch a transparent hole in the sticky marketing bar on landing", () => {
+    const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+    expect(css).not.toContain("backdrop-filter: none");
+    expect(css).not.toMatch(
+      /#site-nav-marketing \{\s*border-color: transparent;\s*background: transparent;/,
+    );
+  });
+
+  it("keeps the landing wash as a faint top-to-bottom fade, not a muted spotlight", () => {
+    const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+    const landing = css.slice(css.indexOf("body:has([data-landing-page]) {"));
+    expect(landing).toMatch(/linear-gradient\(\s*to bottom/);
+    expect(landing).toContain("color-mix(in srgb, var(--background) 92%, var(--muted))");
+    expect(landing).not.toMatch(/linear-gradient\(to bottom, var\(--background\), var\(--muted\)\)/);
+    expect(css).not.toContain("radial-gradient");
   });
 });
 

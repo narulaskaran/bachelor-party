@@ -77,7 +77,7 @@ export function PartyView({
 
         {footerBits.length > 0 ? (
           <footer className="border-t border-border py-8 text-center">
-            <p className="break-words text-xs text-muted-foreground">
+            <p className="break-words text-sm text-muted-foreground">
               {footerBits.join(" · ")}
             </p>
           </footer>

@@ -14,12 +14,12 @@ import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { rsvpFieldDefaults, type RsvpPrefill } from "@/lib/merge-guest";
 import { plusOneAllowed } from "@/lib/rsvp-contract";
 import type { Activity, RsvpConfig } from "@/lib/party-types";
+import { kickerClass } from "@/lib/type";
 import { VoteActivityGroup } from "@/components/vote-activity-group";
+import { cn } from "@/lib/utils";
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-medium text-muted-foreground">{children}</p>
-  );
+  return <p className={cn("font-medium", kickerClass)}>{children}</p>;
 }
 
 function HadField({

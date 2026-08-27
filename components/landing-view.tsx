@@ -12,6 +12,7 @@ import { DEFAULT_INVITE_HOST } from "@/lib/invite-host";
 import { landingPanelHash, panelFromHash, type LandingPanel } from "@/lib/landing-panel";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 import { pageTitleClass, quietLinkClass, sectionTitleClass } from "@/lib/type";
+import { cn } from "@/lib/utils";
 
 export function LandingView({
   inviteHost = DEFAULT_INVITE_HOST,
@@ -38,20 +39,35 @@ export function LandingView({
     flushSync(() => setPanel(next));
   }
 
+  const compact = panel !== null;
+
   return (
     <div
       data-landing-page=""
       className="mx-auto flex min-h-[calc(100svh-3.75rem)] max-w-3xl flex-col px-6"
     >
-      <section className="flex flex-col items-center py-16 text-center sm:py-24">
-        <h1 className={pageTitleClass}>
+      <section
+        className={cn(
+          "flex flex-col items-center text-center",
+          compact ? "py-4 sm:py-5" : "py-16 sm:py-24",
+        )}
+      >
+        <h1 className={pageTitleClass} hidden={compact}>
           The Big <span className="text-primary">Send</span>
         </h1>
-        <p className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base">
+        <p
+          hidden={compact}
+          className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base"
+        >
           Paste a messy plan. Review it on the site. Send a private guest page.
         </p>
 
-        <div className="mt-10 flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
+        <div
+          className={cn(
+            "flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center",
+            compact ? "mt-0" : "mt-10",
+          )}
+        >
           <Button asChild variant={panel === null || panel === "enter" ? "outline" : "default"}>
             <HashFocusLink
               href={landingPanelHash("create")}

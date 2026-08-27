@@ -105,6 +105,10 @@ describe("mobile trip layout", () => {
     expect(html).toContain("Try Demo");
     expect(html).toContain('href="/demo"');
     expect(html).toContain("data-demo-link");
+    expect(html).toContain("sticky top-0");
+    expect(html).toContain("bg-background/90");
+    expect(html).toContain("backdrop-blur");
+    expect(html).toContain("border-b border-border");
     expect(html.indexOf("Try Demo")).toBeLessThan(html.indexOf('aria-label="Toggle theme"'));
     expect(html).not.toContain("Create a trip");
     expect(html).not.toContain('href="/#create"');

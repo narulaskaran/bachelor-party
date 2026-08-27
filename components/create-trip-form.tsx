@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { EVENT_PRESET_LABELS, type EventPreset } from "@/lib/event-preset";
 import {
   createTripFromUi,
@@ -17,13 +18,7 @@ export { hostKeyStorageKey } from "@/lib/host-key-storage";
 
 const PLAN_PLACEHOLDER = `Friday drinks
 Rita's on 6th
-7pm-ish
-
-or
-
-Cabin weekend
-Denver
-Sep 4–7`;
+7-ish`;
 
 export function CreateTripForm({
   create = createTripFromUi,
@@ -72,7 +67,6 @@ export function CreateTripForm({
       </p>
       <form onSubmit={onSubmit} className="mt-6 flex max-w-xl flex-col gap-4">
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">I&apos;m hosting</legend>
           <div className="flex flex-col gap-2 sm:flex-row">
             {(["night-out", "weekend"] as EventPreset[]).map((value) => {
               const selected = preset === value;
@@ -107,7 +101,7 @@ export function CreateTripForm({
           <label htmlFor="plan" className="text-sm font-medium">
             Your event notes
           </label>
-          <textarea
+          <Textarea
             id="plan"
             name="plan"
             rows={10}
@@ -115,7 +109,7 @@ export function CreateTripForm({
             placeholder={PLAN_PLACEHOLDER}
             aria-describedby="create-trip-hint create-trip-facts-hint"
             disabled={pending}
-            className="min-h-48 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-48"
           />
           <p id="create-trip-facts-hint" className="text-xs text-muted-foreground">
             Only facts you know. We won&apos;t invent a time, place, or headcount.
@@ -126,7 +120,7 @@ export function CreateTripForm({
             {error}
           </p>
         ) : null}
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} className="w-fit max-w-sm self-start">
           {pending ? "Creating…" : "Turn into a draft"}
         </Button>
       </form>
