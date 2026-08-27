@@ -1,8 +1,11 @@
 /** @vitest-environment jsdom */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { act, createElement } from "react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { PackingSection } from "@/components/sections/packing";
 import { packingStorageKey } from "@/lib/packing-storage";
 
@@ -62,6 +65,9 @@ describe("PackingSection", () => {
     window.localStorage.setItem(packingStorageKey("demo"), '{"Layers":true}');
     render(<PackingSection slug="demo" packing={items} />);
 
+    expect(screen.getByRole("checkbox", { name: /layers/i }).getAttribute("aria-checked")).toBe(
+      "false",
+    );
     await waitFor(() =>
       expect(screen.getByRole("checkbox", { name: /layers/i }).getAttribute("aria-checked")).toBe(
         "true",
@@ -70,5 +76,51 @@ describe("PackingSection", () => {
     expect(screen.getByRole("checkbox", { name: /government id/i }).getAttribute("aria-checked")).toBe(
       "false",
     );
+  });
+
+  it("hydrates persisted checks without a checkbox mismatch", async () => {
+    window.localStorage.setItem(packingStorageKey("demo"), '{"Government ID":true}');
+    const html = renderToString(
+      createElement(PackingSection, { slug: "demo", packing: items }),
+    );
+    expect(html).toContain('aria-checked="false"');
+    expect(html).not.toContain('aria-checked="true"');
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
+    const recoverable: unknown[] = [];
+    const onRecoverableError = vi.fn((error: unknown) => {
+      recoverable.push(error);
+    });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    await act(async () => {
+      root = hydrateRoot(container, createElement(PackingSection, { slug: "demo", packing: items }), {
+        onRecoverableError,
+      });
+    });
+
+    await waitFor(() =>
+      expect(
+        container.querySelector('[id="pack-0"]')?.getAttribute("aria-checked"),
+      ).toBe("true"),
+    );
+    expect(
+      container.querySelector('[id="pack-1"]')?.getAttribute("aria-checked"),
+    ).toBe("false");
+
+    const hydrationNoise = [...recoverable, ...consoleError.mock.calls.flat()]
+      .map((entry) => String(entry))
+      .filter((text) => /hydrat/i.test(text));
+    expect(hydrationNoise).toEqual([]);
+
+    await act(async () => {
+      root?.unmount();
+    });
+    container.remove();
+    consoleError.mockRestore();
   });
 });

@@ -68,7 +68,7 @@ vi.mock("@/app/globals.css", () => ({}));
 
 import { cookies, headers } from "next/headers";
 import Page from "@/app/page";
-import RootLayout from "@/app/layout";
+import RootLayout, { metadata } from "@/app/layout";
 import TripLayout from "@/app/[slug]/layout";
 
 function fakeDb(rows: Record<string, unknown>[]) {
@@ -122,6 +122,12 @@ describe("GET /", () => {
     vi.mocked(headers).mockResolvedValue({
       get: () => null,
     } as never);
+  });
+
+  it("root meta description is private-link product copy, not a group-chat password", () => {
+    expect(metadata.description).toMatch(/messy plan/i);
+    expect(metadata.description).toMatch(/private link/i);
+    expect(metadata.description).not.toMatch(/password's in the group chat/i);
   });
 
   it("with an access cookie still renders the marketing landing, not the private trip", async () => {
