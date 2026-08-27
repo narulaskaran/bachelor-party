@@ -1,11 +1,15 @@
 /** @vitest-environment jsdom */
 
 import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { act } from "react";
 import { LandingView } from "@/components/landing-view";
+import {
+  LANDING_PANEL_MOTION_MS,
+  landingPanelMotionClass,
+} from "@/components/landing-panel-section";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 
 const push = vi.fn();
@@ -39,6 +43,22 @@ function panelEl(id: string) {
   return document.getElementById(id);
 }
 
+function panelFold(id: string) {
+  return panelEl(id)?.querySelector("[data-landing-fold]");
+}
+
+async function waitForLandingMotion() {
+  await act(async () => {
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  });
+}
+
+async function settlePosterHide() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, LANDING_PANEL_MOTION_MS));
+  });
+}
+
 function expectPanel(id: string, open: boolean) {
   const el = panelEl(id);
   expect(el, `#${id}`).toBeTruthy();
@@ -56,6 +76,10 @@ describe("homepage trip entry", () => {
     resetHash();
     scrollIntoView.mockReset();
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("offers equal host and invite CTAs without a demo path in the hero", () => {
@@ -276,6 +300,8 @@ describe("homepage trip entry", () => {
     const user = userEvent.setup();
     const { container } = render(<LandingView />);
     const hero = container.querySelector("h1")?.closest("section");
+    const poster = container.querySelector("[data-landing-poster]");
+    const posterInner = poster?.querySelector(":scope > div > div");
 
     expect(hero?.className).not.toMatch(/justify-center/);
     expect(hero?.className).toMatch(/py-16/);
@@ -283,29 +309,46 @@ describe("homepage trip entry", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
     expect(screen.getByText(/paste a messy plan/i)).toBeTruthy();
 
-    await act(async () => {
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    });
+    await waitForLandingMotion();
 
     await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
 
     expect(hero?.className).not.toMatch(/py-16/);
     expect(hero?.className).not.toMatch(/sm:py-24/);
     expect(hero?.className).toMatch(/py-4/);
+    expect(hero?.className).toMatch(/transition-\[padding\]/);
+    expect(hero?.className).toContain(landingPanelMotionClass);
+    expect(poster?.className).toMatch(/grid-rows-\[0fr\]/);
+    expect(poster?.className).toMatch(/opacity-0/);
+    expect(poster?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
+    expect(poster?.className).toContain(landingPanelMotionClass);
+    expect(posterInner?.className).toMatch(/-translate-y-2/);
+    expect(posterInner?.className).toMatch(/transition-transform/);
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
-    expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(true);
-    expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(true);
+    expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(false);
+    expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(false);
     expect(container.querySelector("legend")).toBeNull();
     expect(screen.getAllByRole("link", { name: /^i.m hosting$/i })).toHaveLength(1);
     expect(screen.getByRole("link", { name: /^i.m hosting$/i })).toBeTruthy();
     expect(screen.getByRole("link", { name: /^i have an invite$/i })).toBeTruthy();
-    expect(panelEl("create")?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
-    expect(panelEl("create")?.className).toMatch(/motion-reduce:transition-none/);
+    expect(panelFold("create")?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
+    expect(panelFold("create")?.className).toMatch(/motion-reduce:transition-none/);
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
 
+    await settlePosterHide();
+
+    expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(true);
+    expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(true);
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+
+    const posterClass = poster?.className;
+    const heroClass = hero?.className;
     await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
 
+    expect(poster?.className).toBe(posterClass);
+    expect(hero?.className).toBe(heroClass);
     expect(hero?.className).toMatch(/py-4/);
+    expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(true);
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
     expect(screen.getByRole("link", { name: /^i.m hosting$/i })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
@@ -336,6 +379,57 @@ describe("homepage trip entry", () => {
     expect(kofi.querySelector("svg")?.getAttribute("class")).toMatch(/fill-current/);
     expect(github.closest("footer")).toBeTruthy();
     expect(github.parentElement?.className).toMatch(/justify-center/);
+  });
+
+  it("restores the poster with the same motion when the panel closes", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<LandingView />);
+    const hero = container.querySelector("h1")?.closest("section");
+    const poster = container.querySelector("[data-landing-poster]");
+    const posterInner = poster?.querySelector(":scope > div > div");
+
+    await waitForLandingMotion();
+    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+    await settlePosterHide();
+
+    await act(async () => {
+      window.history.pushState(null, "", "#");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    expect(hero?.className).toMatch(/py-16/);
+    expect(hero?.className).toMatch(/transition-\[padding\]/);
+    expect(hero?.className).toContain(landingPanelMotionClass);
+    expect(poster?.className).toMatch(/grid-rows-\[1fr\]/);
+    expect(poster?.className).toMatch(/opacity-100/);
+    expect(poster?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
+    expect(posterInner?.className).toMatch(/translate-y-0/);
+    expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(false);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
+  });
+
+  it("snaps the poster away when prefers-reduced-motion is set", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        matches: query.includes("prefers-reduced-motion"),
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const user = userEvent.setup();
+    const { container } = render(<LandingView />);
+
+    await waitForLandingMotion();
+    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+
+    expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(true);
+    expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(true);
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(container.querySelector("[data-landing-poster]")?.className).toMatch(
+      /motion-reduce:transition-none/,
+    );
   });
 
   it("wires enter errors to the invite field", async () => {
