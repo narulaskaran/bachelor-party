@@ -77,36 +77,44 @@ describe("CreateTripForm", () => {
     assertNoAdminRequirement(container.innerHTML);
     expect(screen.queryByLabelText(/event name/i)).toBeNull();
     expect(screen.queryByLabelText(/start date/i)).toBeNull();
-    expect(screen.getByText(/won.t invent a time, place, or headcount/i)).toBeTruthy();
-    expect(document.getElementById("create-trip-facts-hint")?.className).toMatch(/\btext-sm\b/);
-    expect(document.getElementById("create-trip-facts-hint")?.className).toMatch(
-      /text-muted-foreground/,
-    );
-    expect(document.getElementById("create-trip-facts-hint")?.className).not.toMatch(/\btext-xs\b/);
+    expect(screen.queryByText(/won.t invent a time, place, or headcount/i)).toBeNull();
+    expect(screen.queryByText(/dump what you know/i)).toBeNull();
+    expect(document.getElementById("create-trip-facts-hint")).toBeNull();
+    expect(document.getElementById("create-trip-hint")).toBeNull();
     expect(container.querySelector("legend")).toBeNull();
     expect(screen.queryByText(/^i.m hosting$/i)).toBeNull();
-    expect(screen.getByRole("radio", { name: /night out/i })).toBeTruthy();
-    expect(screen.getByRole("radio", { name: /weekend trip/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /party/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /group trip/i })).toBeTruthy();
+    expect(screen.getByText("Details + RSVP")).toBeTruthy();
+    expect(screen.getByText("Adds schedule, lodge, activities, pack")).toBeTruthy();
 
-    const notes = screen.getByLabelText(/your event notes/i);
-    expect(notes.getAttribute("placeholder")).toBe("Friday drinks\nRita's on 6th\n7-ish");
-    expect(notes.getAttribute("placeholder")).not.toMatch(/\bor\b/);
-    expect(notes.getAttribute("placeholder")).not.toMatch(/Cabin weekend/);
+    const notes = screen.getByLabelText(/^describe your event$/i);
+    expect(notes.getAttribute("placeholder")).toBe(
+      "Long weekend upstate Friday through Sunday. Cabin if I can find one, hike Saturday.",
+    );
+    expect(notes.getAttribute("placeholder")).not.toMatch(/Where:/);
+    expect(notes.getAttribute("placeholder")).not.toMatch(/When:/);
     expect(notes.getAttribute("data-slot")).toBe("textarea");
     expect(notes.className).toMatch(/placeholder:text-muted-foreground/);
     expect(notes.className).toMatch(/focus-visible:border-ring/);
     expect(notes.className).toMatch(/focus-visible:ring-ring\/50/);
     expect(notes.className).not.toMatch(/focus-visible:ring-2(?:\s|$)/);
 
-    const draft = screen.getByRole("button", { name: /turn into a draft/i });
+    const draft = screen.getByRole("button", { name: /^create draft$/i });
     expect(draft.className).toMatch(/min-h-11/);
     expect(draft.className).toMatch(/self-start/);
     expect(draft.className).toMatch(/w-fit/);
     expect(draft.className).not.toMatch(/(?:^|\s)w-full(?:\s|$)/);
 
-    await user.click(screen.getByRole("radio", { name: /night out/i }));
-    await user.type(screen.getByLabelText(/your event notes/i), "Thursday dinner\nRita's");
-    await user.click(screen.getByRole("button", { name: /turn into a draft/i }));
+    await user.click(screen.getByRole("radio", { name: /party/i }));
+    expect(notes.getAttribute("placeholder")).toBe(
+      "Friday drinks at Rita's on 6th around 7. I don't have the exact address yet.",
+    );
+    await user.type(notes, "Thursday dinner\nRita's");
+    await user.click(screen.getByRole("radio", { name: /group trip/i }));
+    expect((notes as HTMLTextAreaElement).value).toBe("Thursday dinner\nRita's");
+    await user.click(screen.getByRole("radio", { name: /party/i }));
+    await user.click(screen.getByRole("button", { name: /^create draft$/i }));
 
     expect(create).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledWith({
@@ -128,8 +136,8 @@ describe("CreateTripForm", () => {
     }));
     render(<CreateTripForm create={create} />);
 
-    await user.type(screen.getByLabelText(/your event notes/i), "Cabin weekend");
-    await user.click(screen.getByRole("button", { name: /turn into a draft/i }));
+    await user.type(screen.getByLabelText(/^describe your event$/i), "Cabin weekend");
+    await user.click(screen.getByRole("button", { name: /^create draft$/i }));
 
     expect(screen.getByRole("alert").textContent).toMatch(/few minutes/i);
     expect(screen.queryByText("ADMIN_UI_PASSWORD")).toBeNull();

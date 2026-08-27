@@ -12,6 +12,24 @@ export function prefersReducedMotion() {
   );
 }
 
+/** Coarse pointer or below Tailwind `sm` (640px) — the site's phone-first layout. */
+export function isPhoneLayout() {
+  if (typeof window === "undefined") return false;
+  if (typeof window.matchMedia === "function") {
+    if (window.matchMedia("(pointer: coarse)").matches) return true;
+    if (window.matchMedia("(max-width: 639px)").matches) return true;
+  }
+  return window.innerWidth < 640;
+}
+
+export function isTextEntryControl(element: HTMLElement) {
+  return (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement
+  );
+}
+
 export function hashScrollBehavior(): ScrollBehavior {
   return prefersReducedMotion() ? "auto" : "smooth";
 }

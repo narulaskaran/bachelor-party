@@ -6,8 +6,20 @@ export const EVENT_PRESETS = ["night-out", "weekend"] as const;
 export type EventPreset = (typeof EVENT_PRESETS)[number];
 
 export const EVENT_PRESET_LABELS: Record<EventPreset, string> = {
-  "night-out": "Night out",
-  weekend: "Weekend trip",
+  "night-out": "Party",
+  weekend: "Group trip",
+};
+
+export const EVENT_PRESET_HINTS: Record<EventPreset, string> = {
+  "night-out": "Details + RSVP",
+  weekend: "Adds schedule, lodge, activities, pack",
+};
+
+export const EVENT_PRESET_PLACEHOLDERS: Record<EventPreset, string> = {
+  "night-out":
+    "Friday drinks at Rita's on 6th around 7. I don't have the exact address yet.",
+  weekend:
+    "Long weekend upstate Friday through Sunday. Cabin if I can find one, hike Saturday.",
 };
 
 export function isEventPreset(value: unknown): value is EventPreset {
@@ -18,7 +30,7 @@ export function parseEventPreset(value: unknown): EventPreset {
   return isEventPreset(value) ? value : "weekend";
 }
 
-/** Weekend-only blocks. Night out is details + RSVP; these stay optional. */
+/** Weekend-only blocks. Party is details + RSVP; these stay optional. */
 export type WeekendBlock = "schedule" | "lodging" | "activities" | "packing";
 
 export function weekendBlocksFilled(content: PartyContent): WeekendBlock[] {

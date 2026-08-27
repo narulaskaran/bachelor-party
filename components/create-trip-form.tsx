@@ -4,7 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { EVENT_PRESET_LABELS, type EventPreset } from "@/lib/event-preset";
+import {
+  EVENT_PRESET_HINTS,
+  EVENT_PRESET_LABELS,
+  EVENT_PRESET_PLACEHOLDERS,
+  EVENT_PRESETS,
+  type EventPreset,
+} from "@/lib/event-preset";
 import {
   createTripFromUi,
   type CreateTripFields,
@@ -15,10 +21,6 @@ import { rememberHostKey } from "@/lib/host-key-storage";
 import { sectionTitleClass } from "@/lib/type";
 
 export { hostKeyStorageKey } from "@/lib/host-key-storage";
-
-const PLAN_PLACEHOLDER = `Friday drinks
-Rita's on 6th
-7-ish`;
 
 export function CreateTripForm({
   create = createTripFromUi,
@@ -62,13 +64,10 @@ export function CreateTripForm({
       <h2 id="create-trip-heading" tabIndex={-1} className={sectionTitleClass}>
         Create an event
       </h2>
-      <p id="create-trip-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
-        Dump what you know. We&apos;ll turn it into a private draft — never publish on its own.
-      </p>
       <form onSubmit={onSubmit} className="mt-6 flex max-w-xl flex-col gap-4">
         <fieldset className="space-y-2">
           <div className="flex flex-col gap-2 sm:flex-row">
-            {(["night-out", "weekend"] as EventPreset[]).map((value) => {
+            {EVENT_PRESETS.map((value) => {
               const selected = preset === value;
               return (
                 <button
@@ -86,9 +85,7 @@ export function CreateTripForm({
                   <span>
                     {EVENT_PRESET_LABELS[value]}
                     <span className="block text-xs font-normal text-muted-foreground">
-                      {value === "night-out"
-                        ? "Details + RSVP"
-                        : "Adds optional schedule, lodge, activities, pack"}
+                      {EVENT_PRESET_HINTS[value]}
                     </span>
                   </span>
                 </button>
@@ -99,21 +96,17 @@ export function CreateTripForm({
         </fieldset>
         <div className="flex flex-col gap-2">
           <label htmlFor="plan" className="text-sm font-medium">
-            Your event notes
+            Describe your event
           </label>
           <Textarea
             id="plan"
             name="plan"
             rows={10}
             required
-            placeholder={PLAN_PLACEHOLDER}
-            aria-describedby="create-trip-hint create-trip-facts-hint"
+            placeholder={EVENT_PRESET_PLACEHOLDERS[preset]}
             disabled={pending}
             className="min-h-48"
           />
-          <p id="create-trip-facts-hint" className="text-sm text-muted-foreground">
-            Only facts you know. We won&apos;t invent a time, place, or headcount.
-          </p>
         </div>
         {error ? (
           <p id="create-trip-error" className="text-sm text-destructive" role="alert">
@@ -121,7 +114,7 @@ export function CreateTripForm({
           </p>
         ) : null}
         <Button type="submit" disabled={pending} className="w-fit max-w-sm self-start">
-          {pending ? "Creating…" : "Turn into a draft"}
+          {pending ? "Creating…" : "Create draft"}
         </Button>
       </form>
     </>

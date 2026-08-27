@@ -3,6 +3,8 @@
 import type { ComponentProps, MouseEvent } from "react";
 import {
   afterNextPaint,
+  isPhoneLayout,
+  isTextEntryControl,
   navigateHashDestination,
 } from "@/components/hash-navigation";
 
@@ -30,13 +32,14 @@ export function HashFocusLink({
 
     const section = document.getElementById(href.slice(1));
     const ids = Array.isArray(focusId) ? focusId : [focusId];
+    const skipTextEntry = isPhoneLayout();
     let target: HTMLElement | null = null;
     for (const id of ids) {
       const el = document.getElementById(id);
-      if (el) {
-        target = el;
-        break;
-      }
+      if (!el) continue;
+      if (skipTextEntry && isTextEntryControl(el)) continue;
+      target = el;
+      break;
     }
     if (!section && !target) return;
 

@@ -13,11 +13,8 @@ import {
   LandingPanelSection,
   landingPanelMotionClass,
 } from "@/components/landing-panel-section";
-import { TripEntryForm } from "@/components/trip-entry-form";
-import { DEFAULT_INVITE_HOST } from "@/lib/invite-host";
 import { landingPanelHash, panelFromHash, type LandingPanel } from "@/lib/landing-panel";
-import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
-import { pageTitleClass, sectionTitleClass } from "@/lib/type";
+import { pageTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
 
 const footerIconLinkClass =
@@ -49,11 +46,7 @@ function KofiMark() {
   );
 }
 
-export function LandingView({
-  inviteHost = DEFAULT_INVITE_HOST,
-}: {
-  inviteHost?: string;
-}) {
+export function LandingView() {
   const [panel, setPanel] = useState<LandingPanel | null>(null);
   const [animate, setAnimate] = useState(false);
   const [hidePoster, setHidePoster] = useState(false);
@@ -163,7 +156,7 @@ export function LandingView({
         </LandingFold>
 
         <div className="flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
-          <Button asChild variant={panel === null || panel === "enter" ? "outline" : "default"}>
+          <Button asChild variant={panel === "create" ? "default" : "outline"}>
             <HashFocusLink
               href={landingPanelHash("create")}
               focusId={["plan", "create-trip-heading"]}
@@ -171,18 +164,7 @@ export function LandingView({
               aria-controls="create"
               onClick={() => reveal("create")}
             >
-              I&apos;m hosting
-            </HashFocusLink>
-          </Button>
-          <Button asChild variant={panel === null || panel === "create" ? "outline" : "default"}>
-            <HashFocusLink
-              href={landingPanelHash("enter")}
-              focusId={["trip-slug", "trip-entry-heading"]}
-              aria-expanded={panel === "enter"}
-              aria-controls="enter"
-              onClick={() => reveal("enter")}
-            >
-              I have an invite
+              Get started
             </HashFocusLink>
           </Button>
         </div>
@@ -196,28 +178,6 @@ export function LandingView({
           labelledBy="create-trip-heading"
         >
           <CreateTripForm />
-        </LandingPanelSection>
-
-        <LandingPanelSection
-          id="enter"
-          open={panel === "enter"}
-          animate={animate}
-          labelledBy="trip-entry-heading"
-        >
-          {LEGACY_PAGE_HASHES.map((hash) => (
-            <div key={hash} id={hash} className="scroll-mt-20" aria-hidden="true" />
-          ))}
-          <h2 id="trip-entry-heading" tabIndex={-1} className={sectionTitleClass}>
-            Enter your trip
-          </h2>
-          <p id="trip-entry-hint" className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Invite links look like{" "}
-            <span className="whitespace-nowrap font-mono text-foreground">
-              {inviteHost}/g/…
-            </span>
-            . Paste that URL. Older events may still use a trip name and password.
-          </p>
-          <TripEntryForm />
         </LandingPanelSection>
       </div>
 

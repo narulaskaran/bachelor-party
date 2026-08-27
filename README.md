@@ -7,8 +7,8 @@ Live: [party.narula.xyz](https://party.narula.xyz)
 
 ## Host
 
-Open the [site](https://party.narula.xyz), hit **I’m hosting**, paste a messy
-plan, and pick Night out or Weekend trip. The site turns what you wrote into
+Open the [site](https://party.narula.xyz), hit **Get started**, paste a messy
+plan, and pick Party or Group trip. The site turns what you wrote into
 a private draft. Review and edit on the host page, preview, then publish.
 Unknown times, places, addresses, and headcount stay blank until you fill
 them in. Nothing is published until you say so.
@@ -18,8 +18,8 @@ copy the unguessable guest link — that URL is the invite, with no password.
 
 ## Guest
 
-Open the guest link (or **I have an invite** on the homepage) and RSVP.
-Older events may still ask for a password.
+Open the guest link (`/g/…`) and RSVP. Older events may still ask for a
+password.
 
 ## Try it
 
