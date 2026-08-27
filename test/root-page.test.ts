@@ -243,6 +243,15 @@ describe("GET /", () => {
       /#site-nav-marketing \{\s*border-color: transparent;\s*background: transparent;/,
     );
   });
+
+  it("keeps the landing wash as a faint top-to-bottom fade, not a muted spotlight", () => {
+    const css = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+    const landing = css.slice(css.indexOf("body:has([data-landing-page]) {"));
+    expect(landing).toMatch(/linear-gradient\(\s*to bottom/);
+    expect(landing).toContain("color-mix(in srgb, var(--background) 92%, var(--muted))");
+    expect(landing).not.toMatch(/linear-gradient\(to bottom, var\(--background\), var\(--muted\)\)/);
+    expect(css).not.toContain("radial-gradient");
+  });
 });
 
 describe("GET /{slug} chrome", () => {

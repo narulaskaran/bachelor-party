@@ -120,6 +120,8 @@ describe("trip page polish", () => {
       }),
     );
     expect(html).toContain("Order is set — times may slip.");
+    expect(html).toContain("text-sm text-muted-foreground");
+    expect(html).not.toMatch(/text-xs text-muted-foreground[\s\S]*Order is set/);
     expect(html).not.toContain("Order locked, times loose");
   });
 

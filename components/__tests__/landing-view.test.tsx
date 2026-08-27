@@ -126,6 +126,11 @@ describe("homepage trip entry", () => {
     expect(draft.className).toMatch(/self-start/);
     expect(draft.className).toMatch(/w-fit/);
     expect(draft.className).not.toMatch(/(?:^|\s)w-full(?:\s|$)/);
+    const notes = screen.getByLabelText(/^your event notes$/i);
+    expect(notes.getAttribute("data-slot")).toBe("textarea");
+    expect(notes.className).toMatch(/focus-visible:border-ring/);
+    expect(notes.className).toMatch(/focus-visible:ring-ring\/50/);
+    expect(notes.className).not.toMatch(/focus-visible:ring-2(?:\s|$)/);
     expect(screen.getByText(/party\.narula\.xyz/i)).toBeTruthy();
     expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
   });

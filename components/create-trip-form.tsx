@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { EVENT_PRESET_LABELS, type EventPreset } from "@/lib/event-preset";
 import {
   createTripFromUi,
@@ -100,7 +101,7 @@ export function CreateTripForm({
           <label htmlFor="plan" className="text-sm font-medium">
             Your event notes
           </label>
-          <textarea
+          <Textarea
             id="plan"
             name="plan"
             rows={10}
@@ -108,7 +109,7 @@ export function CreateTripForm({
             placeholder={PLAN_PLACEHOLDER}
             aria-describedby="create-trip-hint create-trip-facts-hint"
             disabled={pending}
-            className="min-h-48 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-48"
           />
           <p id="create-trip-facts-hint" className="text-xs text-muted-foreground">
             Only facts you know. We won&apos;t invent a time, place, or headcount.

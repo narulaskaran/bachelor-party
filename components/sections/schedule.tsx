@@ -1,7 +1,7 @@
 import type { ScheduleDay } from "@/lib/party-types";
 import { KEY_EVENT_HINT, isKeyEvent, keyEventCount } from "@/lib/key-events";
 import { nonemptySchedule } from "@/lib/trip-sections";
-import { kickerClass, sectionTitleClass } from "@/lib/type";
+import { sectionTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
 
 export type SchedulePicker = {
@@ -43,7 +43,7 @@ export function ScheduleSection({
                     Day {String(dayIndex + 1).padStart(2, "0")}
                   </span>
                   <span className="text-lg font-semibold tracking-tight">{day.weekday}</span>
-                  <span className={kickerClass}>{formatDate(day.date)}</span>
+                  <span className="text-sm text-muted-foreground">{formatDate(day.date)}</span>
                   {headingLabel ? (
                     <span className="text-sm text-muted-foreground">{headingLabel}</span>
                   ) : null}
@@ -54,7 +54,7 @@ export function ScheduleSection({
                   ) : null}
                 </div>
                 {!day.timed && (
-                  <p className={cn("mt-1", kickerClass)}>Order is set — times may slip.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Order is set — times may slip.</p>
                 )}
               </div>
 
@@ -73,7 +73,7 @@ export function ScheduleSection({
                       <div className="flex gap-4">
                         <div
                           className={
-                            "w-14 shrink-0 font-mono text-xs sm:w-20 " +
+                            "w-20 shrink-0 font-mono text-sm " +
                             (key ? "text-primary" : "text-muted-foreground")
                           }
                         >

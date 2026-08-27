@@ -87,7 +87,11 @@ describe("CreateTripForm", () => {
     expect(notes.getAttribute("placeholder")).toBe("Friday drinks\nRita's on 6th\n7-ish");
     expect(notes.getAttribute("placeholder")).not.toMatch(/\bor\b/);
     expect(notes.getAttribute("placeholder")).not.toMatch(/Cabin weekend/);
+    expect(notes.getAttribute("data-slot")).toBe("textarea");
     expect(notes.className).toMatch(/placeholder:text-muted-foreground/);
+    expect(notes.className).toMatch(/focus-visible:border-ring/);
+    expect(notes.className).toMatch(/focus-visible:ring-ring\/50/);
+    expect(notes.className).not.toMatch(/focus-visible:ring-2(?:\s|$)/);
 
     const draft = screen.getByRole("button", { name: /turn into a draft/i });
     expect(draft.className).toMatch(/min-h-11/);
