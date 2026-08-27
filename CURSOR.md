@@ -9,7 +9,7 @@ amber primary). Tests: Vitest.
 Landing dump (server extracts facts via OpenRouter `z-ai/glm-5.3-flash`) →
 host editor at `/{slug}/host` → inert PartyView preview on
 that same page → publish → guest page at `/g/{token}`. Two presets, one
-Event: Night out (hero + RSVP) and Weekend trip (optional glance, schedule,
+Event: Party (hero + RSVP) and Group trip (optional glance, schedule,
 lodge, activities, pack). Empty blocks stay hidden. Pack checkoff is local
 per browser. RSVP identity is stored per event, never a leftover name from
 another trip. Who’s coming is queried for this invite only. Host Guest view opens the minted `/g/{token}` (unpublished

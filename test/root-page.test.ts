@@ -142,34 +142,31 @@ describe("GET /", () => {
     const html = renderToStaticMarkup(await Page());
 
     expect(html).toMatch(/The Big <span class="text-primary">Send<\/span>/);
-    expect(html).toContain("Enter your trip");
+    expect(html).not.toContain("Enter your trip");
+    expect(html).not.toContain("Enter your event");
     expect(html).not.toContain("Try a sample");
     expect(html).not.toContain("Try Demo");
     expect(html).toContain("Create an event");
     expect(html).toContain("data-landing-page");
     expect(html).toContain('href="#create"');
-    expect(html).toContain('href="#enter"');
-    expect(html).toContain("I have an invite");
-    expect(html).toContain("I&#x27;m hosting");
-    expect(html.match(/I&#x27;m hosting/g)).toHaveLength(1);
+    expect(html).toContain("Get started");
+    expect(html).not.toContain("I have an invite");
+    expect(html).not.toContain("I&#x27;m hosting");
+    expect(html).not.toContain("Enter an invite");
     expect(html).not.toContain("password-gated");
     expect(html).not.toMatch(/href="#rsvp"/);
+    expect(html).not.toContain('href="#enter"');
     expect(html).not.toContain("ADMIN_UI_PASSWORD");
     expect(html).not.toContain('href="/admin"');
     expect(html).not.toContain("PRIVATE_TRIP_VIEW");
     expect(html).not.toContain(TRIP_NAME);
     expect(html).not.toContain(SCHEDULE_TITLE);
     expect(html).not.toContain(LODGE_NAME);
-    expect(html).toContain("party.narula.xyz");
-    expect(html).toContain("/g/");
+    expect(html).not.toContain("trip-entry-hint");
     expect(html).not.toContain("yoursite.com");
-    expect(html).toMatch(
-      /trip-entry-hint[\s\S]*whitespace-nowrap font-mono[\s\S]*party\.narula\.xyz\/g\//,
-    );
-    expect(html).not.toMatch(/trip-entry-hint[\s\S]*<wbr\/?>/);
   });
 
-  it("landing invite hint uses the request host so previews stay accurate", async () => {
+  it("does not show an invite-entry host on the landing page", async () => {
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) =>
         name === "x-forwarded-host" ? "preview.example" : null,
@@ -178,23 +175,10 @@ describe("GET /", () => {
 
     const html = renderToStaticMarkup(await Page());
 
-    expect(html).toContain("preview.example");
-    expect(html).toContain("/g/");
-    expect(html).not.toContain("yoursite.com");
-  });
-
-  it("landing invite hint uses party.narula.xyz when the request is the old Vercel alias", async () => {
-    vi.mocked(headers).mockResolvedValue({
-      get: (name: string) =>
-        name === "x-forwarded-host" ? "bachelor-party-eight.vercel.app" : null,
-    } as never);
-    vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
-
-    const html = renderToStaticMarkup(await Page());
-
-    expect(html).toContain("party.narula.xyz");
-    expect(html).toContain("/g/");
-    expect(html).not.toContain("bachelor-party-eight.vercel.app/your-trip");
+    expect(html).not.toContain("preview.example");
+    expect(html).not.toContain("trip-entry-hint");
+    expect(html).not.toContain("I have an invite");
+    expect(html).toContain("Get started");
   });
 
   it("root layout chrome stays marketing when a leftover access cookie is set", async () => {
@@ -236,7 +220,9 @@ describe("GET /", () => {
     expect(html).toContain("Try Demo");
     expect(html).toContain('href="/demo"');
     expect(html).not.toContain("Try a sample");
-    expect(html).toContain("I&#x27;m hosting");
+    expect(html).toContain("Get started");
+    expect(html).not.toContain("I&#x27;m hosting");
+    expect(html).not.toContain("I have an invite");
     expect(html).toContain('href="#create"');
     expect(html).not.toContain('href="/#create"');
     expect(html).not.toContain("Create a trip</a>");

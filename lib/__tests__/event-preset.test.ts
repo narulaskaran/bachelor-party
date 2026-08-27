@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { EVENT_PRESET_LABELS, parseEventPreset, showWeekendEditorBlock, weekendBlocksFilled } from "@/lib/event-preset";
+import {
+  EVENT_PRESET_HINTS,
+  EVENT_PRESET_LABELS,
+  EVENT_PRESET_PLACEHOLDERS,
+  parseEventPreset,
+  showWeekendEditorBlock,
+  weekendBlocksFilled,
+} from "@/lib/event-preset";
 import type { PartyContent } from "@/lib/party-types";
 
 const night: PartyContent = { kind: "trip", preset: "night-out", trip: { siteName: "Thursday dinner" } };
@@ -15,7 +22,16 @@ describe("event presets", () => {
   it("defaults unknown values to weekend without inventing blocks", () => {
     expect(parseEventPreset(undefined)).toBe("weekend");
     expect(parseEventPreset("night-out")).toBe("night-out");
-    expect(EVENT_PRESET_LABELS["night-out"]).toBe("Night out");
+    expect(EVENT_PRESET_LABELS["night-out"]).toBe("Party");
+    expect(EVENT_PRESET_LABELS.weekend).toBe("Group trip");
+    expect(EVENT_PRESET_HINTS["night-out"]).toBe("Details + RSVP");
+    expect(EVENT_PRESET_HINTS.weekend).toBe("Adds schedule, lodge, activities, pack");
+    expect(EVENT_PRESET_PLACEHOLDERS["night-out"]).toBe(
+      "Friday drinks at Rita's on 6th around 7. I don't have the exact address yet.",
+    );
+    expect(EVENT_PRESET_PLACEHOLDERS.weekend).toBe(
+      "Long weekend upstate Friday through Sunday. Cabin if I can find one, hike Saturday.",
+    );
     expect(weekendBlocksFilled(night)).toEqual([]);
   });
 

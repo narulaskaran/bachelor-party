@@ -3,17 +3,16 @@ import { landingPanelHash, panelFromHash } from "@/lib/landing-panel";
 import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
 
 describe("panelFromHash", () => {
-  it("maps create and enter hashes", () => {
+  it("maps the create hash and ignores invite leftovers", () => {
     expect(panelFromHash("#create")).toBe("create");
     expect(panelFromHash("create")).toBe("create");
-    expect(panelFromHash("#enter")).toBe("enter");
+    expect(panelFromHash("#enter")).toBeNull();
     expect(landingPanelHash("create")).toBe("#create");
-    expect(landingPanelHash("enter")).toBe("#enter");
   });
 
-  it("opens the invite panel for retired page hashes", () => {
+  it("does not open a landing panel for retired page hashes", () => {
     for (const hash of LEGACY_PAGE_HASHES) {
-      expect(panelFromHash(`#${hash}`), `#${hash}`).toBe("enter");
+      expect(panelFromHash(`#${hash}`), `#${hash}`).toBeNull();
     }
   });
 

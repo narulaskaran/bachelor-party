@@ -111,7 +111,7 @@ export type RsvpConfig = {
 
 export type PartyContent = {
   kind?: TripKind;
-  /** Night out (details + RSVP) or weekend (optional schedule/lodge/activities/pack). */
+  /** Party (details + RSVP) or group trip (optional schedule/lodge/activities/pack). */
   preset?: EventPreset;
   trip: Trip;
   presentation?: { style: "clean" | "editorial" };

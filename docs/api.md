@@ -18,7 +18,7 @@ Create accepts either a **plan dump** (`plan`, optional `preset` of
 `night-out` | `weekend`, optional `siteName`, optional `startDate` /
 `endDate` overrides) or structured `content` (the only required structured
 field is `content.trip.siteName`). A plan dump reuses `ingestEventPlan` —
-the same path as the landing “Turn into a draft” button. The server asks
+the same path as the landing “Create draft” button. The server asks
 OpenRouter (`z-ai/glm-5.3-flash`, `OPENROUTER_API_KEY`) to extract only
 facts the host wrote, then maps that JSON into `PartyContent` +
 `draftReview`. It never invents time, place, address, or headcount.
@@ -76,7 +76,7 @@ first. Each version: `id`, `version` (per-party 1, 2, 3, …), `state`
 only). There is intentionally no restore endpoint yet.
 
 ```bash
-# Dump a messy plan into an unpublished draft (same as landing “Turn into a draft”)
+# Dump a messy plan into an unpublished draft (same as landing “Create draft”)
 curl https://your-deploy.vercel.app/api/admin/trips \
   -H "Content-Type: application/json" \
   -d '{"plan":"Cabin weekend\nLocation: Denver, CO\n2026-09-04 7:00 PM — arrive","preset":"weekend"}'

@@ -51,6 +51,51 @@ describe("in-page navigation", () => {
     expect(document.getElementById("rsvp")?.getAttribute("tabindex")).toBe("-1");
   });
 
+  it("skips focusing a text field on a phone and uses the heading fallback", () => {
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    const section = document.createElement("section");
+    section.id = "create";
+    const heading = document.createElement("h2");
+    heading.id = "create-trip-heading";
+    heading.tabIndex = -1;
+    heading.textContent = "Create an event";
+    const notes = document.createElement("textarea");
+    notes.id = "plan";
+    document.body.append(section, heading, notes);
+
+    render(
+      <HashFocusLink href="#create" focusId={["plan", "create-trip-heading"]}>
+        Get started
+      </HashFocusLink>,
+    );
+    fireEvent.click(screen.getByRole("link", { name: "Get started" }));
+
+    expect(window.location.hash).toBe("#create");
+    expect(document.activeElement).toBe(heading);
+    expect(document.activeElement).not.toBe(notes);
+  });
+
+  it("focuses the text field on a desktop viewport", () => {
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
+    const section = document.createElement("section");
+    section.id = "create";
+    const heading = document.createElement("h2");
+    heading.id = "create-trip-heading";
+    heading.tabIndex = -1;
+    const notes = document.createElement("textarea");
+    notes.id = "plan";
+    document.body.append(section, heading, notes);
+
+    render(
+      <HashFocusLink href="#create" focusId={["plan", "create-trip-heading"]}>
+        Get started
+      </HashFocusLink>,
+    );
+    fireEvent.click(screen.getByRole("link", { name: "Get started" }));
+
+    expect(document.activeElement).toBe(notes);
+  });
+
   it("uses instant scrolling when reduced motion is preferred", async () => {
     vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
     const user = userEvent.setup();

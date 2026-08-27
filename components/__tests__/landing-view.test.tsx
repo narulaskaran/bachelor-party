@@ -10,7 +10,10 @@ import {
   LANDING_PANEL_MOTION_MS,
   landingPanelMotionClass,
 } from "@/components/landing-panel-section";
-import { LEGACY_PAGE_HASHES } from "@/lib/legacy-page-redirects";
+import {
+  EVENT_PRESET_HINTS,
+  EVENT_PRESET_PLACEHOLDERS,
+} from "@/lib/event-preset";
 
 const push = vi.fn();
 
@@ -67,13 +70,19 @@ function expectPanel(id: string, open: boolean) {
   expect(el?.getAttribute("aria-hidden")).toBe(open ? null : "true");
 }
 
+function setViewport(width: number, height = 844) {
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: height });
+}
+
 const scrollIntoView = vi.fn();
 
-describe("homepage trip entry", () => {
+describe("homepage create", () => {
   beforeEach(() => {
     push.mockReset();
     cleanup();
     resetHash();
+    setViewport(1440, 900);
     scrollIntoView.mockReset();
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
   });
@@ -82,36 +91,32 @@ describe("homepage trip entry", () => {
     vi.unstubAllGlobals();
   });
 
-  it("offers equal host and invite CTAs without a demo path in the hero", () => {
+  it("shows Get started only — no invite tab or hosting/invite toggle", () => {
     const { container } = render(<LandingView />);
 
-    const hosting = screen.getByRole("link", { name: /^i.m hosting$/i });
-    const invite = screen.getByRole("link", { name: /^i have an invite$/i });
-    expect(hosting.getAttribute("href")).toBe("#create");
-    expect(invite.getAttribute("href")).toBe("#enter");
-    expect(hosting.closest("[data-slot=button]")).toBeTruthy();
-    expect(invite.closest("[data-slot=button]")).toBeTruthy();
-    expect(hosting.closest("[data-slot=button]")!.className).toMatch(/min-h-11/);
-    expect(invite.closest("[data-slot=button]")!.className).toMatch(/min-h-11/);
-    expect(hosting.getAttribute("aria-expanded")).toBe("false");
-    expect(invite.getAttribute("aria-expanded")).toBe("false");
-    expect(hosting.closest("[data-slot=button]")?.getAttribute("data-variant")).toBe("outline");
-    expect(invite.closest("[data-slot=button]")?.getAttribute("data-variant")).toBe("outline");
+    const start = screen.getByRole("link", { name: /^get started$/i });
+    expect(start.getAttribute("href")).toBe("#create");
+    expect(start.closest("[data-slot=button]")).toBeTruthy();
+    expect(start.closest("[data-slot=button]")!.className).toMatch(/min-h-11/);
+    expect(start.getAttribute("aria-expanded")).toBe("false");
+    expect(start.closest("[data-slot=button]")?.getAttribute("data-variant")).toBe("outline");
+    expect(screen.getAllByRole("link", { name: /^get started$/i })).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: /^i.m hosting$/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^i have an invite$/i })).toBeNull();
     expect(panelEl("create")).toBeTruthy();
-    expect(panelEl("enter")).toBeTruthy();
+    expect(panelEl("enter")).toBeNull();
     expectPanel("create", false);
-    expectPanel("enter", false);
     expect(screen.queryByRole("heading", { name: /^create an event$/i })).toBeNull();
-    expect(screen.queryByRole("heading", { name: /enter your trip/i })).toBeNull();
+    expect(screen.queryByRole("heading", { name: /enter your (trip|event)/i })).toBeNull();
+    expect(screen.queryByLabelText(/invite link/i)).toBeNull();
     expect(screen.queryByRole("link", { name: /^try a sample$/i })).toBeNull();
     expect(screen.queryByRole("link", { name: /^try demo$/i })).toBeNull();
     expect(container.innerHTML).not.toContain("ADMIN_UI_PASSWORD");
     expect(container.innerHTML).not.toContain('href="/admin"');
     expect(container.innerHTML).not.toContain("password-gated");
     expect(container.innerHTML).not.toMatch(/#rsvp"/);
-    expect(invite.getAttribute("href")).not.toBe("#rsvp");
+    expect(container.innerHTML).not.toContain('href="#enter"');
     expect(container.querySelector("legend")).toBeNull();
-    expect(screen.getAllByRole("link", { name: /^i.m hosting$/i })).toHaveLength(1);
   });
 
   it("is a quiet centered tool page, not a poster", () => {
@@ -140,128 +145,61 @@ describe("homepage trip entry", () => {
     expect(posterInner?.className).toMatch(/text-center/);
   });
 
-  it("renders a trip-entry form on every legacy hash the old pages 307 to", () => {
+  it("keeps create-form chrome without dump subtitle, invent hint, or invite copy", () => {
     render(<LandingView />);
 
-    for (const hash of LEGACY_PAGE_HASHES) {
-      expect(document.getElementById(hash), `#${hash}`).toBeTruthy();
-    }
-    expect(screen.getByLabelText(/invite link or trip name/i)).toBeTruthy();
-    expect(screen.getByRole("button", { name: /open trip/i, hidden: true })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /open trip/i, hidden: true }).className).toMatch(
-      /min-h-11/,
-    );
-    const draft = screen.getByRole("button", { name: /turn into a draft/i, hidden: true });
+    const draft = screen.getByRole("button", { name: /^create draft$/i, hidden: true });
     expect(draft.className).toMatch(/min-h-11/);
     expect(draft.className).toMatch(/self-start/);
     expect(draft.className).toMatch(/w-fit/);
     expect(draft.className).not.toMatch(/(?:^|\s)w-full(?:\s|$)/);
-    const notes = screen.getByLabelText(/^your event notes$/i);
+    const notes = screen.getByLabelText(/^describe your event$/i);
     expect(notes.getAttribute("data-slot")).toBe("textarea");
     expect(notes.className).toMatch(/focus-visible:border-ring/);
     expect(notes.className).toMatch(/focus-visible:ring-ring\/50/);
     expect(notes.className).not.toMatch(/focus-visible:ring-2(?:\s|$)/);
-    expect(screen.getByText(/party\.narula\.xyz/i)).toBeTruthy();
-    expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
+    expect(screen.queryByText(/dump what you know/i)).toBeNull();
+    expect(screen.queryByText(/won.t invent a time, place, or headcount/i)).toBeNull();
+    expect(screen.queryByText(/older events may still/i)).toBeNull();
+    expect(document.getElementById("create-trip-hint")).toBeNull();
+    expect(document.getElementById("create-trip-facts-hint")).toBeNull();
   });
 
-  it("shows a request-host invite example when provided", () => {
-    render(<LandingView inviteHost="preview.example" />);
-
-    expect(screen.getByText(/preview\.example/i)).toBeTruthy();
-    expect(screen.queryByText(/yoursite\.com/i)).toBeNull();
-  });
-
-  it("does not advertise the retired Vercel production alias as the invite host", () => {
-    render(<LandingView />);
-
-    expect(screen.getByText(/party\.narula\.xyz/i)).toBeTruthy();
-    expect(screen.queryByText(/bachelor-party-eight\.vercel\.app/i)).toBeNull();
-  });
-
-  it("keeps the invite example URL as one nowrap token", () => {
-    const { container } = render(<LandingView />);
-    const example = container.querySelector("#trip-entry-hint .font-mono");
-
-    expect(example?.textContent).toBe("party.narula.xyz/g/…");
-    expect(example?.innerHTML).not.toContain("<wbr>");
-    expect(example?.querySelector(".whitespace-nowrap")).toBeNull();
-    expect(example?.className).toMatch(/whitespace-nowrap/);
-  });
-
-  it("navigates to /{slug} when the form is submitted", async () => {
+  it("reveals and focuses Describe your event after Get started on desktop", async () => {
     const user = userEvent.setup();
     render(<LandingView />);
 
-    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
-    await user.type(screen.getByLabelText(/invite link or trip name/i), "jackson-hole-26");
-    await user.click(screen.getByRole("button", { name: /open trip/i }));
-
-    expect(push).toHaveBeenCalledWith("/jackson-hole-26");
-  });
-
-  it("navigates using a pasted invite URL", async () => {
-    const user = userEvent.setup();
-    render(<LandingView />);
-
-    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
-    await user.type(
-      screen.getByLabelText(/invite link or trip name/i),
-      "https://example.com/cabin-weekend",
-    );
-    await user.click(screen.getByRole("button", { name: /open trip/i }));
-
-    expect(push).toHaveBeenCalledWith("/cabin-weekend");
-  });
-
-  it("reveals and focuses the notes field after I'm hosting", async () => {
-    const user = userEvent.setup();
-    render(<LandingView />);
-
-    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+    await user.click(screen.getByRole("link", { name: /^get started$/i }));
 
     expectPanel("create", true);
-    expectPanel("enter", false);
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
-    expect(screen.getByRole("link", { name: /^i.m hosting$/i }).getAttribute("aria-expanded")).toBe(
+    expect(screen.getByRole("link", { name: /^get started$/i }).getAttribute("aria-expanded")).toBe(
       "true",
     );
     expect(screen.getByRole("heading", { name: /^create an event$/i })).toBeTruthy();
-    expect(document.activeElement).toBe(screen.getByLabelText(/^your event notes$/i));
+    expect(document.activeElement).toBe(screen.getByLabelText(/^describe your event$/i));
   });
 
-  it("reveals and focuses the invite field after I have an invite", async () => {
+  it("opens create on a phone without focusing the notes field", async () => {
+    setViewport(390, 844);
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        matches: query.includes("(pointer: coarse)") || query.includes("(max-width: 639px)"),
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
     const user = userEvent.setup();
     render(<LandingView />);
 
-    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
+    await user.click(screen.getByRole("link", { name: /^get started$/i }));
 
-    expectPanel("enter", true);
-    expectPanel("create", false);
+    expectPanel("create", true);
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
-    expect(screen.getByRole("link", { name: /^i have an invite$/i }).getAttribute("aria-expanded")).toBe(
-      "true",
-    );
-    expect(document.activeElement).toBe(screen.getByLabelText(/invite link or trip name/i));
-  });
-
-  it("switches from host to invite without keeping both forms in the a11y tree", async () => {
-    const user = userEvent.setup();
-    render(<LandingView />);
-
-    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
-    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
-
-    expectPanel("create", false);
-    expectPanel("enter", true);
-    expect(screen.queryByRole("heading", { name: /^create an event$/i })).toBeNull();
-    expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /^i.m hosting$/i }).closest("[data-slot=button]")?.getAttribute("data-variant")).toBe(
-      "outline",
-    );
-    expect(screen.getByRole("link", { name: /^i have an invite$/i }).closest("[data-slot=button]")?.getAttribute("data-variant")).toBe(
-      "default",
-    );
+    expect(document.activeElement).not.toBe(screen.getByLabelText(/^describe your event$/i));
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: /^create an event$/i }));
   });
 
   it("opens the create form when the URL hash is #create", () => {
@@ -274,22 +212,24 @@ describe("homepage trip entry", () => {
     expect(hero?.className).toMatch(/py-4/);
     expect(hero?.className).not.toMatch(/py-16/);
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
-    expect(screen.getByRole("link", { name: /^i.m hosting$/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /^get started$/i })).toBeTruthy();
   });
 
-  it("opens the invite form from a legacy page hash", () => {
-    window.history.replaceState(null, "", "/#rsvp");
+  it("does not revive an invite panel from a leftover #enter hash", () => {
+    window.history.replaceState(null, "", "/#enter");
     render(<LandingView />);
 
-    expectPanel("enter", true);
-    expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
+    expectPanel("create", false);
+    expect(panelEl("enter")).toBeNull();
+    expect(screen.queryByRole("heading", { name: /enter your (trip|event)/i })).toBeNull();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
   });
 
   it("hides the form again when the hash is cleared", async () => {
     const user = userEvent.setup();
     render(<LandingView />);
 
-    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+    await user.click(screen.getByRole("link", { name: /^get started$/i }));
     expectPanel("create", true);
 
     await act(async () => {
@@ -302,7 +242,7 @@ describe("homepage trip entry", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("The Big Send");
   });
 
-  it("collapses the hero while create or enter is open and still animates the panel", async () => {
+  it("collapses the hero while create is open and still animates the panel", async () => {
     const user = userEvent.setup();
     const { container } = render(<LandingView />);
     const hero = container.querySelector("h1")?.closest("section");
@@ -317,7 +257,7 @@ describe("homepage trip entry", () => {
 
     await waitForLandingMotion();
 
-    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+    await user.click(screen.getByRole("link", { name: /^get started$/i }));
 
     expect(hero?.className).not.toMatch(/py-16/);
     expect(hero?.className).not.toMatch(/sm:py-24/);
@@ -334,30 +274,20 @@ describe("homepage trip entry", () => {
     expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(false);
     expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(false);
     expect(container.querySelector("legend")).toBeNull();
-    expect(screen.getAllByRole("link", { name: /^i.m hosting$/i })).toHaveLength(1);
-    expect(screen.getByRole("link", { name: /^i.m hosting$/i })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /^i have an invite$/i })).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: /^get started$/i })).toHaveLength(1);
     expect(panelFold("create")?.className).toMatch(/transition-\[grid-template-rows,opacity\]/);
     expect(panelFold("create")?.className).toMatch(/motion-reduce:transition-none/);
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+    expect(screen.getByRole("radio", { name: /party/i })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /group trip/i })).toBeTruthy();
+    expect(screen.getByText(EVENT_PRESET_HINTS["night-out"])).toBeTruthy();
+    expect(screen.getByText(EVENT_PRESET_HINTS.weekend)).toBeTruthy();
 
     await settlePosterHide();
 
     expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(true);
     expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(true);
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
-
-    const posterClass = poster?.className;
-    const heroClass = hero?.className;
-    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
-
-    expect(poster?.className).toBe(posterClass);
-    expect(hero?.className).toBe(heroClass);
-    expect(hero?.className).toMatch(/py-4/);
-    expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(true);
-    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
-    expect(screen.getByRole("link", { name: /^i.m hosting$/i })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
   });
 
   it("puts quiet GitHub and Ko-fi icon links in the footer, not View on GitHub text", () => {
@@ -395,7 +325,7 @@ describe("homepage trip entry", () => {
     const posterInner = poster?.querySelector(":scope > div > div");
 
     await waitForLandingMotion();
-    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+    await user.click(screen.getByRole("link", { name: /^get started$/i }));
     await settlePosterHide();
 
     await act(async () => {
@@ -428,7 +358,7 @@ describe("homepage trip entry", () => {
     const { container } = render(<LandingView />);
 
     await waitForLandingMotion();
-    await user.click(screen.getByRole("link", { name: /^i.m hosting$/i }));
+    await user.click(screen.getByRole("link", { name: /^get started$/i }));
 
     expect(container.querySelector("h1")?.hasAttribute("hidden")).toBe(true);
     expect(screen.getByText(/paste a messy plan/i).hasAttribute("hidden")).toBe(true);
@@ -438,20 +368,14 @@ describe("homepage trip entry", () => {
     );
   });
 
-  it("wires enter errors to the invite field", async () => {
+  it("uses the Group trip placeholder until Party is selected", async () => {
     const user = userEvent.setup();
     render(<LandingView />);
+    await user.click(screen.getByRole("link", { name: /^get started$/i }));
 
-    await user.click(screen.getByRole("link", { name: /^i have an invite$/i }));
-    await user.type(screen.getByLabelText(/invite link or trip name/i), "!!!");
-    await user.click(screen.getByRole("button", { name: /open trip/i }));
-
-    const input = screen.getByLabelText(/invite link or trip name/i);
-    const alert = screen.getByRole("alert");
-    expect(alert.id).toBe("trip-entry-error");
-    expect(input.getAttribute("aria-invalid")).toBe("true");
-    expect(input.getAttribute("aria-describedby")).toContain("trip-entry-error");
-    expect(input.getAttribute("aria-describedby")).toContain("trip-entry-hint");
-    expect(push).not.toHaveBeenCalled();
+    const notes = screen.getByLabelText(/^describe your event$/i);
+    expect(notes.getAttribute("placeholder")).toBe(EVENT_PRESET_PLACEHOLDERS.weekend);
+    await user.click(screen.getByRole("radio", { name: /party/i }));
+    expect(notes.getAttribute("placeholder")).toBe(EVENT_PRESET_PLACEHOLDERS["night-out"]);
   });
 });
