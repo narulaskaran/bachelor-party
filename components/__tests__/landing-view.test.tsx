@@ -331,9 +331,9 @@ describe("homepage trip entry", () => {
     expect(kofi.querySelector("svg")?.getAttribute("viewBox")).toBe("0 0 24 24");
     expect(github.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
     expect(kofi.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
-    expect(github.querySelector("svg")?.className).toMatch(/size-6/);
-    expect(github.querySelector("svg")?.className).toMatch(/fill-current/);
-    expect(kofi.querySelector("svg")?.className).toMatch(/fill-current/);
+    expect(github.querySelector("svg")?.getAttribute("class")).toMatch(/size-6/);
+    expect(github.querySelector("svg")?.getAttribute("class")).toMatch(/fill-current/);
+    expect(kofi.querySelector("svg")?.getAttribute("class")).toMatch(/fill-current/);
     expect(github.closest("footer")).toBeTruthy();
     expect(github.parentElement?.className).toMatch(/justify-center/);
   });
