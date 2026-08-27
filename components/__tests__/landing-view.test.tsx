@@ -311,6 +311,33 @@ describe("homepage trip entry", () => {
     expect(screen.getByRole("heading", { name: /enter your trip/i })).toBeTruthy();
   });
 
+  it("puts quiet GitHub and Ko-fi icon links in the footer, not View on GitHub text", () => {
+    render(<LandingView />);
+
+    expect(screen.queryByText(/view on github/i)).toBeNull();
+
+    const github = screen.getByRole("link", { name: "GitHub" });
+    const kofi = screen.getByRole("link", { name: "Ko-fi" });
+    expect(github.getAttribute("href")).toBe("https://github.com/narulaskaran/bachelor-party");
+    expect(kofi.getAttribute("href")).toBe("https://ko-fi.com/Y8Y21CC8IA");
+    expect(github.getAttribute("target")).toBe("_blank");
+    expect(kofi.getAttribute("target")).toBe("_blank");
+    expect(github.className).toMatch(/size-11/);
+    expect(kofi.className).toMatch(/size-11/);
+    expect(github.className).toMatch(/text-muted-foreground/);
+    expect(github.className).toMatch(/hover:text-foreground/);
+    expect(github.className).not.toMatch(/hover:text-primary/);
+    expect(github.querySelector("svg")?.getAttribute("viewBox")).toBe("0 0 496 512");
+    expect(kofi.querySelector("svg")?.getAttribute("viewBox")).toBe("0 0 24 24");
+    expect(github.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(kofi.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(github.querySelector("svg")?.className).toMatch(/size-6/);
+    expect(github.querySelector("svg")?.className).toMatch(/fill-current/);
+    expect(kofi.querySelector("svg")?.className).toMatch(/fill-current/);
+    expect(github.closest("footer")).toBeTruthy();
+    expect(github.parentElement?.className).toMatch(/justify-center/);
+  });
+
   it("wires enter errors to the invite field", async () => {
     const user = userEvent.setup();
     render(<LandingView />);
