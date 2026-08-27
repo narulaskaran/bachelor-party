@@ -132,6 +132,12 @@ describe("homepage trip entry", () => {
     expect(html).toContain("Paste a messy plan");
     expect(html).toContain("py-16");
     expect(html).toContain("sm:py-24");
+
+    const tagline = screen.getByText(/paste a messy plan/i);
+    expect(tagline.className).toMatch(/max-w-xl/);
+    expect(tagline.className).toMatch(/mx-auto/);
+    const posterInner = container.querySelector("[data-landing-poster] > div > div");
+    expect(posterInner?.className).toMatch(/text-center/);
   });
 
   it("renders a trip-entry form on every legacy hash the old pages 307 to", () => {

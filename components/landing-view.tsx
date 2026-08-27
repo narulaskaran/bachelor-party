@@ -147,7 +147,7 @@ export function LandingView({
           animate={animate}
           closedTranslateClass="-translate-y-2"
           className="w-full"
-          innerClassName="mb-10"
+          innerClassName="mb-10 text-center"
           aria-hidden={compact || undefined}
           inert={compact || undefined}
         >
@@ -156,7 +156,7 @@ export function LandingView({
           </h1>
           <p
             hidden={posterHidden}
-            className="mt-4 max-w-xl text-sm text-muted-foreground sm:text-base"
+            className="mx-auto mt-4 max-w-xl text-sm text-muted-foreground sm:text-base"
           >
             Paste a messy plan. Review it on the site. Send a private guest page.
           </p>
