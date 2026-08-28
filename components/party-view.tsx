@@ -26,6 +26,7 @@ export function PartyView({
     <PartyChrome
       content={content}
       slug={slug}
+      preview={preview}
       rsvp={
         <RsvpSection
           sample={sample}

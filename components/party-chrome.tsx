@@ -15,11 +15,14 @@ export function PartyChrome({
   slug,
   rsvp,
   hashFocus = true,
+  preview = false,
 }: {
   content: PartyContent;
   slug?: string;
   rsvp: ReactNode;
   hashFocus?: boolean;
+  /** Host guest preview — pack is a static list, not a checkoff. */
+  preview?: boolean;
 }) {
   const sections = visibleSections(content);
   const footerBits = [
@@ -50,7 +53,7 @@ export function PartyChrome({
         <BasecampSection trip={content.trip} lodging={content.lodging} />
       ) : null}
       {sections.packing && content.packing ? (
-        <PackingSection packing={content.packing} slug={slug ?? ""} />
+        <PackingSection packing={content.packing} slug={slug ?? ""} preview={preview} />
       ) : null}
       {rsvp}
 

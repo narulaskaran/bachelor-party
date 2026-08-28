@@ -33,16 +33,7 @@ function HadField({
   return <input type="hidden" name={`had:${name}`} value="1" />;
 }
 
-export function RsvpForm({
-  pollActivities,
-  airport,
-  existing,
-  rsvpConfig = {},
-  sample = false,
-  preview = false,
-  inviteToken,
-  extras = { flights: Boolean(airport), food: false, votes: pollActivities.length > 0, notes: false },
-}: {
+type RsvpFormProps = {
   pollActivities: Activity[];
   airport?: string;
   existing?: RsvpPrefill | null;
@@ -51,8 +42,28 @@ export function RsvpForm({
   preview?: boolean;
   inviteToken?: string;
   extras?: { flights: boolean; food: boolean; votes: boolean; notes: boolean };
-}) {
-  const locked = sample || preview;
+};
+
+export function RsvpForm({ preview = false, ...props }: RsvpFormProps) {
+  if (preview) return <RsvpFormPreview />;
+  return <LiveRsvpForm {...props} />;
+}
+
+/** Host guest preview — heading / description / who's coming live in RsvpSectionView. */
+function RsvpFormPreview() {
+  return <div data-rsvp-preview-static="" />;
+}
+
+function LiveRsvpForm({
+  pollActivities,
+  airport,
+  existing,
+  rsvpConfig = {},
+  sample = false,
+  inviteToken,
+  extras = { flights: Boolean(airport), food: false, votes: pollActivities.length > 0, notes: false },
+}: Omit<RsvpFormProps, "preview">) {
+  const locked = sample;
   const [state, formAction, isPending] = useActionState(
     sample ? submitSampleGuestInfo : submitGuestInfo,
     null,

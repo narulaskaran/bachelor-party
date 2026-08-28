@@ -22,6 +22,7 @@ export function HostPartyPreview({
       content={content}
       slug={slug}
       hashFocus={false}
+      preview
       rsvp={
         <RsvpSectionView
           sample={sample}

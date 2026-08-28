@@ -120,4 +120,22 @@ describe("PackingSection", () => {
     container.remove();
     consoleError.mockRestore();
   });
+
+  it("host preview lists items as text without checkboxes or packing-storage writes", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <PackingSection preview slug="demo" packing={items} />,
+    );
+
+    expect(screen.getByText("Pack")).toBeTruthy();
+    expect(screen.getByText("Government ID")).toBeTruthy();
+    expect(screen.getByText("Nights drop below 40")).toBeTruthy();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(container.querySelector("[data-slot=checkbox]")).toBeNull();
+    expect(container.querySelector("input")).toBeNull();
+    expect(container.querySelector("button")).toBeNull();
+
+    await user.click(screen.getByText("Government ID"));
+    expect(window.localStorage.getItem(packingStorageKey("demo"))).toBeNull();
+  });
 });
