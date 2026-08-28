@@ -149,4 +149,12 @@ describe("HostWorkspace layout and preview", () => {
     expect(screen.queryByText(/private host workspace/i)).toBeNull();
     expect(screen.queryByText(/check every extracted fact/i)).toBeNull();
   });
+
+  it("does not crash when Event title is cleared; preview and header use Untitled event", async () => {
+    renderWorkspace();
+    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "" } });
+    await waitFor(() => expect(screen.getByText(/PREVIEW:Untitled event/)).toBeTruthy());
+    expect((screen.getByLabelText("Event title") as HTMLInputElement).value).toBe("");
+    expect(screen.getByRole("heading", { name: "Untitled event" })).toBeTruthy();
+  });
 });

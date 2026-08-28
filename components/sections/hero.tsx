@@ -1,4 +1,4 @@
-import type { GuestUpdate, Trip } from "@/lib/party-types";
+import { eventTitleOrFallback, type GuestUpdate, type Trip } from "@/lib/party-types";
 import { Countdown } from "@/components/countdown";
 import { formatGuestWhen, formatGuestWhere, GUEST_WHEN_PLACEHOLDER } from "@/lib/guest-when";
 import { guestUpdateRelativeLabel } from "@/lib/guest-update";
@@ -19,7 +19,7 @@ export function Hero({
 
   return (
     <section className="py-10 sm:py-14">
-      <h1 className={cn(pageTitleClass, "break-words")}>{trip.siteName}</h1>
+      <h1 className={cn(pageTitleClass, "break-words")}>{eventTitleOrFallback(trip.siteName)}</h1>
       {trip.tagline ? (
         <p className="mt-3 max-w-xl text-muted-foreground">{trip.tagline}</p>
       ) : null}

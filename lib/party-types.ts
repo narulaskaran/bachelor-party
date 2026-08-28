@@ -47,6 +47,13 @@ export type Trip = {
   airport?: string;
 };
 
+/** Preview/header fallback when the live editor title is empty. Save can still require a name. */
+export const UNTITLED_EVENT_TITLE = "Untitled event";
+
+export function eventTitleOrFallback(name: string | undefined): string {
+  return name?.trim() || UNTITLED_EVENT_TITLE;
+}
+
 export type Lodging = {
   name: string;
   url?: string;

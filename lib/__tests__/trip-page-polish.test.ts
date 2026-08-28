@@ -93,6 +93,13 @@ describe("trip page polish", () => {
     expect(html).not.toContain("Group Trip");
   });
 
+  it("shows Untitled event when the live hero title is empty", () => {
+    const html = renderToStaticMarkup(
+      createElement(Hero, { trip: { siteName: "" } }),
+    );
+    expect(html).toContain("Untitled event");
+  });
+
   it("lets hero coordinates wrap", () => {
     const trip = {
       siteName: "X",

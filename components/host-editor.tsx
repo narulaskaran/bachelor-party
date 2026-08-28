@@ -177,7 +177,7 @@ export function HostEditor({
     setContent((current) => {
       const next = {
         ...current,
-        trip: { ...current.trip, [field]: value || undefined },
+        trip: { ...current.trip, [field]: field === "siteName" ? value : value || undefined },
       };
       if (!current.draftReview) return next;
       return {
@@ -359,7 +359,7 @@ export function HostEditor({
         <form className="space-y-8" onSubmit={submit} onChange={handleFormChange}>
           <fieldset disabled={isPending || sample} className="space-y-6">
             <legend className="text-lg font-semibold">Event basics</legend>
-            <Field label="Event title" name="siteName" value={trip.siteName} required onChange={(value) => updateTrip("siteName", value)} />
+            <Field label="Event title" name="siteName" value={trip.siteName ?? ""} required onChange={(value) => updateTrip("siteName", value)} />
             <Field label="Tagline" name="tagline" value={trip.tagline ?? ""} onChange={(value) => updateTrip("tagline", value)} />
             <div className="grid gap-4 sm:grid-cols-2">
               <div>

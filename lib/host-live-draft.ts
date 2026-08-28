@@ -11,7 +11,7 @@ import {
   type ScheduleEditorRow,
 } from "@/lib/schedule-rows";
 import { settledTimeZone } from "@/lib/timezones";
-import type { PartyContent } from "@/lib/party-types";
+import { eventTitleOrFallback, type PartyContent } from "@/lib/party-types";
 
 export type HostPreviewSource = "draft" | "guests";
 
@@ -123,7 +123,7 @@ export function buildHostDraft(
     preset,
     trip: {
       ...content.trip,
-      siteName: content.trip.siteName.trim() || "Untitled event",
+      siteName: eventTitleOrFallback(content.trip.siteName),
       tagline: content.trip.tagline?.trim() || undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
@@ -181,7 +181,7 @@ export function livePreviewContent(input: HostLiveDraftInput, lastValid: PartyCo
     preset: input.preset,
     trip: {
       ...lastValid.trip,
-      siteName: input.content.trip.siteName.trim() || lastValid.trip.siteName,
+      siteName: input.content.trip.siteName?.trim() || lastValid.trip.siteName,
       tagline: input.content.trip.tagline?.trim() || undefined,
       startTime: input.content.trip.startTime?.trim() || undefined,
       location: input.content.trip.location?.trim() || undefined,

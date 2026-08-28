@@ -6,8 +6,8 @@ import {
   livePreviewContent,
   type HostLiveDraftInput,
 } from "@/lib/host-live-draft";
+import { eventTitleOrFallback, UNTITLED_EVENT_TITLE, type PartyContent } from "@/lib/party-types";
 import { rowsFromActivities, rowsFromPacking, rowsFromSchedule } from "@/lib/schedule-rows";
-import type { PartyContent } from "@/lib/party-types";
 
 const content: PartyContent = {
   kind: "trip",
@@ -114,5 +114,43 @@ describe("host live draft preview", () => {
     expect(hostPreviewCaption("draft", false)).toBeNull();
     expect(hostPreviewCaption("guests", false)).toBe("Guests currently see");
     expect(hostPreviewCaption("guests", true)).toBe("Guests currently see");
+  });
+
+  it("keeps an empty or missing live title as a placeholder instead of throwing", () => {
+    expect(eventTitleOrFallback("")).toBe(UNTITLED_EVENT_TITLE);
+    expect(eventTitleOrFallback("   ")).toBe(UNTITLED_EVENT_TITLE);
+    expect(eventTitleOrFallback(undefined)).toBe(UNTITLED_EVENT_TITLE);
+
+    const empty = livePreviewContent(
+      input({
+        content: {
+          ...content,
+          trip: { ...content.trip, siteName: "" },
+        },
+      }),
+      content,
+    );
+    expect(empty.trip.siteName).toBe(UNTITLED_EVENT_TITLE);
+    expect(
+      buildHostDraft(
+        input({
+          content: {
+            ...content,
+            trip: { ...content.trip, siteName: "" },
+          },
+        }),
+      ),
+    ).toMatchObject({ ok: true, content: { trip: { siteName: UNTITLED_EVENT_TITLE } } });
+
+    const missing = livePreviewContent(
+      input({
+        content: {
+          ...content,
+          trip: { ...content.trip, siteName: undefined as unknown as string },
+        },
+      }),
+      content,
+    );
+    expect(missing.trip.siteName).toBe(UNTITLED_EVENT_TITLE);
   });
 });
