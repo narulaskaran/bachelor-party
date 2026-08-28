@@ -1,5 +1,9 @@
 import type { Trip } from "@/lib/party-types";
+import { isInvertedDateRange } from "@/lib/trip-dates";
 import { settledTimeZone } from "@/lib/timezones";
+
+/** Neutral When copy when dates are missing or invalid. Never format an inverted range. */
+export const GUEST_WHEN_PLACEHOLDER = "When TBD";
 
 export function formatClockTime(value: string): string {
   const trimmed = value.trim();
@@ -38,6 +42,7 @@ export function shortTimeZoneName(timeZone: string, at = new Date()): string {
 
 /** Human when-line for guests. A clock is settled only with an IANA zone. Never guess a zone. */
 export function formatGuestWhen(trip: Trip): string | undefined {
+  if (isInvertedDateRange(trip.startDate, trip.endDate)) return undefined;
   if (!trip.startDate) return undefined;
   const start = formatWeekdayDate(trip.startDate);
   if (!start) return undefined;

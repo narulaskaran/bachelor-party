@@ -45,15 +45,14 @@ describe("SiteNav", () => {
     const { container } = render(<SiteNav />);
     const header = container.querySelector("#site-nav-marketing");
     const demo = screen.getByRole("link", { name: /^try demo$/i });
-    const toggle = screen.getByRole("button", { name: /toggle theme/i });
+    const toggle = screen.getByRole("button", { name: /theme/i });
 
     expect(demo.getAttribute("href")).toBe("/demo");
     expect(demo.closest("[data-slot=button]")?.getAttribute("data-variant")).toBe("ghost");
     expect(header?.contains(demo)).toBe(true);
     expect(header?.contains(toggle)).toBe(true);
-    expect(header?.innerHTML.indexOf("Try Demo")).toBeLessThan(
-      header!.innerHTML.indexOf('aria-label="Toggle theme"'),
-    );
+    expect(toggle.getAttribute("aria-pressed")).toMatch(/^(true|false)$/);
+    expect(demo.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByRole("link", { name: /^try a sample$/i })).toBeNull();
   });
 
@@ -61,7 +60,7 @@ describe("SiteNav", () => {
     render(<SiteNav siteName="Alpine Weekend" sections={allVisible} />);
 
     expect(screen.queryByRole("link", { name: /^try demo$/i })).toBeNull();
-    expect(screen.getByRole("button", { name: /toggle theme/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /theme/i })).toBeTruthy();
   });
 
   it("separates the event title from the date in guest nav", () => {

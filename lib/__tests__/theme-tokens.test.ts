@@ -24,9 +24,10 @@ const LIGHT = {
   background: "#f5f5f4",
   foreground: "#171717",
   primary: "#d97706",
+  "primary-foreground": "#1c1917",
   ring: "#d97706",
   muted: "#eeebe8",
-  "muted-foreground": "#71717a",
+  "muted-foreground": "#57534e",
   border: "#e7e5e4",
   input: "#e7e5e4",
 } as const;
@@ -35,6 +36,7 @@ const DARK = {
   background: "#0c0a09",
   foreground: "#ededed",
   primary: "#d97706",
+  "primary-foreground": "#1c1917",
   ring: "#d97706",
   muted: "#292524",
   border: "#292524",
@@ -100,4 +102,32 @@ describe("theme tokens", () => {
   it("uses stone charcoal dark tokens on .dark", () => {
     expectTokens(blockVars(css, ".dark"), DARK);
   });
+
+  it("gives primary buttons and light muted copy at least 4.5:1 contrast", () => {
+    const light = blockVars(css, ":root");
+    expect(contrastRatio(light.primary, light["primary-foreground"])).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(light.background, light["muted-foreground"])).toBeGreaterThanOrEqual(4.5);
+    const dark = blockVars(css, ".dark");
+    expect(contrastRatio(dark.primary, dark["primary-foreground"])).toBeGreaterThanOrEqual(4.5);
+  });
 });
+
+function srgbChannel(hexPair: string): number {
+  const c = Number.parseInt(hexPair, 16) / 255;
+  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+
+function relativeLuminance(hex: string): number {
+  const value = hex.replace("#", "");
+  const r = srgbChannel(value.slice(0, 2));
+  const g = srgbChannel(value.slice(2, 4));
+  const b = srgbChannel(value.slice(4, 6));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastRatio(a: string, b: string): number {
+  const first = relativeLuminance(a);
+  const second = relativeLuminance(b);
+  const [hi, lo] = first > second ? [first, second] : [second, first];
+  return (hi + 0.05) / (lo + 0.05);
+}

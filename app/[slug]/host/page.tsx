@@ -47,7 +47,7 @@ export default async function HostPage({ params }: Params) {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8">
+      <div className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Private host workspace</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Review the event your crew will trust</h1>
@@ -60,6 +60,7 @@ export default async function HostPage({ params }: Params) {
           slug={slug}
           initial={editor.content}
           published={editor.published}
+          publishStatus={editor.publishStatus}
           sample={isDemo}
           guestUrl={editor.guestUrl}
           save={saveHostDraft}
@@ -80,7 +81,7 @@ export default async function HostPage({ params }: Params) {
             />
           </div>
         </section>
-      </main>
+      </div>
       {hasSchedule(editor.content) ? (
         <HostScheduleView
           slug={slug}

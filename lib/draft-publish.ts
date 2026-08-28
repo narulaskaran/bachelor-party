@@ -18,6 +18,28 @@ export function publishedForGuests(party: DraftPartyState): PartyContent | null 
   return party.published ? party.content : null;
 }
 
+export type HostPublishStatus = "draft-only" | "live" | "unpublished-changes";
+
+/** Guest-facing snapshot: ignore host review markers and update banners. */
+export function guestFacingContent(content: PartyContent): Omit<PartyContent, "draftReview" | "guestUpdate"> {
+  const rest = { ...content };
+  delete rest.draftReview;
+  delete rest.guestUpdate;
+  return rest;
+}
+
+export function draftsMatchPublished(draft: PartyContent, published: PartyContent): boolean {
+  return JSON.stringify(guestFacingContent(draft)) === JSON.stringify(guestFacingContent(published));
+}
+
+/** Draft only / Live / Unpublished changes — never a blanket "Published + draft". */
+export function hostPublishStatus(party: DraftPartyState): HostPublishStatus {
+  if (!party.published) return "draft-only";
+  return draftsMatchPublished(draftForParty(party), party.content)
+    ? "live"
+    : "unpublished-changes";
+}
+
 /**
  * Parse the editor's readable schedule format:
  * date | weekday | day label | time | event title | optional note

@@ -251,4 +251,69 @@ describe("HostEditor draft review safety", () => {
     expect(save.mock.calls[0]?.[3]).toBe("party-tok");
     expect(sessionStorage.getItem(hostKeyStorageKey("cabin-weekend"))).toBe("party-tok");
   });
+
+  it("shows Draft only, Live, or Unpublished changes — never Published + draft", () => {
+    const save = vi.fn(async () => ({ ok: true as const }));
+    const publish = vi.fn(async () => ({ ok: true as const }));
+
+    render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published={false}
+        publishStatus="draft-only"
+        save={save}
+        publish={publish}
+      />,
+    );
+    expect(screen.getByLabelText("Event status: Draft only").textContent).toBe("Draft only");
+    expect(screen.queryByText("Published + draft")).toBeNull();
+    cleanup();
+
+    render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published
+        publishStatus="live"
+        save={save}
+        publish={publish}
+      />,
+    );
+    expect(screen.getByLabelText("Event status: Live").textContent).toBe("Live");
+    expect(screen.getByText("Guests see this version.")).toBeTruthy();
+    expect(screen.queryByText("Editing a private draft.")).toBeNull();
+    cleanup();
+
+    render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published
+        publishStatus="unpublished-changes"
+        save={save}
+        publish={publish}
+      />,
+    );
+    expect(screen.getByLabelText("Event status: Unpublished changes").textContent).toBe("Unpublished changes");
+    expect(screen.getByText("Editing a private draft.")).toBeTruthy();
+  });
+
+  it("does not preview an inverted end-before-start When line", () => {
+    render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published
+        save={vi.fn(async () => ({ ok: true as const }))}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2026-09-01" } });
+    const preview = screen.getByText(/guests will see:/i);
+    expect(preview.textContent).toBe("Guests will see: When TBD");
+    expect(preview.textContent).not.toMatch(/Sep 1/);
+    expect(preview.textContent).not.toMatch(/Sep 4 –/);
+  });
 });

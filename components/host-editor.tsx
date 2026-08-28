@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { END_BEFORE_START_MESSAGE, formatDateLabel, isInvertedDateRange } from "@/lib/trip-dates";
-import { rsvpForDraft } from "@/lib/draft-publish";
+import { rsvpForDraft, type HostPublishStatus } from "@/lib/draft-publish";
 import { parseEventPreset, showWeekendEditorBlock, type WeekendBlock } from "@/lib/event-preset";
 import { draftFactsForContent } from "@/lib/plan-ingestion";
 import { slugFromName } from "@/lib/slug";
@@ -22,7 +22,7 @@ import {
   type PackEditorRow,
   type ScheduleEditorRow,
 } from "@/lib/schedule-rows";
-import { formatGuestWhen } from "@/lib/guest-when";
+import { formatGuestWhen, GUEST_WHEN_PLACEHOLDER } from "@/lib/guest-when";
 import { EVENT_TIMEZONES, formatTimeZoneLabel, settledTimeZone } from "@/lib/timezones";
 import type { DraftFact, PartyContent } from "@/lib/party-types";
 import { readStoredHostKey, rememberHostKey } from "@/lib/host-key-storage";
@@ -42,10 +42,26 @@ const EMPTY_SCHEDULE_ROW: ScheduleEditorRow = { date: "", time: "", title: "", n
 const EMPTY_PACK_ROW: PackEditorRow = { title: "", note: "" };
 const EMPTY_ACTIVITY_ROW: ActivityEditorRow = { name: "", note: "" };
 
+const PUBLISH_STATUS_COPY: Record<HostPublishStatus, { chip: string; blurb: string }> = {
+  "draft-only": {
+    chip: "Draft only",
+    blurb: "Unpublished draft — guests cannot see these details.",
+  },
+  live: {
+    chip: "Live",
+    blurb: "Guests see this version.",
+  },
+  "unpublished-changes": {
+    chip: "Unpublished changes",
+    blurb: "Editing a private draft.",
+  },
+};
+
 export function HostEditor({
   slug,
   initial,
   published,
+  publishStatus: initialPublishStatus,
   sample = false,
   guestUrl,
   save,
@@ -54,6 +70,7 @@ export function HostEditor({
   slug: string;
   initial: PartyContent;
   published: boolean;
+  publishStatus?: HostPublishStatus;
   sample?: boolean;
   guestUrl?: string;
   save: HostEditorAction;
@@ -66,6 +83,9 @@ export function HostEditor({
   const [isPending, startTransition] = useTransition();
   const [reviewAcknowledged, setReviewAcknowledged] = useState(initial.draftReview?.acknowledged === true);
   const [hasSavedDraft, setHasSavedDraft] = useState(true);
+  const [publishStatus, setPublishStatus] = useState<HostPublishStatus>(
+    initialPublishStatus ?? (published ? "live" : "draft-only"),
+  );
   const preset = parseEventPreset(content.preset);
   const [scheduleRows, setScheduleRows] = useState<ScheduleEditorRow[]>(() => rowsFromSchedule(initial.schedule));
   const [packingRows, setPackingRows] = useState<PackEditorRow[]>(() => rowsFromPacking(initial.packing));
@@ -263,6 +283,7 @@ export function HostEditor({
       }
       setContent(next);
       setHasSavedDraft(true);
+      if (publishStatus === "live" || publishedUrl) setPublishStatus("unpublished-changes");
       setNotice("Draft saved. Guest view still shows the last published version.");
     });
   }
@@ -288,6 +309,7 @@ export function HostEditor({
       }
       const nextUrl = result.guestUrl ?? publishedUrl;
       if (nextUrl) setPublishedUrl(nextUrl);
+      setPublishStatus("live");
       setNotice("Published. Guests now see this version.");
     });
   }
@@ -299,15 +321,14 @@ export function HostEditor({
           <div>
             <CardTitle>Event editor</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              {sample
-                ? "Sample event — changes stay in this tab."
-                : published
-                  ? "Editing a private draft."
-                  : "Unpublished draft — guests cannot see these details."}
+              {sample ? "Sample event — changes stay in this tab." : PUBLISH_STATUS_COPY[publishStatus].blurb}
             </p>
           </div>
-          <span className="rounded-full border px-3 py-1 text-xs font-medium" aria-label={`Event status: ${published ? "published" : "draft"}`}>
-            {published ? "Published + draft" : "Draft — not published"}
+          <span
+            className="rounded-full border px-3 py-1 text-xs font-medium"
+            aria-label={`Event status: ${PUBLISH_STATUS_COPY[publishStatus].chip}`}
+          >
+            {PUBLISH_STATUS_COPY[publishStatus].chip}
           </span>
         </div>
       </CardHeader>
@@ -422,7 +443,7 @@ export function HostEditor({
               </div>
             </div>
             <p id="when-preview" className="text-sm" aria-live="polite">
-              Guests will see: {formatGuestWhen(trip) ?? "When TBD"}
+              Guests will see: {formatGuestWhen(trip) ?? GUEST_WHEN_PLACEHOLDER}
             </p>
             <p id="date-help" className="text-xs text-muted-foreground">
               Dates are optional. End date cannot be before start date. No timezone means guests see time TBD — we will not guess America/New_York.

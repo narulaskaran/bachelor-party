@@ -2,14 +2,16 @@
 
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RsvpForm } from "@/components/rsvp-form";
 import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { submitGuestInfo, submitSampleGuestInfo } from "@/lib/rsvp-actions";
 
+const { mockRefresh } = vi.hoisted(() => ({ mockRefresh: vi.fn() }));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: vi.fn() }),
+  useRouter: () => ({ refresh: mockRefresh }),
 }));
 
 vi.mock("next/link", () => ({
@@ -42,6 +44,7 @@ vi.mock("@/lib/rsvp-actions", () => ({
 describe("RsvpForm", () => {
   beforeEach(() => {
     cleanup();
+    mockRefresh.mockClear();
     vi.mocked(submitGuestInfo).mockClear();
     vi.mocked(submitSampleGuestInfo).mockClear();
   });
@@ -172,5 +175,44 @@ describe("RsvpForm", () => {
     const invite = "f".repeat(32);
     render(<RsvpForm pollActivities={[]} inviteToken={invite} />);
     expect((document.querySelector('input[name="invite"]') as HTMLInputElement).value).toBe(invite);
+  });
+
+  it("keeps Saved confirmation after refresh remounts a No RSVP", async () => {
+    const user = userEvent.setup();
+    render(<RsvpForm pollActivities={[]} />);
+
+    await user.type(screen.getByLabelText(/^name$/i), "Alex");
+    await user.click(screen.getByLabelText("No"));
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /^saved$/i })).toBeTruthy());
+    expect(screen.getByRole("alert").textContent).toMatch(/on the board/i);
+    expect(mockRefresh).toHaveBeenCalled();
+
+    cleanup();
+    render(
+      <RsvpForm
+        pollActivities={[]}
+        existing={{
+          name: "Alex",
+          nameKey: "alex",
+          phone: null,
+          arrivalFlight: null,
+          arrivalTime: null,
+          departureFlight: null,
+          departureTime: null,
+          dietary: null,
+          notes: null,
+          activityPrefs: {},
+          attendanceStatus: "not-attending",
+          partySize: 1,
+          plusOneName: null,
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /^saved$/i })).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toMatch(/on the board/i);
+    expect((screen.getByLabelText("No") as HTMLInputElement).checked).toBe(true);
   });
 });

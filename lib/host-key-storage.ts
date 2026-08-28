@@ -32,3 +32,21 @@ export function rememberHostKey(slug: string, hostKey: string): void {
   sessionStorage.setItem(hostKeyStorageKey(slug), value);
   notifyHostKeyStore();
 }
+
+const HOST_KEY_BANNER_HIDDEN = "bp-host-key-banner-hidden";
+
+export function hostKeyBannerHiddenKey(slug: string): string {
+  return `${HOST_KEY_BANNER_HIDDEN}:${slug}`;
+}
+
+export function isHostKeyBannerHidden(slug: string): boolean {
+  if (typeof window === "undefined") return false;
+  return sessionStorage.getItem(hostKeyBannerHiddenKey(slug)) === "1";
+}
+
+export function setHostKeyBannerHidden(slug: string, hidden: boolean): void {
+  if (typeof window === "undefined") return;
+  if (hidden) sessionStorage.setItem(hostKeyBannerHiddenKey(slug), "1");
+  else sessionStorage.removeItem(hostKeyBannerHiddenKey(slug));
+  notifyHostKeyStore();
+}
