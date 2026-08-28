@@ -377,4 +377,24 @@ describe("HostEditor draft review safety", () => {
     expect(bar?.className).toContain("backdrop-blur");
     expect(bar?.closest("[data-slot=card]")?.className).toContain("overflow-visible");
   });
+
+  it("keeps the Event title controlled when it is cleared", () => {
+    const onLiveContentChange = vi.fn();
+    render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published={false}
+        save={vi.fn(async () => ({ ok: true as const }))}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+        onLiveContentChange={onLiveContentChange}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "" } });
+    expect((screen.getByLabelText("Event title") as HTMLInputElement).value).toBe("");
+    expect(onLiveContentChange).toHaveBeenCalled();
+    const last = onLiveContentChange.mock.calls.at(-1)?.[0] as PartyContent;
+    expect(last.trip.siteName).toBe("Untitled event");
+  });
 });

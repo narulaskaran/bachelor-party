@@ -7,7 +7,7 @@ import { HostKeyBanner } from "@/components/host-key-banner";
 import { HostPreviewPane } from "@/components/host-preview-pane";
 import { HOST_PUBLISH_STATUS_COPY, type HostPublishStatus } from "@/lib/draft-publish";
 import type { HostPreviewSource } from "@/lib/host-live-draft";
-import type { PartyContent } from "@/lib/party-types";
+import { eventTitleOrFallback, type PartyContent } from "@/lib/party-types";
 import { cn } from "@/lib/utils";
 
 export function HostWorkspace({
@@ -49,7 +49,7 @@ export function HostWorkspace({
   return (
     <div data-host-workspace="" className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6">
       <header className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">{liveContent.trip.siteName}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{eventTitleOrFallback(liveContent.trip.siteName)}</h1>
         <span
           className="rounded-full border px-3 py-1 text-xs font-medium"
           aria-label={`Event status: ${statusChip}`}
