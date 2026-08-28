@@ -9,7 +9,8 @@ amber primary). Tests: Vitest.
 Landing dump (server extracts facts via OpenRouter `z-ai/glm-5.3-flash`) →
 host workspace at `/{slug}/host` (lg+: editor left, sticky inert guest
 preview right; below lg: Edit | Preview tabs) → publish → guest page at
-`/g/{token}`. Preview follows the unsaved valid draft. Two presets, one
+`/g/{token}`. Preview follows the unsaved valid draft. Host preview pack
+and RSVP are static copy (no checkboxes, no form). Two presets, one
 Event: Party (hero + RSVP) and Group trip (optional glance, schedule,
 lodge, activities, pack). Empty blocks stay hidden. Pack checkoff is local
 per browser. RSVP identity is stored per event, never a leftover name from

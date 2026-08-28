@@ -92,21 +92,18 @@ describe("RsvpForm", () => {
     expect(screen.queryByRole("link", { name: /create your own trip to collect RSVPs/i })).toBeNull();
   });
 
-  it("host preview looks like a real RSVP and does not show demo copy", async () => {
-    const user = userEvent.setup();
-    render(<RsvpForm preview pollActivities={[]} />);
+  it("host preview has no RSVP fields or Save and does not show demo copy", () => {
+    const { container } = render(<RsvpForm preview pollActivities={[]} extras={{ flights: true, food: true, votes: true, notes: true }} airport="DEN" />);
 
     expect(screen.queryByText(DEMO_RSVP_MESSAGE)).toBeNull();
     expect(screen.queryByRole("link", { name: /create your own trip to collect RSVPs/i })).toBeNull();
-    const save = screen.getByRole("button", { name: /^save$/i });
-    expect((save as HTMLButtonElement).disabled).toBe(false);
-
-    await user.type(screen.getByLabelText(/^name$/i), "Alex");
-    await user.click(save);
-    const form = save.closest("form");
-    expect(form).toBeTruthy();
-    fireEvent.submit(form!);
-
+    expect(container.querySelector("form")).toBeNull();
+    expect(container.querySelector("input")).toBeNull();
+    expect(container.querySelector("textarea")).toBeNull();
+    expect(container.querySelector("button")).toBeNull();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByRole("radio")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^save$/i })).toBeNull();
     expect(submitSampleGuestInfo).not.toHaveBeenCalled();
     expect(submitGuestInfo).not.toHaveBeenCalled();
   });
