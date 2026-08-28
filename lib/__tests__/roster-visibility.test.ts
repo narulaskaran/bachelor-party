@@ -43,6 +43,7 @@ describe("roster visibility", () => {
         attendanceStatus: "attending",
         partySize: 2,
         plusOneName: "Taylor",
+        phone: "555-0100",
         arrivalFlight: "UA 1523",
         arrivalTime: "Fri 10:45 AM",
         departureFlight: "UA 887",

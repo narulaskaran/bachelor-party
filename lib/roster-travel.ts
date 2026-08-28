@@ -15,7 +15,7 @@ function joinTravel(
   return `${kind} · ${parts.join(" · ")}`;
 }
 
-/** Lines to show on a roster card when the trip collects flights. */
+/** Lines to show on a roster card when the guest actually supplied travel. Never invent Driving. */
 export function rosterTravelLines(guest: RosterTravel): string[] {
   const arrival = joinTravel("Arrival", guest.arrivalFlight, guest.arrivalTime);
   const departure = joinTravel(
@@ -23,6 +23,5 @@ export function rosterTravelLines(guest: RosterTravel): string[] {
     guest.departureFlight,
     guest.departureTime,
   );
-  if (!arrival && !departure) return ["Driving"];
   return [arrival, departure].filter((line): line is string => Boolean(line));
 }

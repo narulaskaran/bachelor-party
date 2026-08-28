@@ -1,6 +1,6 @@
 import type { GuestUpdate, Trip } from "@/lib/party-types";
 import { Countdown } from "@/components/countdown";
-import { formatGuestWhen, formatGuestWhere } from "@/lib/guest-when";
+import { formatGuestWhen, formatGuestWhere, GUEST_WHEN_PLACEHOLDER } from "@/lib/guest-when";
 import { guestUpdateRelativeLabel } from "@/lib/guest-update";
 import { kickerClass, pageTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,7 @@ export function Hero({
       ) : null}
 
       <div className="mt-4 space-y-1 text-sm text-muted-foreground">
-        <p>{when ?? "When TBD"}</p>
+        <p>{when ?? GUEST_WHEN_PLACEHOLDER}</p>
         {where.place || where.address || where.mapsUrl ? (
           <p className="break-words">
             {[where.place, where.address].filter(Boolean).join(" · ")}

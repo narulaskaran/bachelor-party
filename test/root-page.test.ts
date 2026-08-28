@@ -52,7 +52,7 @@ vi.mock("@/components/ui/sonner", () => ({
 
 vi.mock("@/components/theme-toggle", () => ({
   ThemeToggle: () =>
-    createElement("button", { type: "button", "aria-label": "Toggle theme" }),
+    createElement("button", { type: "button", "aria-label": "Dark theme", "aria-pressed": "true" }),
 }));
 
 vi.mock("@/lib/db", async (importOriginal) => {

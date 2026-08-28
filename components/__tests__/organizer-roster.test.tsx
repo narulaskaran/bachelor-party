@@ -10,6 +10,7 @@ describe("OrganizerRoster", () => {
           {
             id: 7,
             name: "Mina",
+            phone: "555-0100",
             arrivalFlight: "UA 1523",
             arrivalTime: "Fri 10:45 AM",
             departureFlight: "UA 887",
@@ -25,6 +26,8 @@ describe("OrganizerRoster", () => {
     expect(html).toContain("Arrival · UA 1523 · Fri 10:45 AM");
     expect(html).toContain("Departure · UA 887 · Mon 3:15 PM");
     expect(html).toContain("Vegetarian, no nuts");
+    expect(html).toContain("Phone: 555-0100");
+    expect(html).not.toMatch(/Driving/);
   });
 
   it("renders private RSVP counts, statuses, party size, and plus-one details", () => {
@@ -45,5 +48,6 @@ describe("OrganizerRoster", () => {
     expect(html).toContain("Expected people: 3");
     expect(html).toContain("attending · 2 people");
     expect(html).toContain("Plus-one: Taylor");
+    expect(html).not.toMatch(/Driving/);
   });
 });

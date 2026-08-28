@@ -2,7 +2,12 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
-import { readStoredHostKey, subscribeHostKeyStore } from "@/lib/host-key-storage";
+import {
+  isHostKeyBannerHidden,
+  readStoredHostKey,
+  setHostKeyBannerHidden,
+  subscribeHostKeyStore,
+} from "@/lib/host-key-storage";
 
 export function HostKeyBanner({ slug }: { slug: string }) {
   const stored = useSyncExternalStore(
@@ -10,9 +15,13 @@ export function HostKeyBanner({ slug }: { slug: string }) {
     () => readStoredHostKey(slug) ?? null,
     () => null,
   );
-  const [dismissed, setDismissed] = useState(false);
+  const hidden = useSyncExternalStore(
+    subscribeHostKeyStore,
+    () => isHostKeyBannerHidden(slug),
+    () => true,
+  );
   const [copied, setCopied] = useState(false);
-  if (!stored || dismissed) return null;
+  if (!stored) return null;
   const hostKey = stored;
 
   async function copy() {
@@ -24,18 +33,28 @@ export function HostKeyBanner({ slug }: { slug: string }) {
     }
   }
 
+  if (hidden) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="ghost" onClick={() => setHostKeyBannerHidden(slug, false)}>
+          Show host key
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <aside className="rounded-lg border border-border bg-muted/30 p-4" aria-label="Host key">
       <p className="text-sm font-medium">Bookmark this organizer page. Your host key:</p>
       <p className="mt-2 break-all font-mono text-sm">{hostKey}</p>
       <p className="mt-2 text-xs text-muted-foreground">
-        Keep this to yourself. It is not the guest link, and we won&apos;t show it again here.
+        Keep this to yourself. It is not the guest link. Hide it here; you can show it again in this tab.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button type="button" variant="outline" onClick={() => void copy()}>
           {copied ? "Copied" : "Copy host key"}
         </Button>
-        <Button type="button" variant="ghost" onClick={() => setDismissed(true)}>
+        <Button type="button" variant="ghost" onClick={() => setHostKeyBannerHidden(slug, true)}>
           Hide
         </Button>
       </div>

@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { HostKeyBanner } from "@/components/host-key-banner";
-import { hostKeyStorageKey, rememberHostKey } from "@/lib/host-key-storage";
+import { hostKeyBannerHiddenKey, hostKeyStorageKey, rememberHostKey } from "@/lib/host-key-storage";
 
 const SLUG = "friday-drinks";
 const HOST_KEY = "party-tok";
@@ -43,6 +43,21 @@ describe("HostKeyBanner", () => {
     fireEvent.click(screen.getByRole("button", { name: /^hide$/i }));
 
     expect(screen.queryByRole("button", { name: /copy host key/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /show host key/i })).toBeTruthy();
+    expect(sessionStorage.getItem(hostKeyStorageKey(SLUG))).toBe(HOST_KEY);
+    expect(sessionStorage.getItem(hostKeyBannerHiddenKey(SLUG))).toBe("1");
+  });
+
+  it("keeps the key hidden after remount until Show host key", () => {
+    render(<HostKeyBanner slug={SLUG} />);
+    fireEvent.click(screen.getByRole("button", { name: /^hide$/i }));
+    cleanup();
+    render(<HostKeyBanner slug={SLUG} />);
+
+    expect(screen.queryByText(HOST_KEY)).toBeNull();
+    expect(screen.getByRole("button", { name: /show host key/i })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /show host key/i }));
+    expect(screen.getByText(HOST_KEY)).toBeTruthy();
     expect(sessionStorage.getItem(hostKeyStorageKey(SLUG))).toBe(HOST_KEY);
   });
 });

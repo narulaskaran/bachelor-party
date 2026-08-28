@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { DEMO_PARTY } from "@/lib/demo-party";
-import { draftForParty, preserveScheduleKeyEvents } from "@/lib/draft-publish";
+import { draftForParty, hostPublishStatus, preserveScheduleKeyEvents, type HostPublishStatus } from "@/lib/draft-publish";
 import { publishedGuestPath } from "@/lib/guest-invite";
 import { constantTimeEqual } from "@/lib/cookie-hash";
 import { recordContentVersion } from "@/lib/content-versions";
@@ -118,6 +118,7 @@ export type HostEditorState =
       ok: true;
       content: import("@/lib/party-types").PartyContent;
       published: boolean;
+      publishStatus: HostPublishStatus;
       sample: boolean;
       guestUrl?: string;
     }
@@ -125,7 +126,14 @@ export type HostEditorState =
 
 export async function getHostEditorState(slug: string): Promise<HostEditorState> {
   if (slug === "demo") {
-    return { ok: true, content: DEMO_PARTY, published: true, sample: true, guestUrl: "/demo" };
+    return {
+      ok: true,
+      content: DEMO_PARTY,
+      published: true,
+      publishStatus: "live",
+      sample: true,
+      guestUrl: "/demo",
+    };
   }
   const loaded = await loadHostParty(slug);
   if (loaded.status === "unavailable") return { ok: false, error: "Database unavailable." };
@@ -138,6 +146,11 @@ export async function getHostEditorState(slug: string): Promise<HostEditorState>
     ok: true,
     content: draftForParty(loaded.party),
     published,
+    publishStatus: hostPublishStatus({
+      content: loaded.party.content,
+      draftContent: loaded.party.draftContent,
+      published,
+    }),
     sample: false,
     ...(published
       ? {
@@ -253,6 +266,7 @@ export async function getHostGuests(
         attendanceStatus: schema.guests.attendanceStatus,
         partySize: schema.guests.partySize,
         plusOneName: schema.guests.plusOneName,
+        phone: schema.guests.phone,
         arrivalFlight: schema.guests.arrivalFlight,
         arrivalTime: schema.guests.arrivalTime,
         departureFlight: schema.guests.departureFlight,

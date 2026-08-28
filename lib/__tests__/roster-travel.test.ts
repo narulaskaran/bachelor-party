@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { rosterTravelLines } from "@/lib/roster-travel";
 
 describe("rosterTravelLines", () => {
-  it("says Driving when arrival and departure are empty", () => {
-    expect(rosterTravelLines({})).toEqual(["Driving"]);
+  it("does not invent Driving when arrival and departure are empty", () => {
+    expect(rosterTravelLines({})).toEqual([]);
     expect(
       rosterTravelLines({
         arrivalFlight: "",
@@ -11,7 +11,7 @@ describe("rosterTravelLines", () => {
         departureFlight: null,
         departureTime: undefined,
       }),
-    ).toEqual(["Driving"]);
+    ).toEqual([]);
   });
 
   it("does not print em dashes for missing flight fields", () => {

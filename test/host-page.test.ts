@@ -84,6 +84,7 @@ describe("host guest preview", () => {
       ok: true,
       content: nightOut,
       published: false,
+      publishStatus: "draft-only",
       // The route, not an editor-state flag, owns the explicit /demo mode.
       sample: true,
     });
@@ -112,6 +113,7 @@ describe("host guest preview", () => {
       ok: true,
       content: nightOut,
       published: true,
+      publishStatus: "live",
       // The route, not an editor-state flag, owns the explicit /demo mode.
       sample: false,
     });
@@ -157,6 +159,7 @@ describe("host guest preview", () => {
         ],
       },
       published: false,
+      publishStatus: "draft-only",
       sample: false,
     });
     vi.mocked(getHostGuests).mockResolvedValue([]);
@@ -170,5 +173,26 @@ describe("host guest preview", () => {
     expect(html).not.toMatch(/API, CLI, or an agent/);
     expect(html).not.toContain("Add days and events");
     expect(html).not.toContain('id="key-events"');
+  });
+
+  it("does not nest a second main landmark on the stacked host workspace", async () => {
+    vi.mocked(resolvePartyBySlug).mockResolvedValue({ status: "unpublished" });
+    vi.mocked(hostSessionForSlug).mockResolvedValue(true);
+    vi.mocked(getHostEditorState).mockResolvedValue({
+      ok: true,
+      content: nightOut,
+      published: false,
+      publishStatus: "draft-only",
+      sample: false,
+    });
+    vi.mocked(getHostGuests).mockResolvedValue([]);
+
+    const html = renderToStaticMarkup(
+      (await HostPage({ params: Promise.resolve({ slug: "friday-drinks" }) })) as ReactElement,
+    );
+
+    expect(html).not.toMatch(/<main\b/);
+    expect(html).toContain("Guest preview");
+    expect(html).toContain("HOST_EDITOR");
   });
 });

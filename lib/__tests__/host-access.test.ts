@@ -287,6 +287,11 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     expect(mem.parties[0].draftContent).toMatchObject({
       trip: { siteName: "Private draft" },
     });
+    await expect(getHostEditorState("cabin-weekend")).resolves.toMatchObject({
+      ok: true,
+      published: true,
+      publishStatus: "unpublished-changes",
+    });
   });
 
   it("preserves RSVP policy and picker key events during a stale editor save", async () => {
@@ -487,6 +492,7 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
     await expect(getHostEditorState("cabin-weekend")).resolves.toMatchObject({
       ok: true,
       published: true,
+      publishStatus: "live",
       guestUrl: `/g/${guestToken}`,
     });
     expect(published.ok && "guestUrl" in published ? published.guestUrl : "").not.toBe("/cabin-weekend");
@@ -561,6 +567,7 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
       partyId: 9,
       name: "Mina",
       plusOneName: "Jordan",
+      phone: "555-0100",
       arrivalFlight: "UA 1523",
       arrivalTime: "Fri 10:45 AM",
       departureFlight: "UA 887",
@@ -576,6 +583,7 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
         plusOneName: "Jordan",
         arrivalFlight: "UA 1523",
         dietary: "Vegetarian, no nuts",
+        phone: "555-0100",
       }),
     ]);
 

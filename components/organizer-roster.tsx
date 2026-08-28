@@ -51,6 +51,9 @@ export function OrganizerRoster({
                   {guest.plusOneName ? (
                     <p className="break-words text-xs text-muted-foreground">Plus-one: {guest.plusOneName}</p>
                   ) : null}
+                  {guest.phone ? (
+                    <p className="break-words text-xs text-muted-foreground">Phone: {guest.phone}</p>
+                  ) : null}
                   {rosterTravelLines(guest).map((line) => (
                     <p
                       key={line}

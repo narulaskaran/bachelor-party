@@ -67,13 +67,23 @@ describe("formatGuestWhen", () => {
     ).toMatch(/Fri, Sep 4, 7:00 PM M[DS]T/);
     expect(
       formatGuestWhen({
-        siteName: "Dinner",
+        siteName: "Cabin weekend",
         startDate: "2026-09-04",
         endDate: "2026-09-04",
         startTime: "19:00",
         timezone: "America/Denver",
       }),
     ).not.toMatch(/Sep 4 –/);
+  });
+
+  it("does not format an inverted end-before-start range", () => {
+    expect(
+      formatGuestWhen({
+        siteName: "Cabin weekend",
+        startDate: "2026-09-04",
+        endDate: "2026-09-01",
+      }),
+    ).toBeUndefined();
   });
 });
 

@@ -62,6 +62,7 @@ export function RsvpForm({
   const allowPlusOne = plusOneAllowed(rsvpConfig);
   const [attendance, setAttendance] = useState<string>(defaults.attendanceStatus ?? "");
   const [plusOneName, setPlusOneName] = useState(defaults.plusOneName);
+  const confirmed = Boolean(state?.ok || existing);
 
   useEffect(() => {
     if (state?.ok) {
@@ -259,7 +260,7 @@ export function RsvpForm({
         </Alert>
       ) : null}
 
-      {sample ? null : state?.ok ? (
+      {sample ? null : confirmed ? (
         <Alert>
           <AlertDescription>Saved. You&rsquo;re on the board.</AlertDescription>
         </Alert>
@@ -276,7 +277,7 @@ export function RsvpForm({
         disabled={sample || isPending}
         aria-describedby={sample ? "demo-rsvp-banner" : undefined}
       >
-        {isPending ? "Saving…" : state?.ok ? "Saved" : "Save"}
+        {isPending ? "Saving…" : confirmed ? "Saved" : "Save"}
       </Button>
       {sample ? (
         <p className="text-center text-sm text-muted-foreground">

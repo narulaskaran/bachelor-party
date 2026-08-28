@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   draftForParty,
+  hostPublishStatus,
   initialDraftState,
   publishedForGuests,
   parseScheduleText,
@@ -52,6 +53,31 @@ describe("draft and publish state", () => {
     };
     expect(publishedForGuests(party)).toEqual(content);
     expect(draftForParty(party).trip.location).toBe("New location");
+  });
+
+  it("derives Draft only, Live, and Unpublished changes", () => {
+    expect(hostPublishStatus(initialDraftState(content))).toBe("draft-only");
+    expect(
+      hostPublishStatus({
+        content,
+        draftContent: content,
+        published: true,
+      }),
+    ).toBe("live");
+    expect(
+      hostPublishStatus({
+        content,
+        draftContent: { ...content, trip: { ...content.trip, location: "Boulder" } },
+        published: true,
+      }),
+    ).toBe("unpublished-changes");
+    expect(
+      hostPublishStatus({
+        content,
+        draftContent: { ...content, draftReview: { acknowledged: true, facts: [] } },
+        published: true,
+      }),
+    ).toBe("live");
   });
 });
 

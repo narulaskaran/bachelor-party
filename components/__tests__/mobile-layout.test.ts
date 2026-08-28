@@ -23,7 +23,8 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@/components/theme-toggle", () => ({
-  ThemeToggle: () => createElement("button", { type: "button", "aria-label": "Toggle theme" }),
+  ThemeToggle: () =>
+    createElement("button", { type: "button", "aria-label": "Dark theme", "aria-pressed": "true" }),
 }));
 
 vi.mock("@/components/sections/rsvp", () => ({
@@ -101,7 +102,7 @@ describe("mobile trip layout", () => {
     expect(html).toContain("data-marketing-brand");
     expect(html).toContain("The Big Send");
     expect(html).toContain("ml-auto");
-    expect(html).toContain('aria-label="Toggle theme"');
+    expect(html).toContain('aria-label="Dark theme"');
     expect(html).toContain("Try Demo");
     expect(html).toContain('href="/demo"');
     expect(html).toContain("data-demo-link");
@@ -109,7 +110,7 @@ describe("mobile trip layout", () => {
     expect(html).toContain("bg-background/90");
     expect(html).toContain("backdrop-blur");
     expect(html).toContain("border-b border-border");
-    expect(html.indexOf("Try Demo")).toBeLessThan(html.indexOf('aria-label="Toggle theme"'));
+    expect(html.indexOf("Try Demo")).toBeLessThan(html.indexOf('aria-label="Dark theme"'));
     expect(html).not.toContain("Create a trip");
     expect(html).not.toContain('href="/#create"');
     expect(html).not.toContain('href="/admin"');

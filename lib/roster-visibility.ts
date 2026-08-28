@@ -25,6 +25,7 @@ export type OrganizerVisibleRosterEntry = Pick<
   | "attendanceStatus"
   | "partySize"
   | "plusOneName"
+  | "phone"
   | "arrivalFlight"
   | "arrivalTime"
   | "departureFlight"
@@ -58,6 +59,7 @@ export function organizerVisibleRoster(
       attendanceStatus,
       partySize,
       plusOneName,
+      phone,
       arrivalFlight,
       arrivalTime,
       departureFlight,
@@ -69,6 +71,7 @@ export function organizerVisibleRoster(
       ...(attendanceStatus === undefined ? {} : { attendanceStatus }),
       ...(partySize === undefined ? {} : { partySize }),
       ...(plusOneName === undefined ? {} : { plusOneName }),
+      ...(phone === undefined ? {} : { phone }),
       arrivalFlight,
       arrivalTime,
       departureFlight,
