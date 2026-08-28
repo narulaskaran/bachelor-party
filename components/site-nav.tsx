@@ -25,26 +25,34 @@ export function SiteNav({
   slug,
   homeHref,
   sections,
+  host = false,
 }: {
   siteName?: string;
   dateLabel?: string;
   slug?: string;
   homeHref?: string;
   sections?: VisibleSections;
+  host?: boolean;
 }) {
-  const resolvedHome = homeHref ?? (slug ? `/${slug}` : "/");
-  const links = (sections ? allLinks.filter((link) => sections[link.section]) : allLinks).map(
-    (link) => ({ href: link.href, label: link.label, focusId: link.href.slice(1) }),
-  );
+  const tripChrome = Boolean(siteName) || host;
+  const resolvedHome = host
+    ? (slug ? `/${slug}/host` : "/")
+    : (homeHref ?? (slug ? `/${slug}` : "/"));
+  const links = host
+    ? []
+    : (sections ? allLinks.filter((link) => sections[link.section]) : allLinks).map(
+        (link) => ({ href: link.href, label: link.label, focusId: link.href.slice(1) }),
+      );
 
   return (
     <header
-      id={siteName ? undefined : "site-nav-marketing"}
-      data-trip-chrome={siteName ? "" : undefined}
+      id={tripChrome ? undefined : "site-nav-marketing"}
+      data-trip-chrome={tripChrome ? "" : undefined}
+      data-host-chrome={host ? "" : undefined}
       className="sticky top-0 z-50 min-w-0 border-b border-border bg-background/90 backdrop-blur"
     >
       <div className="mx-auto flex w-full min-w-0 max-w-5xl items-center justify-between gap-3 px-4 py-3">
-        {!siteName ? (
+        {!tripChrome ? (
           <Button asChild variant="ghost" size="sm" className="h-8">
             <Link href="/demo" data-demo-link="">
               Try Demo
@@ -53,11 +61,11 @@ export function SiteNav({
         ) : null}
         <Link
           href={resolvedHome}
-          data-marketing-brand={siteName ? undefined : ""}
+          data-marketing-brand={tripChrome ? undefined : ""}
           className="min-w-0 truncate text-sm font-semibold tracking-tight"
         >
           {siteName ?? "The Big Send"}
-          {dateLabel ? (
+          {dateLabel && !host ? (
             <span className="hidden text-sm font-normal normal-case tracking-normal text-muted-foreground lg:inline">
               {" "}
               · {dateLabel}
@@ -65,7 +73,7 @@ export function SiteNav({
           ) : null}
         </Link>
         <div className="ml-auto flex shrink-0 items-center gap-1">
-          {siteName ? (
+          {tripChrome && !host ? (
             <>
               <nav className="hidden items-center gap-1 md:flex" aria-label="Trip sections">
                 {links.map((link) => (

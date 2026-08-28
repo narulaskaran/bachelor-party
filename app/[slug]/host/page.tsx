@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
-import { HostKeyBanner } from "@/components/host-key-banner";
 import { OrganizerRoster } from "@/components/organizer-roster";
-import { PartyView } from "@/components/party-view";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { HostEditor } from "@/components/host-editor";
 import { HostScheduleView } from "@/components/host-schedule-view";
+import { HostWorkspace } from "@/components/host-workspace";
 import { getHostGuests, getHostEditorState, hostSessionForSlug, publishHostDraft, saveHostDraft } from "@/lib/host-access";
 import { resolvePartyBySlug } from "@/lib/resolve-party";
 import { hasSchedule } from "@/lib/trip-sections";
@@ -47,41 +45,17 @@ export default async function HostPage({ params }: Params) {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Private host workspace</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Review the event your crew will trust</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Check every extracted fact, leave unknown logistics as TBD, make copy or presentation changes, preview the same draft, then explicitly publish.
-          </p>
-        </div>
-        <HostKeyBanner slug={slug} />
-        <HostEditor
-          slug={slug}
-          initial={editor.content}
-          published={editor.published}
-          publishStatus={editor.publishStatus}
-          sample={isDemo}
-          guestUrl={editor.guestUrl}
-          save={saveHostDraft}
-          publish={publishHostDraft}
-        />
-        <section aria-labelledby="preview-heading" className="rounded-xl border border-border bg-muted/20 p-4 sm:p-6">
-          <div className="mb-2">
-            <h2 id="preview-heading" className="text-xl font-semibold tracking-tight">Guest preview</h2>
-            <p className="text-sm text-muted-foreground">This is the saved draft rendered in the same guest components. It never changes the published page until you press publish.</p>
-          </div>
-          {/* Preview is inert: no guest-cookie reads/writes. Demo copy only on /demo. */}
-          <div inert>
-            <PartyView
-              content={editor.content}
-              sample={isDemo}
-              preview
-              slug={slug}
-            />
-          </div>
-        </section>
-      </div>
+      <HostWorkspace
+        slug={slug}
+        initial={editor.content}
+        published={editor.published}
+        publishStatus={editor.publishStatus}
+        sample={isDemo}
+        guestUrl={editor.guestUrl}
+        publishedSnapshot={editor.publishedSnapshot}
+        save={saveHostDraft}
+        publish={publishHostDraft}
+      />
       {hasSchedule(editor.content) ? (
         <HostScheduleView
           slug={slug}

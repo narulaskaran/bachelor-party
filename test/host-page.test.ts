@@ -37,8 +37,9 @@ vi.mock("@/lib/host-access", () => ({
   setScheduleKeyEvent: vi.fn(),
 }));
 
-vi.mock("@/components/host-editor", () => ({
-  HostEditor: () => "HOST_EDITOR",
+vi.mock("@/components/host-workspace", () => ({
+  HostWorkspace: ({ sample }: { sample?: boolean }) =>
+    `HOST_WORKSPACE sample=${String(Boolean(sample))}`,
 }));
 
 vi.mock("@/components/host-key-banner", () => ({
@@ -94,13 +95,16 @@ describe("host guest preview", () => {
       (await HostPage({ params: Promise.resolve({ slug: "friday-drinks" }) })) as ReactElement,
     );
 
-    expect(html).toContain("Guest preview");
-    expect(html).toContain("inert");
-    expect(html).toContain("PARTY_VIEW sample=false preview=true");
-    expect(html).not.toContain("PARTY_VIEW sample=true");
+    expect(html).toContain("HOST_WORKSPACE sample=false");
+    expect(html).not.toContain("HOST_WORKSPACE sample=true");
+    expect(html).not.toContain("Guest preview");
+    expect(html).not.toContain("inert");
+    expect(html).not.toContain("PARTY_VIEW");
     expect(html).not.toContain("Key events");
     expect(html).not.toMatch(/API, CLI, or an agent/);
     expect(html).not.toContain("Add days and events");
+    expect(html).not.toContain("Review the event your crew will trust");
+    expect(html).not.toContain("Private host workspace");
   });
 
   it("keeps /demo host preview on sample copy", async () => {
@@ -123,7 +127,8 @@ describe("host guest preview", () => {
       (await HostPage({ params: Promise.resolve({ slug: "demo" }) })) as ReactElement,
     );
 
-    expect(html).toContain("PARTY_VIEW sample=true preview=true");
+    expect(html).toContain("HOST_WORKSPACE sample=true");
+    expect(html).not.toContain("HOST_WORKSPACE sample=false");
   });
 
   it("shows a host-key field when the create cookie is missing", async () => {
@@ -137,7 +142,7 @@ describe("host guest preview", () => {
     expect(html).toMatch(/host key/i);
     expect(html).toContain('id="hostKey"');
     expect(html).toContain('name="hostKey"');
-    expect(html).not.toContain("HOST_EDITOR");
+    expect(html).not.toContain("HOST_WORKSPACE");
   });
 
   it("does not mount Key events for a night out with empty schedule days", async () => {
@@ -168,14 +173,15 @@ describe("host guest preview", () => {
       (await HostPage({ params: Promise.resolve({ slug: "friday-drinks" }) })) as ReactElement,
     );
 
-    expect(html).toContain("Guest preview");
+    expect(html).toContain("HOST_WORKSPACE sample=false");
+    expect(html).not.toContain("Guest preview");
     expect(html).not.toContain("Key events");
     expect(html).not.toMatch(/API, CLI, or an agent/);
     expect(html).not.toContain("Add days and events");
     expect(html).not.toContain('id="key-events"');
   });
 
-  it("does not nest a second main landmark on the stacked host workspace", async () => {
+  it("does not nest a second main landmark on the host workspace", async () => {
     vi.mocked(resolvePartyBySlug).mockResolvedValue({ status: "unpublished" });
     vi.mocked(hostSessionForSlug).mockResolvedValue(true);
     vi.mocked(getHostEditorState).mockResolvedValue({
@@ -192,7 +198,8 @@ describe("host guest preview", () => {
     );
 
     expect(html).not.toMatch(/<main\b/);
-    expect(html).toContain("Guest preview");
-    expect(html).toContain("HOST_EDITOR");
+    expect(html).toContain("HOST_WORKSPACE");
+    expect(html).not.toContain("Guest preview");
+    expect(html).not.toContain("PARTY_VIEW");
   });
 });

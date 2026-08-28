@@ -20,6 +20,12 @@ export function publishedForGuests(party: DraftPartyState): PartyContent | null 
 
 export type HostPublishStatus = "draft-only" | "live" | "unpublished-changes";
 
+export const HOST_PUBLISH_STATUS_COPY: Record<HostPublishStatus, { chip: string }> = {
+  "draft-only": { chip: "Draft only" },
+  live: { chip: "Live" },
+  "unpublished-changes": { chip: "Unpublished changes" },
+};
+
 /** Guest-facing snapshot: ignore host review markers and update banners. */
 export function guestFacingContent(content: PartyContent): Omit<PartyContent, "draftReview" | "guestUpdate"> {
   const rest = { ...content };

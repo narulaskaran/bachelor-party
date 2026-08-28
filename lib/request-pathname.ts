@@ -9,3 +9,8 @@ export function pathnameFromHeaders(headersList: Headers): string | null {
   if (!path || path.includes("\\") || path.includes("//")) return null;
   return path;
 }
+
+/** True for `/{slug}/host` — organizer workspace, not the guest page. */
+export function isHostPathname(pathname: string | null | undefined, slug: string): boolean {
+  return pathname === `/${slug}/host`;
+}

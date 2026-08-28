@@ -1,5 +1,7 @@
+import { headers } from "next/headers";
 import { SiteNav } from "@/components/site-nav";
 import { getCurrentParty } from "@/lib/current-party";
+import { isHostPathname, pathnameFromHeaders } from "@/lib/request-pathname";
 import { resolvePartyBySlug } from "@/lib/resolve-party";
 import { visibleSections } from "@/lib/trip-sections";
 
@@ -11,6 +13,8 @@ export default async function TripLayout({
   params: Promise<{ slug: string }>;
 }>) {
   const { slug } = await params;
+  const pathname = pathnameFromHeaders(await headers());
+  const hostRoute = isHostPathname(pathname, slug);
   const current = await getCurrentParty();
   // Cookie for trip A must not brand trip B's login gate (or 404, …).
   let tripChrome = current?.slug === slug ? current : null;
@@ -25,6 +29,19 @@ export default async function TripLayout({
     } catch {
       // Lookup failed — keep marketing chrome.
     }
+  }
+
+  if (hostRoute) {
+    return (
+      <>
+        <SiteNav
+          siteName={tripChrome?.content.trip.siteName ?? "The Big Send"}
+          slug={slug}
+          host
+        />
+        {children}
+      </>
+    );
   }
 
   return (

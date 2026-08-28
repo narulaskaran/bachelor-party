@@ -7,8 +7,9 @@ amber primary). Tests: Vitest.
 ## Human product
 
 Landing dump (server extracts facts via OpenRouter `z-ai/glm-5.3-flash`) →
-host editor at `/{slug}/host` → inert PartyView preview on
-that same page → publish → guest page at `/g/{token}`. Two presets, one
+host workspace at `/{slug}/host` (lg+: editor left, sticky inert guest
+preview right; below lg: Edit | Preview tabs) → publish → guest page at
+`/g/{token}`. Preview follows the unsaved valid draft. Two presets, one
 Event: Party (hero + RSVP) and Group trip (optional glance, schedule,
 lodge, activities, pack). Empty blocks stay hidden. Pack checkoff is local
 per browser. RSVP identity is stored per event, never a leftover name from

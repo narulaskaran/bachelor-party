@@ -85,4 +85,21 @@ describe("SiteNav", () => {
     expect(brand?.getAttribute("href")).toBe(`/g/${"f".repeat(32)}`);
     expect(brand?.getAttribute("href")).not.toBe("/cabin-weekend");
   });
+
+  it("keeps /host chrome to the wordmark and theme toggle", () => {
+    const { container } = render(
+      <SiteNav siteName="Friday drinks" slug="cabin-weekend" host dateLabel="Sep 4, 2026" sections={allVisible} />,
+    );
+
+    expect(container.querySelector("[data-host-chrome]")).toBeTruthy();
+    expect(container.querySelector("[data-trip-chrome]")).toBeTruthy();
+    expect(screen.getByText("Friday drinks")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /theme/i })).toBeTruthy();
+    expect(container.querySelector("a.truncate")?.getAttribute("href")).toBe("/cabin-weekend/host");
+    expect(screen.queryByRole("navigation", { name: /trip sections/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^rsvp$/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^try demo$/i })).toBeNull();
+    expect(screen.queryByLabelText(/open menu/i)).toBeNull();
+    expect(container.querySelector("a.truncate")?.textContent).not.toMatch(/Sep 4/);
+  });
 });
