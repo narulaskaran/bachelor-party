@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { APICallError, generateText, LoadAPIKeyError, Output } from "ai";
+import { APICallError, generateText, Output } from "ai";
 import { z } from "zod";
 import { PlanExtractionUnavailableError } from "@/lib/plan-ingest-errors";
 import type { ExtractedPlanFacts, ExtractedScheduleEntry } from "@/lib/plan-ingestion";
@@ -7,6 +7,44 @@ import { isValidCalendarDate } from "@/lib/trip-dates";
 
 export const OPENROUTER_MODEL = "z-ai/glm-5.3-flash";
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+/** GLM 5.3 Flash always reasons; slow providers often take ~20s. Abort must outlast that. */
+export const PLAN_EXTRACT_TIMEOUT_MS = 50_000;
+export const OPENROUTER_REASONING = { effort: "low" as const };
+
+/** Inject OpenRouter's unified reasoning control onto an AI SDK fetch body. */
+export function withOpenRouterReasoning(init?: RequestInit): RequestInit | undefined {
+  if (!init || typeof init.body !== "string") return init;
+  try {
+    const parsed = JSON.parse(init.body) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return init;
+    const body = parsed as Record<string, unknown>;
+    if (body.reasoning) return init;
+    return {
+      ...init,
+      body: JSON.stringify({ ...body, reasoning: OPENROUTER_REASONING }),
+    };
+  } catch {
+    return init;
+  }
+}
+
+export function openRouterFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  return fetch(input, withOpenRouterReasoning(init));
+}
+
+function logPlanExtractionFailure(error: unknown, aborted: boolean): void {
+  if (APICallError.isInstance(error)) {
+    console.error("plan extraction failed", { status: error.statusCode, aborted });
+    return;
+  }
+  console.error("plan extraction failed", {
+    name: error instanceof Error ? error.name : typeof error,
+    aborted,
+  });
+}
 
 const UNKNOWN_VALUE_RE =
   /^(tbd|tba|n\/?a|unknown|still deciding|not sure|none|to be (decided|determined)|—|-|\.{3}|…)$/i;
@@ -158,6 +196,7 @@ export async function extractPlanWithOpenRouter(
     apiKey,
     baseURL: OPENROUTER_BASE_URL,
     name: "openrouter",
+    fetch: openRouterFetch,
     headers: {
       "HTTP-Referer": "https://party.narula.xyz",
       "X-Title": "The Big Send",
@@ -165,7 +204,7 @@ export async function extractPlanWithOpenRouter(
   });
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20_000);
+  const timer = setTimeout(() => controller.abort(), PLAN_EXTRACT_TIMEOUT_MS);
   try {
     const { output } = await generateText({
       model: openrouter.chat(OPENROUTER_MODEL),
@@ -175,9 +214,11 @@ export async function extractPlanWithOpenRouter(
         description: "Facts the host stated. Null when unknown.",
       }),
       temperature: 0,
+      maxOutputTokens: 2048,
+      maxRetries: 1,
       abortSignal: controller.signal,
       providerOptions: {
-        openai: { strictJsonSchema: false },
+        openai: { strictJsonSchema: false, reasoningEffort: "low" },
       },
       system:
         "You extract event logistics from messy host notes. You never invent facts. You never guess a timezone from a city.",
@@ -185,13 +226,8 @@ export async function extractPlanWithOpenRouter(
     });
     return factsFromModelOutput(output, plan);
   } catch (error) {
+    logPlanExtractionFailure(error, controller.signal.aborted);
     if (error instanceof PlanExtractionUnavailableError) throw error;
-    if (error instanceof LoadAPIKeyError || APICallError.isInstance(error)) {
-      throw new PlanExtractionUnavailableError();
-    }
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new PlanExtractionUnavailableError();
-    }
     throw new PlanExtractionUnavailableError();
   } finally {
     clearTimeout(timer);

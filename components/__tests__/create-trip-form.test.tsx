@@ -132,6 +132,45 @@ describe("CreateTripForm", () => {
     expect(screen.queryByText(PACKET.password)).toBeNull();
   });
 
+  it("shows a spinner on Create draft while notes are being read", async () => {
+    const user = userEvent.setup();
+    let finish: (result: CreateTripResult) => void = () => {};
+    const create = vi.fn(
+      () =>
+        new Promise<CreateTripResult>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(<CreateTripForm create={create} />);
+
+    await user.type(screen.getByLabelText(/^describe your event$/i), "Thursday dinner");
+    await user.click(screen.getByRole("button", { name: /^create draft$/i }));
+
+    const busy = screen.getByRole("button", { name: /creating/i });
+    expect((busy as HTMLButtonElement).disabled).toBe(true);
+    expect(busy.getAttribute("aria-busy")).toBe("true");
+    expect(busy.className).toMatch(/disabled:opacity-100/);
+    const spinner = busy.querySelector("svg");
+    expect(spinner).toBeTruthy();
+    expect(spinner?.getAttribute("aria-hidden")).toBe("true");
+    expect(spinner?.getAttribute("class") ?? "").toMatch(/animate-spin/);
+    expect((screen.getByLabelText(/^describe your event$/i) as HTMLTextAreaElement).disabled).toBe(
+      true,
+    );
+    expect((screen.getByRole("radio", { name: /party/i }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+
+    finish({
+      ok: false,
+      error: "Couldn't read your notes right now. Try again in a minute.",
+    });
+    expect((await screen.findByRole("alert")).textContent).toMatch(/read your notes/i);
+    expect((screen.getByRole("button", { name: /^create draft$/i }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+
   it("surfaces create failures without sending the host to /admin", async () => {
     const user = userEvent.setup();
     const create = vi.fn(async () => ({
