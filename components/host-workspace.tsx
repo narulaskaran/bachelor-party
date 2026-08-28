@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { HostEditor, type HostEditorAction } from "@/components/host-editor";
 import { HostKeyBanner } from "@/components/host-key-banner";
@@ -41,7 +41,9 @@ export function HostWorkspace({
   const [previewSource, setPreviewSource] = useState<HostPreviewSource>("draft");
   const [guestSnapshot, setGuestSnapshot] = useState(publishedSnapshot);
   const liveRef = useRef(liveContent);
-  liveRef.current = liveContent;
+  useEffect(() => {
+    liveRef.current = liveContent;
+  }, [liveContent]);
   const statusChip = HOST_PUBLISH_STATUS_COPY[publishStatus].chip;
 
   return (
