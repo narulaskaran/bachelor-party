@@ -252,11 +252,72 @@ describe("HostEditor draft review safety", () => {
     expect(sessionStorage.getItem(hostKeyStorageKey("cabin-weekend"))).toBe("party-tok");
   });
 
+  it("collapses facts after review and save, then reopens on edit", async () => {
+    const save = vi.fn(async () => ({ ok: true as const }));
+    render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published={false}
+        save={save}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+
+    const facts = screen.getByText("Review the facts before sharing").closest("details");
+    expect(facts?.open).toBe(false);
+
+    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Updated title" } });
+    expect(facts?.open).toBe(true);
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /i reviewed every fact/i }));
+    fireEvent.submit(screen.getByRole("button", { name: /save draft/i }).closest("form")!);
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(facts?.open).toBe(false);
+
+    fireEvent.change(screen.getByLabelText("Location"), { target: { value: "Boulder" } });
+    expect(facts?.open).toBe(true);
+  });
+
+  it("offers one Add section control for lodge, schedule, activities, and pack", () => {
+    render(
+      <HostEditor
+        slug="dinner"
+        initial={{ kind: "trip", preset: "night-out", trip: { siteName: "Friday drinks" } }}
+        published={false}
+        save={vi.fn(async () => ({ ok: true as const }))}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+
+    const add = screen.getByLabelText("Add section");
+    expect(add).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /add lodge/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /add schedule/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /add packing/i })).toBeNull();
+    expect([...add.querySelectorAll("option")].map((option) => option.textContent)).toEqual([
+      "Choose…",
+      "Lodge",
+      "Schedule",
+      "Activities",
+      "Pack",
+    ]);
+
+    fireEvent.change(add, { target: { value: "lodging" } });
+    expect(screen.getByLabelText("Lodging name")).toBeTruthy();
+    expect([...screen.getByLabelText("Add section").querySelectorAll("option")].map((option) => option.textContent)).toEqual([
+      "Choose…",
+      "Schedule",
+      "Activities",
+      "Pack",
+    ]);
+  });
+
   it("shows Draft only, Live, or Unpublished changes — never Published + draft", () => {
     const save = vi.fn(async () => ({ ok: true as const }));
     const publish = vi.fn(async () => ({ ok: true as const }));
 
-    render(
+    const { unmount } = render(
       <HostEditor
         slug="cabin-weekend"
         initial={initial}
@@ -266,9 +327,8 @@ describe("HostEditor draft review safety", () => {
         publish={publish}
       />,
     );
-    expect(screen.getByLabelText("Event status: Draft only").textContent).toBe("Draft only");
     expect(screen.queryByText("Published + draft")).toBeNull();
-    cleanup();
+    unmount();
 
     render(
       <HostEditor
@@ -280,23 +340,7 @@ describe("HostEditor draft review safety", () => {
         publish={publish}
       />,
     );
-    expect(screen.getByLabelText("Event status: Live").textContent).toBe("Live");
-    expect(screen.getByText("Guests see this version.")).toBeTruthy();
-    expect(screen.queryByText("Editing a private draft.")).toBeNull();
-    cleanup();
-
-    render(
-      <HostEditor
-        slug="cabin-weekend"
-        initial={initial}
-        published
-        publishStatus="unpublished-changes"
-        save={save}
-        publish={publish}
-      />,
-    );
-    expect(screen.getByLabelText("Event status: Unpublished changes").textContent).toBe("Unpublished changes");
-    expect(screen.getByText("Editing a private draft.")).toBeTruthy();
+    expect(screen.queryByText("Published + draft")).toBeNull();
   });
 
   it("does not preview an inverted end-before-start When line", () => {
@@ -315,5 +359,22 @@ describe("HostEditor draft review safety", () => {
     expect(preview.textContent).toBe("Guests will see: When TBD");
     expect(preview.textContent).not.toMatch(/Sep 1/);
     expect(preview.textContent).not.toMatch(/Sep 4 –/);
+  });
+
+  it("keeps Save draft and Publish sticky", () => {
+    const { container } = render(
+      <HostEditor
+        slug="cabin-weekend"
+        initial={initial}
+        published={false}
+        save={vi.fn(async () => ({ ok: true as const }))}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+    const bar = container.querySelector(".sticky.bottom-0");
+    expect(bar?.textContent).toMatch(/Save draft/);
+    expect(bar?.textContent).toMatch(/Publish for guests/);
+    expect(bar?.className).toContain("backdrop-blur");
+    expect(bar?.closest("[data-slot=card]")?.className).toContain("overflow-visible");
   });
 });

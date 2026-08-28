@@ -121,6 +121,7 @@ export type HostEditorState =
       publishStatus: HostPublishStatus;
       sample: boolean;
       guestUrl?: string;
+      publishedSnapshot?: import("@/lib/party-types").PartyContent;
     }
   | { ok: false; error: string };
 
@@ -133,6 +134,7 @@ export async function getHostEditorState(slug: string): Promise<HostEditorState>
       publishStatus: "live",
       sample: true,
       guestUrl: "/demo",
+      publishedSnapshot: DEMO_PARTY,
     };
   }
   const loaded = await loadHostParty(slug);
@@ -155,6 +157,7 @@ export async function getHostEditorState(slug: string): Promise<HostEditorState>
     ...(published
       ? {
           guestUrl: publishedGuestPath(loaded.party),
+          publishedSnapshot: loaded.party.content,
         }
       : {}),
   };

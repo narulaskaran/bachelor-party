@@ -33,6 +33,13 @@ export function parseEventPreset(value: unknown): EventPreset {
 /** Weekend-only blocks. Party is details + RSVP; these stay optional. */
 export type WeekendBlock = "schedule" | "lodging" | "activities" | "packing";
 
+export const WEEKEND_SECTION_OPTIONS: { block: WeekendBlock; label: string }[] = [
+  { block: "lodging", label: "Lodge" },
+  { block: "schedule", label: "Schedule" },
+  { block: "activities", label: "Activities" },
+  { block: "packing", label: "Pack" },
+];
+
 export function weekendBlocksFilled(content: PartyContent): WeekendBlock[] {
   const filled: WeekendBlock[] = [];
   if (hasSchedule(content)) filled.push("schedule");

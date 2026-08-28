@@ -4,6 +4,7 @@ import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AUTH_COOKIE, authCookieValue } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { REQUEST_PATHNAME_HEADER } from "@/lib/request-pathname";
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(async () => ({
@@ -253,6 +254,10 @@ describe("GET /{slug} chrome", () => {
   afterEach(() => {
     vi.mocked(getDb).mockReset();
     vi.mocked(cookies).mockReset();
+    vi.mocked(headers).mockReset();
+    vi.mocked(headers).mockResolvedValue({
+      get: () => null,
+    } as never);
   });
 
   it("still brands the nav with the unlocked trip", async () => {
@@ -384,5 +389,35 @@ describe("GET /{slug} chrome", () => {
     expect(html).not.toContain("Create a trip");
     expect(html).not.toContain("Try Demo");
     expect(html).toContain("DEMO_BODY");
+  });
+
+  it("drops guest section links on /demo/host and keeps wordmark plus theme", async () => {
+    vi.mocked(cookies).mockResolvedValue({
+      get: () => undefined,
+      set: vi.fn(),
+    } as never);
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) => (name === REQUEST_PATHNAME_HEADER ? "/demo/host" : null),
+    } as never);
+    vi.mocked(getDb).mockReturnValue(fakeDb([]) as never);
+
+    const html = renderToStaticMarkup(
+      await TripLayout({
+        children: createElement("p", null, "HOST_BODY"),
+        params: Promise.resolve({ slug: "demo" }),
+      }),
+    );
+
+    expect(html).toContain("Alpine Weekend");
+    expect(html).toContain("data-host-chrome");
+    expect(html).toContain("data-trip-chrome");
+    expect(html).toContain('href="/demo/host"');
+    expect(html).toContain('aria-label="Dark theme"');
+    expect(html).not.toContain('href="#rsvp"');
+    expect(html).not.toContain('href="#schedule"');
+    expect(html).not.toContain('href="#lodge"');
+    expect(html).not.toContain("RSVP");
+    expect(html).not.toContain("Try Demo");
+    expect(html).toContain("HOST_BODY");
   });
 });
