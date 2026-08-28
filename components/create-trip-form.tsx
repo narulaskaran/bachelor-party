@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -80,8 +81,9 @@ export function CreateTripForm({
                   type="button"
                   role="radio"
                   aria-checked={selected}
+                  disabled={pending}
                   onClick={() => setPreset(value)}
-                  className={`flex min-h-11 flex-1 items-center rounded-md border px-3 py-2 text-left text-sm ${
+                  className={`flex min-h-11 flex-1 items-center rounded-md border px-3 py-2 text-left text-sm disabled:pointer-events-none disabled:opacity-50 ${
                     selected
                       ? "border-primary bg-primary/10 font-medium"
                       : "border-border"
@@ -118,8 +120,20 @@ export function CreateTripForm({
             {error}
           </p>
         ) : null}
-        <Button type="submit" disabled={pending} className="w-fit max-w-sm self-start">
-          {pending ? "Creating…" : "Create draft"}
+        <Button
+          type="submit"
+          disabled={pending}
+          aria-busy={pending}
+          className={cn("w-fit max-w-sm self-start", pending && "disabled:opacity-100")}
+        >
+          {pending ? (
+            <>
+              <Loader2Icon data-icon="inline-start" className="animate-spin" aria-hidden />
+              Creating…
+            </>
+          ) : (
+            "Create draft"
+          )}
         </Button>
       </form>
     </>
