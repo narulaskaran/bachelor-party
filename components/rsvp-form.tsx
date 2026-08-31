@@ -14,7 +14,7 @@ import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { rsvpFieldDefaults, type RsvpPrefill } from "@/lib/merge-guest";
 import { plusOneAllowed } from "@/lib/rsvp-contract";
 import type { Activity, RsvpConfig } from "@/lib/party-types";
-import { kickerClass } from "@/lib/type";
+import { contentGroupClass, kickerClass } from "@/lib/type";
 import { VoteActivityGroup } from "@/components/vote-activity-group";
 import { cn } from "@/lib/utils";
 
@@ -91,7 +91,7 @@ function LiveRsvpForm({
       action={locked ? undefined : formAction}
       onSubmit={onSubmit}
       noValidate={locked}
-      className="mx-auto max-w-2xl space-y-10"
+      className="mx-auto max-w-2xl space-y-4 sm:space-y-5"
     >
       {inviteToken ? <input type="hidden" name="invite" value={inviteToken} /> : null}
       {sample ? (
@@ -99,7 +99,7 @@ function LiveRsvpForm({
           <AlertDescription>{DEMO_RSVP_MESSAGE}</AlertDescription>
         </Alert>
       ) : null}
-      <section className="space-y-4">
+      <section className={cn("space-y-4 p-4 sm:p-6", contentGroupClass)}>
         <Eyebrow>Who</Eyebrow>
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
@@ -126,7 +126,7 @@ function LiveRsvpForm({
         </div>
       </section>
 
-      <section className="space-y-4 border-t border-border pt-8">
+      <section className={cn("space-y-4 p-4 sm:p-6", contentGroupClass)}>
         <Eyebrow>Attendance</Eyebrow>
         <fieldset role="group" aria-label="Attendance" className="space-y-3">
           <legend className="sr-only">Attendance</legend>
@@ -165,7 +165,7 @@ function LiveRsvpForm({
       </section>
 
       {extras.flights && airport ? (
-      <section className="space-y-4 border-t border-border pt-8">
+      <section className={cn("space-y-4 p-4 sm:p-6", contentGroupClass)}>
         <Eyebrow>Flights</Eyebrow>
         <p className="text-sm text-muted-foreground">
           Flying into {airport}. Leave blank if driving.
@@ -216,7 +216,7 @@ function LiveRsvpForm({
       ) : null}
 
       {extras.food ? (
-      <section className="space-y-4 border-t border-border pt-8">
+      <section className={cn("space-y-4 p-4 sm:p-6", contentGroupClass)}>
         <Eyebrow>Food</Eyebrow>
         <div className="space-y-2">
           <Label htmlFor="dietary">Dietary restrictions</Label>
@@ -232,7 +232,7 @@ function LiveRsvpForm({
       ) : null}
 
       {extras.votes && pollActivities.length > 0 ? (
-      <section className="space-y-2 border-t border-border pt-8">
+      <section className={cn("space-y-2 p-4 sm:p-6", contentGroupClass)}>
         <Eyebrow>Votes</Eyebrow>
         <p className="text-sm text-muted-foreground">
           The toss-up activities — tell us where you stand.
@@ -250,7 +250,7 @@ function LiveRsvpForm({
       ) : null}
 
       {extras.notes ? (
-      <section className="space-y-4 border-t border-border pt-8">
+      <section className={cn("space-y-4 p-4 sm:p-6", contentGroupClass)}>
         <Eyebrow>Notes</Eyebrow>
         <div className="space-y-2">
           <Label htmlFor="notes">Anything else</Label>

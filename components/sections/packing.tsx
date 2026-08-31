@@ -11,7 +11,8 @@ import {
 } from "@/lib/packing-storage";
 import type { PackingItem } from "@/lib/party-types";
 import { nonemptyPacking } from "@/lib/trip-sections";
-import { sectionTitleClass } from "@/lib/type";
+import { contentGroupClass, sectionTitleClass } from "@/lib/type";
+import { cn } from "@/lib/utils";
 
 export function PackingSection({
   packing,
@@ -34,7 +35,7 @@ function PackingShell({ children }: { children: ReactNode }) {
     <section id="pack" className="scroll-mt-20 py-12 sm:py-16">
       <h2 className={sectionTitleClass}>Pack</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">Don&apos;t forget these.</p>
-      <ul className="mt-8 flex max-w-xl flex-col">{children}</ul>
+      <ul className={cn("mt-8 flex max-w-xl flex-col overflow-hidden", contentGroupClass)}>{children}</ul>
     </section>
   );
 }
@@ -52,7 +53,7 @@ function StaticPackingList({ items }: { items: PackingItem[] }) {
   return (
     <PackingShell>
       {items.map((item, index) => (
-        <li key={`${item.title}-${index}`}>
+        <li key={`${item.title}-${index}`} className="border-b border-border px-4 last:border-b-0 sm:px-5">
           <div className="flex min-h-11 flex-col items-start justify-center text-left">
             <ItemCopy item={item} />
           </div>
@@ -89,7 +90,7 @@ function InteractivePackingList({
         const id = `pack-${index}`;
         const isChecked = Boolean(checked[item.title]);
         return (
-          <li key={`${item.title}-${index}`}>
+          <li key={`${item.title}-${index}`} className="border-b border-border px-4 last:border-b-0 sm:px-5">
             <div className="flex min-h-11 items-center gap-3">
               <Checkbox
                 id={id}

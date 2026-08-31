@@ -64,7 +64,7 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
       {lodging.address || lodging.mapsUrl || lodging.url ? (
         <div className="mt-10">
           <p className={kickerClass}>Getting there</p>
-          <Card className="mt-4 max-w-xl">
+          <Card className="mt-4 max-w-xl border border-border">
             {lodging.address ? (
               <CardHeader>
                 <p className={kickerClass}>Address</p>

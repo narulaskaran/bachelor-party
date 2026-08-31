@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HashFocusLink } from "@/components/hash-focus-link";
 import type { Activity, PartyContent } from "@/lib/party-types";
 import { nonemptyActivities } from "@/lib/trip-sections";
-import { kickerClass, sectionTitleClass } from "@/lib/type";
+import { contentGroupClass, kickerClass, sectionTitleClass } from "@/lib/type";
+import { cn } from "@/lib/utils";
 
 export function ActivitiesSection({
   activities,
@@ -33,7 +34,7 @@ export function ActivitiesSection({
       ) : null}
 
       {ifTimeAllows.length > 0 ? (
-        <div className="mt-10 border-t border-border pt-8">
+        <div className={cn("mt-10 p-4 sm:p-5", contentGroupClass)}>
           <p className={kickerClass}>If time allows</p>
           <ul className="mt-4 flex flex-col gap-3">
             {ifTimeAllows.map((activity) => (
@@ -44,7 +45,7 @@ export function ActivitiesSection({
       ) : null}
 
       {backups.length > 0 ? (
-        <div className="mt-10 border-t border-border pt-8">
+        <div className={cn("mt-10 p-4 sm:p-5", contentGroupClass)}>
           <p className={kickerClass}>Backups</p>
           <ul className="mt-4 flex flex-col gap-3">
             {backups.map((activity) => (
@@ -70,7 +71,7 @@ function CoreActivityCard({ activity }: { activity: Activity }) {
   const hasMultipleOptions = (activity.options?.length ?? 0) > 1;
 
   return (
-    <Card>
+    <Card className="border border-border">
       <CardHeader>
         <CardTitle className="text-lg font-semibold tracking-tight">{activity.name}</CardTitle>
       </CardHeader>

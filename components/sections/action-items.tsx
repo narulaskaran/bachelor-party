@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { HashFocusLink } from "@/components/hash-focus-link";
 import type { ActionItem } from "@/lib/party-types";
-import { sectionTitleClass } from "@/lib/type";
+import { contentGroupClass, sectionTitleClass } from "@/lib/type";
+import { cn } from "@/lib/utils";
 
 const ANCHOR_LABELS: Record<string, string> = {
   rsvp: "RSVP",
@@ -25,9 +26,9 @@ export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
     <section id="do-your-part" className="scroll-mt-20 py-12 sm:py-16">
       <h2 className={sectionTitleClass}>Do your part</h2>
 
-      <ol className="mt-8 flex flex-col gap-6">
+      <ol className={cn("mt-8 overflow-hidden", contentGroupClass)}>
         {actionItems.map((item, index) => (
-          <li key={item.title} className="flex items-start gap-4">
+          <li key={item.title} className="flex items-start gap-4 border-b border-border p-4 last:border-b-0 sm:p-5">
             <span
               aria-hidden="true"
               className="text-3xl font-semibold leading-none text-primary"

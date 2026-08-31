@@ -1,7 +1,8 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { RsvpForm } from "@/components/rsvp-form";
 import type { Activity, RsvpConfig } from "@/lib/party-types";
-import { sectionTitleClass } from "@/lib/type";
+import { contentGroupClass, sectionTitleClass } from "@/lib/type";
+import { cn } from "@/lib/utils";
 import type { RsvpPrefill } from "@/lib/merge-guest";
 
 export type RsvpSectionViewProps = {
@@ -59,7 +60,7 @@ export function RsvpSectionView({
         />
       </div>
 
-      <div className="mt-12 border-t border-border pt-8">
+      <div className={cn("mt-12 p-4 sm:p-6", contentGroupClass)}>
         <h3 className="text-xl font-semibold tracking-tight">Who&rsquo;s coming</h3>
 
         {guests.length === 0 ? (

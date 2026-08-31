@@ -1,6 +1,6 @@
 import type { Lodging, Trip } from "@/lib/party-types";
 import { glanceFacts } from "@/lib/trip-sections";
-import { kickerClass, sectionTitleClass } from "@/lib/type";
+import { contentGroupClass, kickerClass, sectionTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
 
 export function Glance({ trip, lodging }: { trip: Trip; lodging?: Lodging }) {
@@ -11,9 +11,9 @@ export function Glance({ trip, lodging }: { trip: Trip; lodging?: Lodging }) {
     <section id="glance" className="scroll-mt-20 py-12 sm:py-16">
       <h2 className={sectionTitleClass}>At a glance</h2>
 
-      <div className="mt-6 flex flex-col gap-6 md:flex-row md:gap-8">
+      <div className="mt-6 flex flex-col gap-3 sm:grid sm:grid-cols-2 md:flex md:flex-row">
         {facts.map((fact) => (
-          <div key={fact.label} className="min-w-0 flex-1">
+          <div key={fact.label} className={`${contentGroupClass} min-w-0 flex-1 p-4 sm:p-5`}>
             <p className={kickerClass}>{fact.label}</p>
             <p className="mt-1 break-words text-base font-medium sm:text-lg">{fact.value}</p>
             {fact.note && (
