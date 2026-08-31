@@ -177,6 +177,17 @@ describe("mobile trip layout", () => {
     expect(html).toContain("break-words");
   });
 
+  it("puts a primary RSVP path in the hero", () => {
+    const html = renderToStaticMarkup(
+      createElement(Hero, {
+        trip: { siteName: "Alpine Weekend" },
+      }),
+    );
+    expect(html).toContain('href="#rsvp"');
+    expect(html).toContain("RSVP now");
+    expect(html).toContain("Takes about one minute");
+  });
+
   it("lays out basecamp stats in a wrapping grid instead of a horizontal scroller", () => {
     const html = renderToStaticMarkup(
       createElement(BasecampSection, {

@@ -1,5 +1,7 @@
 import { eventTitleOrFallback, type GuestUpdate, type Trip } from "@/lib/party-types";
 import { Countdown } from "@/components/countdown";
+import { HashFocusLink } from "@/components/hash-focus-link";
+import { Button } from "@/components/ui/button";
 import { formatGuestWhen, formatGuestWhere, GUEST_WHEN_PLACEHOLDER } from "@/lib/guest-when";
 import { guestUpdateRelativeLabel } from "@/lib/guest-update";
 import { kickerClass, pageTitleClass } from "@/lib/type";
@@ -48,6 +50,15 @@ export function Hero({
       {guestUpdate ? (
         <p className={cn("mt-2", kickerClass)}>{guestUpdateRelativeLabel(guestUpdate)}</p>
       ) : null}
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <Button asChild size="lg">
+          <HashFocusLink href="#rsvp" focusId="rsvp">
+            RSVP now
+          </HashFocusLink>
+        </Button>
+        <span className="text-sm text-muted-foreground">Takes about one minute</span>
+      </div>
 
       {trip.startDate ? (
         <div className="mt-4">
