@@ -27,6 +27,7 @@ export function PartyView({
       content={content}
       slug={slug}
       preview={preview}
+      sample={sample}
       rsvp={
         <RsvpSection
           sample={sample}

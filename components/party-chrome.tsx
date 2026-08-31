@@ -16,6 +16,7 @@ export function PartyChrome({
   rsvp,
   hashFocus = true,
   preview = false,
+  sample = false,
 }: {
   content: PartyContent;
   slug?: string;
@@ -23,6 +24,8 @@ export function PartyChrome({
   hashFocus?: boolean;
   /** Host guest preview — pack is a static list, not a checkoff. */
   preview?: boolean;
+  /** Public sample trip — clearly disclose non-persistent/demo content. */
+  sample?: boolean;
 }) {
   const sections = visibleSections(content);
   const footerBits = [
@@ -36,7 +39,7 @@ export function PartyChrome({
       className="mx-auto w-full min-w-0 max-w-5xl px-4"
       data-presentation={content.presentation?.style ?? "clean"}
     >
-      <Hero trip={content.trip} guestUpdate={content.guestUpdate} />
+      <Hero trip={content.trip} guestUpdate={content.guestUpdate} sample={sample} />
       {sections.glance ? (
         <Glance trip={content.trip} lodging={content.lodging} />
       ) : null}

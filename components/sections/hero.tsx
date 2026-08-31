@@ -11,10 +11,12 @@ export function Hero({
   trip,
   meta,
   guestUpdate,
+  sample = false,
 }: {
   trip: Trip;
   meta?: string[];
   guestUpdate?: GuestUpdate;
+  sample?: boolean;
 }) {
   const when = formatGuestWhen(trip);
   const where = formatGuestWhere(trip);
@@ -22,6 +24,11 @@ export function Hero({
   return (
     <section className="py-10 sm:py-14">
       <h1 className={cn(pageTitleClass, "break-words")}>{eventTitleOrFallback(trip.siteName)}</h1>
+      {sample ? (
+        <p className="mt-3 inline-flex rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+          Sample trip · Demo mode
+        </p>
+      ) : null}
       {trip.tagline ? (
         <p className="mt-3 max-w-xl text-muted-foreground">{trip.tagline}</p>
       ) : null}

@@ -188,6 +188,15 @@ describe("mobile trip layout", () => {
     expect(html).toContain("Takes about one minute");
   });
 
+  it("discloses sample trips in the hero", () => {
+    const sample = renderToStaticMarkup(
+      createElement(Hero, { trip: { siteName: "Alpine Weekend" }, sample: true }),
+    );
+    const live = renderToStaticMarkup(createElement(Hero, { trip: { siteName: "Alpine Weekend" } }));
+    expect(sample).toContain("Sample trip · Demo mode");
+    expect(live).not.toContain("Sample trip · Demo mode");
+  });
+
   it("lays out basecamp stats in a wrapping grid instead of a horizontal scroller", () => {
     const html = renderToStaticMarkup(
       createElement(BasecampSection, {
