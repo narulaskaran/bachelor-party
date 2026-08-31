@@ -23,9 +23,9 @@ const SCAN_EXT = new Set([
 const LIGHT = {
   background: "#f5f5f4",
   foreground: "#171717",
-  primary: "#d97706",
-  "primary-foreground": "#1c1917",
-  ring: "#d97706",
+  primary: "#b45309",
+  "primary-foreground": "#fff7ed",
+  ring: "#b45309",
   muted: "#eeebe8",
   "muted-foreground": "#57534e",
   border: "#e7e5e4",
@@ -106,6 +106,7 @@ describe("theme tokens", () => {
   it("gives primary buttons and light muted copy at least 4.5:1 contrast", () => {
     const light = blockVars(css, ":root");
     expect(contrastRatio(light.primary, light["primary-foreground"])).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(light.primary, light.background)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(light.background, light["muted-foreground"])).toBeGreaterThanOrEqual(4.5);
     const dark = blockVars(css, ".dark");
     expect(contrastRatio(dark.primary, dark["primary-foreground"])).toBeGreaterThanOrEqual(4.5);
