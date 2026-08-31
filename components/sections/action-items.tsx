@@ -40,7 +40,7 @@ export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
               {item.note && (
                 <p className="mt-1 text-sm text-muted-foreground">{item.note}</p>
               )}
-              {item.anchor && (
+              {item.anchor ? (
                 <Button asChild size="sm" className="mt-3">
                   {item.anchor.startsWith("#") ? (
                     <HashFocusLink
@@ -53,6 +53,10 @@ export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
                     <a href={item.anchor}>{actionItemCtaLabel(item.anchor)}</a>
                   )}
                 </Button>
+              ) : (
+                <span className="mt-2 inline-flex rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
+                  Reminder
+                </span>
               )}
             </div>
           </li>

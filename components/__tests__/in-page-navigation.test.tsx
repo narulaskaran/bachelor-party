@@ -137,6 +137,17 @@ describe("in-page navigation", () => {
     expect(document.documentElement.style.scrollBehavior).toBe("");
   });
 
+  it("marks items without an anchor as reminders instead of implying a missing action", () => {
+    render(
+      <ActionItems
+        actionItems={[{ title: "Book your flight" }, { title: "RSVP below", anchor: "#rsvp" }]}
+      />,
+    );
+
+    expect(screen.getByText("Reminder")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "RSVP" })).toBeTruthy();
+  });
+
   it("smooth-scrolls action-item links to their section", async () => {
     const user = userEvent.setup();
     addTarget("rsvp");
