@@ -80,7 +80,7 @@ export function rsvpFieldDefaults(existing: RsvpPrefill | null | undefined) {
     dietary: existing?.dietary ?? "",
     notes: existing?.notes ?? "",
     activityPrefs: existing?.activityPrefs ?? {},
-    attendanceStatus: existing?.attendanceStatus ?? "attending",
+    attendanceStatus: existing ? (existing.attendanceStatus ?? "attending") : "",
     partySize: existing?.partySize ?? 1,
     plusOneName: existing?.plusOneName ?? "",
   };

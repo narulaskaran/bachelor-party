@@ -144,6 +144,7 @@ describe("form prefills existing data", () => {
   it("returns empty defaults when nothing is saved for this session", () => {
     expect(rsvpFieldDefaults(null).name).toBe("");
     expect(rsvpFieldDefaults(null).phone).toBe("");
+    expect(rsvpFieldDefaults(null).attendanceStatus).toBe("");
     expect(rsvpFieldDefaults(undefined).activityPrefs).toEqual({});
   });
 });
