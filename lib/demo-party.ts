@@ -64,10 +64,22 @@ export const DEMO_PARTY: PartyContent = {
       key: "sunday",
       date: "2030-09-01",
       weekday: "Sunday",
-      label: "Head home",
+      label: "Last full day",
       timed: false,
       entries: [
         { title: "Pack up" },
+        { title: "Final cabin morning" },
+        { title: "Free afternoon" },
+      ],
+    },
+    {
+      key: "monday",
+      date: "2030-09-02",
+      weekday: "Monday",
+      label: "Departure day",
+      timed: false,
+      entries: [
+        { title: "Check out" },
         { title: "Drive to the airport" },
         { title: "Departures" },
       ],

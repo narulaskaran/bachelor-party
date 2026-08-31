@@ -18,6 +18,14 @@ describe("DEMO_RSVP_MESSAGE", () => {
   });
 });
 
+describe("DEMO_PARTY schedule", () => {
+  it("covers every date in the trip range through departure day", () => {
+    const schedule = DEMO_PARTY.schedule ?? [];
+    expect(schedule.at(-1)?.date).toBe(DEMO_PARTY.trip.endDate);
+    expect(schedule.at(-1)?.label).toBe("Departure day");
+    expect(schedule.at(-1)?.entries.map((entry) => entry.title)).toContain("Departures");
+  });
+});
 describe("DEMO_PARTY packing", () => {
   it("lists alpine-weekend items and a Pack action-item", () => {
     expect(DEMO_PARTY.packing?.map((item) => item.title)).toEqual([
