@@ -120,7 +120,7 @@ describe("factsFromModelOutput", () => {
 });
 
 describe("extractionPrompt", () => {
-  const prompt = extractionPrompt(AIRPORT_CONFUSION, "2026-09-01");
+  const prompt = extractionPrompt("Cabin weekend", "2026-09-01");
 
   it("keeps the general travel-vs-venue rule and is not a one-shot of the JFK sentence", () => {
     expect(prompt).toContain("Separate travel logistics from event logistics.");
@@ -130,21 +130,20 @@ describe("extractionPrompt", () => {
     expect(prompt).toContain(
       "Do not use a departure airport, arrival airport, or transit point as the event location unless the host explicitly says the event happens there.",
     );
+    expect(prompt).toContain("never pick an airport as Where");
     expect(prompt).not.toContain(ONE_SHOT_JFK_EXAMPLE);
-    expect(prompt).toContain(AIRPORT_CONFUSION);
+    expect(prompt).not.toContain(AIRPORT_CONFUSION);
   });
 
-  it("covers a short diverse set of location vs travel cases", () => {
-    expect(prompt).toContain('"the Mission" (not JFK/SFO); address null');
-    expect(prompt).toContain("LGA terminal B");
-    expect(prompt).toContain("SFO United Club");
+  it("adds two or three compact cases, not a long few-shot list", () => {
     expect(prompt).toContain("cabin in Leavenworth");
-    expect(prompt).toContain("Penn Station");
-    expect(prompt).toContain("we're all flying JFK to DEN");
-    expect(prompt).toContain("Rita's on 6th");
+    expect(prompt).toContain("LGA terminal B");
     expect(prompt).toContain("Catskills");
-    expect(prompt).toContain("never pick an airport as Where");
     expect(prompt).toContain("Never invent a street address");
+    expect(prompt).not.toContain("location vs travel");
+    expect(prompt).not.toContain("Penn Station");
+    expect(prompt).not.toContain("Rita's on 6th");
+    expect(prompt).not.toContain("SFO United Club");
   });
 });
 
