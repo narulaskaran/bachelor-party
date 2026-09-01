@@ -160,7 +160,8 @@ export function factsFromModelOutput(raw: unknown, plan: string): ExtractedPlanF
   return facts;
 }
 
-function extractionPrompt(plan: string, today: string): string {
+/** Prompt sent to the extractor. */
+export function extractionPrompt(plan: string, today: string): string {
   return `Today (UTC) is ${today}.
 
 Extract only facts the host actually wrote in the notes below. Return JSON.
@@ -172,9 +173,14 @@ Rules:
 - siteName: a short event name they implied (e.g. "Friday drinks"), not the whole paragraph.
 - startDate / endDate: YYYY-MM-DD only. If they named a month and day without a year, use the next occurrence on or after today. If the calendar day is still ambiguous, null.
 - startTime: a clock they stated, including "around seven" / "7-ish" as "7:00 PM". Null if they did not mention a time.
-- Separate travel logistics from event logistics. Airport codes, airlines, flight numbers, and airport-to-airport routes are travel details, not event locations.
-- location: the venue, neighborhood, city, or other place where the event happens, explicitly associated with the event. Do not use a departure airport, arrival airport, or transit point as the event location unless the host explicitly says the event happens there.
-- For example, "Alaska JFK→SFO then dinner in the Mission." means location="the Mission"; JFK and SFO are not the location.
+- Separate travel logistics from event logistics. Airport codes, airlines, flight numbers, and airport-to-airport routes are travel details, not event locations. So are transit hubs and driving/train as transport.
+- location: the venue, neighborhood, city, lodging, or other place where the event happens, explicitly associated with the event. Do not use a departure airport, arrival airport, or transit point as the event location unless the host explicitly says the event happens there. If they only described travel and named no venue, city, or lodging for the event, location is null — never pick an airport as Where. Never invent a street address.
+- location vs travel (extract only; do not invent a street address):
+  - "Alaska JFK→SFO then dinner in the Mission." → "the Mission" (not JFK/SFO); address null
+  - "meet at LGA terminal B" / "party at the SFO United Club" → that airport venue
+  - "Delta into SEA, cabin in Leavenworth" → the cabin/Leavenworth, not SEA
+  - "Penn Station then walk to Keen's" → Keen's, not Penn Station; "we're all flying JFK to DEN" → null
+  - "Friday drinks at Rita's on 6th" → Rita's on 6th; "driving up to the Catskills Friday" → the Catskills, not "driving"
 - address: only an explicit street address. "I don't know the address" → null.
 - timezone: only an IANA zone they wrote (e.g. America/Denver). City names are not timezones. Abbreviations (ET, EST, PT) stay as written only if present; do not convert them to IANA.
 - lodgingName / packing / schedule: only what they listed. Do not infer a schedule from "get there early".
