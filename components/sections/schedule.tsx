@@ -26,7 +26,9 @@ export function ScheduleSection({
       <h2 className={sectionTitleClass}>{picker ? "Key events" : "Schedule"}</h2>
       {picker ? (
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">{KEY_EVENT_HINT}</p>
-      ) : null}
+      ) : (
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground">Highlighted entries are key events.</p>
+      )}
 
       <div className="mx-auto mt-8 flex max-w-3xl flex-col">
         {days.map((day, dayIndex) => {
@@ -82,7 +84,9 @@ export function ScheduleSection({
                         <div className="min-w-0 flex-1">
                           <p className={"font-medium" + (key ? " text-primary" : "")}>
                             {key && !picker ? (
-                              <span className="mr-2 text-xs font-medium">Key</span>
+                              <span className="mr-2 inline-flex rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                Key event
+                              </span>
                             ) : null}
                             {entry.title}
                           </p>

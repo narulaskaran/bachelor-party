@@ -46,7 +46,8 @@ const emptyDay: ScheduleDay = {
 describe("ScheduleSection", () => {
   it("labels key events and paints time, title, and dot with the primary color", () => {
     const html = renderToStaticMarkup(createElement(ScheduleSection, { schedule: [friday] }));
-    expect(html).toContain("Key");
+    expect(html).toContain("Key event");
+    expect(html).toContain("Highlighted entries are key events.");
     expect(html).toContain("Check in at the lodge");
     expect(html).toContain("text-primary");
     expect(html).toContain("bg-primary");
@@ -59,7 +60,7 @@ describe("ScheduleSection", () => {
     expect(html).toMatch(/text-sm text-muted-foreground[^>]*>Aug 30/);
     expect(html).toContain("text-sm text-muted-foreground");
     expect(html).not.toContain("text-muted-foreground/80");
-    expect(html).toContain("mr-2 text-xs font-medium");
+    expect(html).toContain("inline-flex rounded-full border border-primary/30");
   });
 
   it("keeps a human day label and omits Plan or a weekday duplicate", () => {
