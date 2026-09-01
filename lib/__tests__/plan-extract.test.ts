@@ -26,6 +26,7 @@ const MESSY =
   "yeah so friday drinks at the dead rabbit in nyc september 4 around seven we should get there early I don't know the address yet maybe 12 people";
 const AIRPORT_CONFUSION = "Alaska JFK→SFO then dinner in the Mission.";
 const AMTRAK_CATSKILLS = "Amtrak to Hudson then drive to the Catskills cabin";
+const LAKE_PLACID_DRIVE = "We're driving. Cabin in Lake Placid all weekend.";
 const ONE_SHOT_JFK_EXAMPLE =
   'For example, "Alaska JFK→SFO then dinner in the Mission." means location="the Mission"; JFK and SFO are not the location.';
 
@@ -115,9 +116,74 @@ describe("factsFromModelOutput", () => {
       },
       "Cabin\nLocation: TBD",
     );
+    expect(facts.siteName).toBe("Cabin");
     expect(facts.location).toBeUndefined();
     expect(facts.address).toBeUndefined();
     expect(facts.lodging).toBeUndefined();
+  });
+
+  it("drops a coined Cabin weekend title and keeps Cabin in Lake Placid as Where", () => {
+    const facts = factsFromModelOutput(
+      {
+        siteName: "Cabin weekend",
+        tagline: null,
+        startDate: null,
+        endDate: null,
+        startTime: null,
+        location: "Cabin in Lake Placid",
+        address: null,
+        timezone: null,
+        lodgingName: "Cabin in Lake Placid",
+        packing: null,
+        schedule: null,
+      },
+      LAKE_PLACID_DRIVE,
+    );
+    expect(facts.siteName).toBeUndefined();
+    expect(facts.location).toBe("Cabin in Lake Placid");
+    expect(facts.lodging).toBe("Cabin in Lake Placid");
+  });
+
+  it("drops a venue phrase used as Event name when it is the Where, not a stated title", () => {
+    const facts = factsFromModelOutput(
+      {
+        siteName: "Cabin in Lake Placid",
+        tagline: null,
+        startDate: null,
+        endDate: null,
+        startTime: null,
+        location: "Cabin in Lake Placid",
+        address: null,
+        timezone: null,
+        lodgingName: null,
+        packing: null,
+        schedule: null,
+      },
+      LAKE_PLACID_DRIVE,
+    );
+    expect(facts.siteName).toBeUndefined();
+    expect(facts.location).toBe("Cabin in Lake Placid");
+  });
+
+  it("keeps a stated Cabin weekend title that actually appears in the dump", () => {
+    const facts = factsFromModelOutput(
+      {
+        siteName: "Cabin weekend",
+        tagline: null,
+        startDate: null,
+        endDate: null,
+        startTime: null,
+        location: "Denver, CO",
+        address: null,
+        timezone: null,
+        lodgingName: null,
+        packing: null,
+        schedule: null,
+      },
+      "Cabin weekend\nLocation: Denver, CO",
+    );
+    expect(facts.siteName).toBe("Cabin weekend");
+    expect(facts.location).toBe("Denver, CO");
   });
 });
 
@@ -149,6 +215,16 @@ describe("extractionPrompt", () => {
     expect(prompt).not.toContain("Penn Station");
     expect(prompt).not.toContain("Rita's on 6th");
     expect(prompt).not.toContain("SFO United Club");
+  });
+
+  it("takes Event name only from a stated title, never lodging + weekend", () => {
+    expect(prompt).toContain("only a title they wrote");
+    expect(prompt).toContain("Null if they did not name the event");
+    expect(prompt).toContain("Never coin a title from lodging, venue, city, or timing");
+    expect(prompt).toContain(LAKE_PLACID_DRIVE);
+    expect(prompt).toContain("meet at LGA terminal B Friday");
+    expect(prompt).toContain("or event title");
+    expect(prompt).not.toContain("they implied");
   });
 });
 
@@ -266,6 +342,33 @@ describe("extractPlanWithOpenRouter", () => {
     expect(call.prompt).toContain(AMTRAK_CATSKILLS);
     expect(call.prompt).toContain("After ignoring transit");
     expect(call.prompt).not.toContain(ONE_SHOT_JFK_EXAMPLE);
+  });
+
+  it("drops a coined Cabin weekend title from the Lake Placid dump and keeps Where", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    generateTextMock.mockResolvedValueOnce({
+      output: {
+        siteName: "Cabin weekend",
+        tagline: null,
+        startDate: null,
+        endDate: null,
+        startTime: null,
+        location: "Cabin in Lake Placid",
+        address: null,
+        timezone: null,
+        lodgingName: "Cabin in Lake Placid",
+        packing: null,
+        schedule: null,
+      },
+    });
+
+    const facts = await extractPlanWithOpenRouter(LAKE_PLACID_DRIVE);
+    expect(facts.siteName).toBeUndefined();
+    expect(facts.location).toBe("Cabin in Lake Placid");
+    const call = generateTextMock.mock.calls[0]?.[0] as { prompt?: string; system?: string };
+    expect(call.prompt).toContain("only a title they wrote");
+    expect(call.prompt).toContain(LAKE_PLACID_DRIVE);
+    expect(call.system).toContain("never coin an event title");
   });
 
   it("does not abort a 20s OpenRouter completion, then maps a later abort to unavailable", async () => {
