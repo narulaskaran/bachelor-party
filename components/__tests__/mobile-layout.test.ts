@@ -186,6 +186,10 @@ describe("mobile trip layout", () => {
     expect(html).toContain('href="#rsvp"');
     expect(html).toContain("RSVP now");
     expect(html).toContain("Takes about one minute");
+    const rsvpNow = html.match(/<a\b[^>]*>RSVP now<\/a>/);
+    expect(rsvpNow?.[0]).toMatch(/min-h-11/);
+    expect(rsvpNow?.[0]).toContain('data-size="lg"');
+    expect(rsvpNow?.[0]).toContain('data-variant="default"');
   });
 
   it("discloses sample trips in the hero", () => {

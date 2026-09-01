@@ -41,7 +41,7 @@ export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
                 <p className="mt-1 text-sm text-muted-foreground">{item.note}</p>
               )}
               {item.anchor ? (
-                <Button asChild size="sm" className="mt-3">
+                <Button asChild size="sm" className="mt-3 min-h-11">
                   {item.anchor.startsWith("#") ? (
                     <HashFocusLink
                       href={item.anchor as `#${string}`}

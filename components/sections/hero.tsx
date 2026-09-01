@@ -59,7 +59,7 @@ export function Hero({
       ) : null}
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <Button asChild size="lg">
+        <Button asChild size="lg" className="min-h-11">
           <HashFocusLink href="#rsvp" focusId="rsvp">
             RSVP now
           </HashFocusLink>
