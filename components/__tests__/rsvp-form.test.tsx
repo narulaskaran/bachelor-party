@@ -92,6 +92,16 @@ describe("RsvpForm", () => {
     expect(screen.queryByRole("link", { name: /create your own trip to collect RSVPs/i })).toBeNull();
   });
 
+  it("explains that every flight field is optional for drivers", () => {
+    render(<RsvpForm airport="DEN" pollActivities={[]} extras={{ flights: true, food: false, votes: false, notes: false }} />);
+
+    expect(screen.getByText(/flight details are optional/i).textContent).toMatch(/leave all four fields blank/i);
+    expect(screen.getByLabelText(/arrival flight \(optional\)/i)).toBeTruthy();
+    expect(screen.getByLabelText(/arrival time \(optional\)/i)).toBeTruthy();
+    expect(screen.getByLabelText(/departure flight \(optional\)/i)).toBeTruthy();
+    expect(screen.getByLabelText(/departure time \(optional\)/i)).toBeTruthy();
+  });
+
   it("host preview has no RSVP fields or Save and does not show demo copy", () => {
     const { container } = render(<RsvpForm preview pollActivities={[]} extras={{ flights: true, food: true, votes: true, notes: true }} airport="DEN" />);
 

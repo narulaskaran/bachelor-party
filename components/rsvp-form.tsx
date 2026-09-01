@@ -168,11 +168,11 @@ function LiveRsvpForm({
       <section className={cn("space-y-4 p-4 sm:p-6", contentGroupClass)}>
         <Eyebrow>Flights</Eyebrow>
         <p className="text-sm text-muted-foreground">
-          Flying into {airport}. Leave blank if driving.
+          Flight details are optional. Flying into {airport}? Add any details you know. Driving instead? Leave all four fields blank.
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="arrivalFlight">Arrival flight</Label>
+            <Label htmlFor="arrivalFlight">Arrival flight (optional)</Label>
             <HadField name="arrivalFlight" value={existing?.arrivalFlight} />
             <Input
               id="arrivalFlight"
@@ -182,7 +182,7 @@ function LiveRsvpForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="arrivalTime">Arrival time</Label>
+            <Label htmlFor="arrivalTime">Arrival time (optional)</Label>
             <HadField name="arrivalTime" value={existing?.arrivalTime} />
             <Input
               id="arrivalTime"
@@ -192,7 +192,7 @@ function LiveRsvpForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="departureFlight">Departure flight</Label>
+            <Label htmlFor="departureFlight">Departure flight (optional)</Label>
             <HadField name="departureFlight" value={existing?.departureFlight} />
             <Input
               id="departureFlight"
@@ -202,7 +202,7 @@ function LiveRsvpForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="departureTime">Departure time</Label>
+            <Label htmlFor="departureTime">Departure time (optional)</Label>
             <HadField name="departureTime" value={existing?.departureTime} />
             <Input
               id="departureTime"
