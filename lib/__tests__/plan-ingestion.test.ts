@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { factsFromModelOutput } from "@/lib/plan-extract";
 import { PlanExtractionUnavailableError } from "@/lib/plan-ingest-errors";
 import {
   draftFactsForContent,
@@ -367,6 +368,46 @@ describe("model-backed event plan ingestion", () => {
       status: "extracted",
       value: extracted.location,
     });
+  });
+
+  it("keeps Catskills cabin as Where from an Amtrak transfer dump, not Amtrak or Hudson", async () => {
+    const plan = "Amtrak to Hudson then drive to the Catskills cabin";
+    const { content, review } = await ingestEventPlan(
+      plan,
+      { preset: "weekend" },
+      {
+        extract: async (dump) =>
+          factsFromModelOutput(
+            {
+              siteName: null,
+              tagline: null,
+              startDate: null,
+              endDate: null,
+              startTime: null,
+              location: "Catskills cabin",
+              address: null,
+              timezone: null,
+              lodgingName: "Catskills cabin",
+              packing: null,
+              schedule: null,
+            },
+            dump,
+          ),
+      },
+    );
+    expect(content.trip.location).toMatch(/Catskills( cabin)?/i);
+    expect(content.trip.location).not.toMatch(/Amtrak/i);
+    expect(content.trip.location).not.toMatch(/Hudson/i);
+    expect(content.trip.address).toBeUndefined();
+    expect(content.trip.siteName).toBe("Untitled event");
+    expect(review.facts.find((item) => item.path === "trip.location")).toMatchObject({
+      status: "extracted",
+    });
+    expect(review.facts.find((item) => item.path === "trip.siteName")).toMatchObject({
+      status: "missing",
+    });
+    expect(review.facts.find((item) => item.path === "trip.siteName")?.value).toBeUndefined();
+    expect(review.acknowledged).toBe(false);
   });
 
   it("treats a non-IANA timezone as missing even if the model returned one", async () => {

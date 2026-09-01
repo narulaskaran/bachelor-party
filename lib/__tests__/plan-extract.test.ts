@@ -3,6 +3,7 @@ import {
   extractionPrompt,
   factsFromModelOutput,
   extractPlanWithOpenRouter,
+  openRouterFetch,
   PLAN_EXTRACT_TIMEOUT_MS,
   withOpenRouterReasoning,
 } from "@/lib/plan-extract";
@@ -24,6 +25,7 @@ vi.mock("ai", async (importOriginal) => {
 const MESSY =
   "yeah so friday drinks at the dead rabbit in nyc september 4 around seven we should get there early I don't know the address yet maybe 12 people";
 const AIRPORT_CONFUSION = "Alaska JFK→SFO then dinner in the Mission.";
+const AMTRAK_CATSKILLS = "Amtrak to Hudson then drive to the Catskills cabin";
 const ONE_SHOT_JFK_EXAMPLE =
   'For example, "Alaska JFK→SFO then dinner in the Mission." means location="the Mission"; JFK and SFO are not the location.';
 
@@ -130,6 +132,8 @@ describe("extractionPrompt", () => {
     expect(prompt).toContain(
       "Do not use a departure airport, arrival airport, or transit point as the event location unless the host explicitly says the event happens there.",
     );
+    expect(prompt).toContain("After ignoring transit");
+    expect(prompt).toContain("still extract the named destination");
     expect(prompt).toContain("never pick an airport as Where");
     expect(prompt).not.toContain(ONE_SHOT_JFK_EXAMPLE);
     expect(prompt).not.toContain(AIRPORT_CONFUSION);
@@ -138,7 +142,8 @@ describe("extractionPrompt", () => {
   it("adds two or three compact cases, not a long few-shot list", () => {
     expect(prompt).toContain("cabin in Leavenworth");
     expect(prompt).toContain("LGA terminal B");
-    expect(prompt).toContain("Catskills");
+    expect(prompt).toContain(AMTRAK_CATSKILLS);
+    expect(prompt).toContain("the Catskills cabin, not Amtrak or Hudson");
     expect(prompt).toContain("Never invent a street address");
     expect(prompt).not.toContain("location vs travel");
     expect(prompt).not.toContain("Penn Station");
@@ -233,6 +238,36 @@ describe("extractPlanWithOpenRouter", () => {
     expect(call.prompt).not.toContain(ONE_SHOT_JFK_EXAMPLE);
   });
 
+  it("keeps the Catskills cabin as Where from an Amtrak transfer dump, not Amtrak or Hudson", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    generateTextMock.mockResolvedValueOnce({
+      output: {
+        siteName: null,
+        tagline: null,
+        startDate: null,
+        endDate: null,
+        startTime: null,
+        location: "Catskills cabin",
+        address: null,
+        timezone: null,
+        lodgingName: "Catskills cabin",
+        packing: null,
+        schedule: null,
+      },
+    });
+
+    const facts = await extractPlanWithOpenRouter(AMTRAK_CATSKILLS);
+    expect(facts.location).toMatch(/Catskills( cabin)?/i);
+    expect(facts.location).not.toMatch(/Amtrak/i);
+    expect(facts.location).not.toMatch(/Hudson/i);
+    expect(facts.address).toBeUndefined();
+    expect(facts.lodging).toBe("Catskills cabin");
+    const call = generateTextMock.mock.calls[0]?.[0] as { prompt?: string };
+    expect(call.prompt).toContain(AMTRAK_CATSKILLS);
+    expect(call.prompt).toContain("After ignoring transit");
+    expect(call.prompt).not.toContain(ONE_SHOT_JFK_EXAMPLE);
+  });
+
   it("does not abort a 20s OpenRouter completion, then maps a later abort to unavailable", async () => {
     vi.useFakeTimers();
     process.env.OPENROUTER_API_KEY = "test-key";
@@ -269,5 +304,47 @@ describe("extractPlanWithOpenRouter", () => {
     expect(logged).toHaveBeenCalled();
     expect(String(logged.mock.calls[0]?.[0])).toBe("plan extraction failed");
     logged.mockRestore();
+  });
+
+  it("maps a hanging generateText past the extract timeout to unavailable instead of waiting", async () => {
+    vi.useFakeTimers();
+    process.env.OPENROUTER_API_KEY = "test-key";
+    generateTextMock.mockImplementation(() => new Promise(() => {}));
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const pending = extractPlanWithOpenRouter(AMTRAK_CATSKILLS);
+    let settled = false;
+    void pending.then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
+    );
+
+    await vi.advanceTimersByTimeAsync(PLAN_EXTRACT_TIMEOUT_MS - 1);
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(pending).rejects.toBeInstanceOf(PlanExtractionUnavailableError);
+    expect(settled).toBe(true);
+    expect(logged).toHaveBeenCalled();
+    logged.mockRestore();
+  });
+});
+
+describe("openRouterFetch", () => {
+  it("rejects immediately when the abort signal already fired", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      openRouterFetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        body: JSON.stringify({ model: "x" }),
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: "AbortError" });
   });
 });

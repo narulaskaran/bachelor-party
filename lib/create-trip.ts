@@ -5,7 +5,11 @@ import {
   optionalDate,
 } from "@/lib/trip-dates";
 import { parseEventPreset, type EventPreset } from "@/lib/event-preset";
-import { NOTES_UNAVAILABLE_MESSAGE } from "@/lib/plan-ingest-errors";
+import {
+  isAbortError,
+  NOTES_UNAVAILABLE_MESSAGE,
+  PLAN_EXTRACT_TIMEOUT_MS,
+} from "@/lib/plan-ingest-errors";
 import { UNTITLED_EVENT_TITLE } from "@/lib/party-types";
 import { unguessableEventSlug } from "@/lib/slug";
 
@@ -142,14 +146,46 @@ export async function createTripFromUi(
     return { ok: false, error: END_BEFORE_START_MESSAGE };
   }
 
-  let res: Response;
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      const error = new Error("This operation was aborted");
+      error.name = "AbortError";
+      reject(error);
+    }, PLAN_EXTRACT_TIMEOUT_MS);
+  });
+
+  let request: Promise<Response>;
   try {
-    res = await fetchImpl(
-      CREATE_TRIP_PATH,
-      createTripRequestInit({ ...fields, siteName, plan, preset: parseEventPreset(fields.preset) }),
+    request = Promise.resolve(
+      fetchImpl(CREATE_TRIP_PATH, {
+        ...createTripRequestInit({
+          ...fields,
+          siteName,
+          plan,
+          preset: parseEventPreset(fields.preset),
+        }),
+        signal: controller.signal,
+      }),
     );
   } catch {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
     return { ok: false, error: "Couldn't reach the server. Try again." };
+  }
+  void request.catch(() => {});
+
+  let res: Response;
+  try {
+    res = await Promise.race([request, timeout]);
+  } catch (error) {
+    if (isAbortError(error)) {
+      return { ok: false, error: NOTES_UNAVAILABLE_MESSAGE };
+    }
+    return { ok: false, error: "Couldn't reach the server. Try again." };
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
   }
 
   let body: unknown = null;

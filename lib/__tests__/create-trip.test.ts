@@ -8,6 +8,7 @@ import {
   parseOrganizerPacket,
   visitorSafeCreateError,
 } from "@/lib/create-trip";
+import { NOTES_UNAVAILABLE_MESSAGE, PLAN_EXTRACT_TIMEOUT_MS } from "@/lib/plan-ingest-errors";
 import { getDb } from "@/lib/db";
 import { resetRateLimitStore } from "@/lib/rate-limit";
 import { createMemoryDb } from "../../test/api/memory-db";
@@ -40,6 +41,7 @@ describe("create-from-UI helper", () => {
   afterEach(() => {
     resetRateLimitStore();
     vi.mocked(getDb).mockReset();
+    vi.useRealTimers();
   });
 
   it("builds a public POST with siteName-only and no Authorization", () => {
@@ -320,5 +322,52 @@ describe("create-from-UI helper", () => {
     if (result.ok) return;
     expect(result.error).toMatch(/read your notes/i);
     expect(mem.parties).toHaveLength(0);
+  });
+
+  it("maps extract abort to the notes unavailable error", async () => {
+    const abort = new Error("This operation was aborted");
+    abort.name = "AbortError";
+    const result = await createTripFromUi(
+      { siteName: "", plan: "Amtrak to Hudson then drive to the Catskills cabin" },
+      async () => {
+        throw abort;
+      },
+    );
+    expect(result).toEqual({ ok: false, error: NOTES_UNAVAILABLE_MESSAGE });
+  });
+
+  it("still maps a network failure to the reach-the-server copy", async () => {
+    const result = await createTripFromUi({ siteName: "Cabin" }, async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    expect(result).toEqual({ ok: false, error: "Couldn't reach the server. Try again." });
+  });
+
+  it("fails with notes unavailable when create hangs past the extract timeout", async () => {
+    vi.useFakeTimers();
+    const pending = createTripFromUi(
+      { siteName: "", plan: "Amtrak to Hudson then drive to the Catskills cabin" },
+      () => new Promise(() => {}),
+    );
+    let settled = false;
+    void pending.then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
+    );
+
+    await vi.advanceTimersByTimeAsync(PLAN_EXTRACT_TIMEOUT_MS - 1);
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(pending).resolves.toEqual({
+      ok: false,
+      error: NOTES_UNAVAILABLE_MESSAGE,
+    });
+    expect(settled).toBe(true);
   });
 });
