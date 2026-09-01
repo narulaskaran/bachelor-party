@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  extractionPrompt,
   factsFromModelOutput,
   extractPlanWithOpenRouter,
   PLAN_EXTRACT_TIMEOUT_MS,
@@ -23,6 +24,8 @@ vi.mock("ai", async (importOriginal) => {
 const MESSY =
   "yeah so friday drinks at the dead rabbit in nyc september 4 around seven we should get there early I don't know the address yet maybe 12 people";
 const AIRPORT_CONFUSION = "Alaska JFK→SFO then dinner in the Mission.";
+const ONE_SHOT_JFK_EXAMPLE =
+  'For example, "Alaska JFK→SFO then dinner in the Mission." means location="the Mission"; JFK and SFO are not the location.';
 
 describe("factsFromModelOutput", () => {
   it("keeps stated venue/date/time and drops address, timezone, and headcount", () => {
@@ -116,6 +119,34 @@ describe("factsFromModelOutput", () => {
   });
 });
 
+describe("extractionPrompt", () => {
+  const prompt = extractionPrompt("Cabin weekend", "2026-09-01");
+
+  it("keeps the general travel-vs-venue rule and is not a one-shot of the JFK sentence", () => {
+    expect(prompt).toContain("Separate travel logistics from event logistics.");
+    expect(prompt).toContain(
+      "Airport codes, airlines, flight numbers, and airport-to-airport routes are travel details, not event locations.",
+    );
+    expect(prompt).toContain(
+      "Do not use a departure airport, arrival airport, or transit point as the event location unless the host explicitly says the event happens there.",
+    );
+    expect(prompt).toContain("never pick an airport as Where");
+    expect(prompt).not.toContain(ONE_SHOT_JFK_EXAMPLE);
+    expect(prompt).not.toContain(AIRPORT_CONFUSION);
+  });
+
+  it("adds two or three compact cases, not a long few-shot list", () => {
+    expect(prompt).toContain("cabin in Leavenworth");
+    expect(prompt).toContain("LGA terminal B");
+    expect(prompt).toContain("Catskills");
+    expect(prompt).toContain("Never invent a street address");
+    expect(prompt).not.toContain("location vs travel");
+    expect(prompt).not.toContain("Penn Station");
+    expect(prompt).not.toContain("Rita's on 6th");
+    expect(prompt).not.toContain("SFO United Club");
+  });
+});
+
 describe("withOpenRouterReasoning", () => {
   it("asks GLM to reason at low effort so extraction can finish before abort", () => {
     const init = withOpenRouterReasoning({
@@ -198,12 +229,8 @@ describe("extractPlanWithOpenRouter", () => {
     expect(call.maxRetries).toBe(1);
     expect(call.providerOptions?.openai?.reasoningEffort).toBe("low");
     expect(call.prompt).toContain("Separate travel logistics from event logistics.");
-    expect(call.prompt).toContain(
-      "Airport codes, airlines, flight numbers, and airport-to-airport routes are travel details, not event locations.",
-    );
-    expect(call.prompt).toContain(
-      'For example, "Alaska JFK→SFO then dinner in the Mission." means location="the Mission"; JFK and SFO are not the location.',
-    );
+    expect(call.prompt).toContain(AIRPORT_CONFUSION);
+    expect(call.prompt).not.toContain(ONE_SHOT_JFK_EXAMPLE);
   });
 
   it("does not abort a 20s OpenRouter completion, then maps a later abort to unavailable", async () => {
