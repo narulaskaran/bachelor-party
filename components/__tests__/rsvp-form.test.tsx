@@ -87,6 +87,9 @@ describe("RsvpForm", () => {
     render(<RsvpForm pollActivities={[]} />);
 
     expect(screen.queryByText(DEMO_RSVP_MESSAGE)).toBeNull();
+    expect(screen.getByText(/name and attendance are required/i)).toBeTruthy();
+    expect(document.querySelector('label[for="name"]')?.className).toContain("after:content");
+    expect(screen.getByText("Attendance", { selector: "span" }).className).toContain("after:content");
     const save = screen.getByRole("button", { name: /^save$/i });
     expect((save as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByRole("link", { name: /create your own trip to collect RSVPs/i })).toBeNull();

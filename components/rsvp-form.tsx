@@ -99,10 +99,15 @@ function LiveRsvpForm({
           <AlertDescription>{DEMO_RSVP_MESSAGE}</AlertDescription>
         </Alert>
       ) : null}
+      <p className="px-1 text-sm text-muted-foreground">
+        Name and attendance are required. All other details are optional.
+      </p>
       <section className={cn("space-y-4 p-4 sm:p-6", contentGroupClass)}>
         <Eyebrow>Who</Eyebrow>
         <div className="space-y-2">
-          <Label htmlFor="name">Name</Label>
+          <Label htmlFor="name" className="after:ml-1 after:text-muted-foreground after:content-['(required)']">
+            Name
+          </Label>
           <Input
             id="name"
             name="name"
@@ -127,7 +132,9 @@ function LiveRsvpForm({
       </section>
 
       <section className={cn("space-y-4 p-4 sm:p-6", contentGroupClass)}>
-        <Eyebrow>Attendance</Eyebrow>
+        <Eyebrow>
+          <span className="after:ml-1 after:text-muted-foreground after:content-['(required)']">Attendance</span>
+        </Eyebrow>
         <fieldset role="group" aria-label="Attendance" className="space-y-3">
           <legend className="sr-only">Attendance</legend>
           {([
