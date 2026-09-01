@@ -39,3 +39,13 @@ describe("DEMO_PARTY packing", () => {
     expect(DEMO_PARTY.actionItems?.some((item) => item.anchor === "#pack")).toBe(true);
   });
 });
+
+describe("DEMO_PARTY action items", () => {
+  it("does not give Do your part a second RSVP duration", () => {
+    const rsvp = DEMO_PARTY.actionItems?.find((item) => item.anchor === "#rsvp");
+    expect(rsvp?.title).toBe("RSVP below");
+    expect(rsvp?.note).toBe("Flights, food, votes");
+    expect(rsvp?.note).not.toMatch(/minute/i);
+    expect(JSON.stringify(DEMO_PARTY.actionItems)).not.toMatch(/two minutes/i);
+  });
+});

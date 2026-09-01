@@ -145,6 +145,10 @@ describe("mobile trip layout", () => {
     expect(lodgeIdx).toBeGreaterThan(-1);
     expect(packIdx).toBeGreaterThan(lodgeIdx);
     expect(rsvpIdx).toBeGreaterThan(packIdx);
+    expect(html).toContain("Takes about one minute");
+    expect(html).toContain("Flights, food, votes");
+    expect(html).not.toContain("two minutes");
+    expect(html).not.toMatch(/Flights, food, votes[^<]*minute/i);
   });
 
   it("hides night-out key events when there is no schedule", () => {
