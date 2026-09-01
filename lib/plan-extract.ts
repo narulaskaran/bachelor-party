@@ -5,7 +5,11 @@ import {
   PLAN_EXTRACT_TIMEOUT_MS,
   PlanExtractionUnavailableError,
 } from "@/lib/plan-ingest-errors";
-import type { ExtractedPlanFacts, ExtractedScheduleEntry } from "@/lib/plan-ingestion";
+import {
+  statedExtractedTitle,
+  type ExtractedPlanFacts,
+  type ExtractedScheduleEntry,
+} from "@/lib/plan-ingestion";
 import { isValidCalendarDate } from "@/lib/trip-dates";
 
 export const OPENROUTER_MODEL = "z-ai/glm-5.3-flash";
@@ -112,14 +116,13 @@ function mentionedInPlan(plan: string, value: string): boolean {
   return plan.toLowerCase().includes(value.toLowerCase());
 }
 
-/** Map model JSON into extracted facts. Drops invented timezone and unknown placeholders. */
+/** Map model JSON into extracted facts. Drops invented timezone, coined titles, and unknown placeholders. */
 export function factsFromModelOutput(raw: unknown, plan: string): ExtractedPlanFacts {
   const parsed = extractedPlanSchema.safeParse(raw);
   if (!parsed.success) {
     throw new PlanExtractionUnavailableError();
   }
   const output = parsed.data;
-  const siteName = settledText(output.siteName)?.slice(0, 100);
   const tagline = settledText(output.tagline);
   const startDate = validIso(output.startDate);
   const endDate = validIso(output.endDate);
@@ -127,6 +130,7 @@ export function factsFromModelOutput(raw: unknown, plan: string): ExtractedPlanF
   const location = settledText(output.location);
   const address = settledText(output.address);
   const lodging = settledText(output.lodgingName);
+  const siteName = statedExtractedTitle(plan, output.siteName ?? undefined, { location, lodging });
   const timezoneRaw = settledText(output.timezone);
   const timezoneMentioned = timezoneRaw ? mentionedInPlan(plan, timezoneRaw) : false;
   const packing = output.packing
@@ -175,10 +179,10 @@ export function extractionPrompt(plan: string, today: string): string {
 Extract only facts the host actually wrote in the notes below. Return JSON.
 
 Rules:
-- Never invent a time, place, street address, timezone, lodging, packing item, schedule row, or headcount.
+- Never invent a time, place, street address, timezone, lodging, packing item, schedule row, headcount, or event title.
 - Never default 7pm, 19:00, or America/New_York.
 - If a fact is missing, ambiguous, hedged ("maybe", "if we can", "I don't know"), or TBD, return null for that field.
-- siteName: a short event name they implied (e.g. "Friday drinks"), not the whole paragraph.
+- siteName: only a title they wrote (e.g. "Friday drinks"), not the whole paragraph. Null if they did not name the event. Never coin a title from lodging, venue, city, or timing. "We're driving. Cabin in Lake Placid all weekend." → siteName null (Where is the cabin); "meet at LGA terminal B Friday" → siteName null.
 - startDate / endDate: YYYY-MM-DD only. If they named a month and day without a year, use the next occurrence on or after today. If the calendar day is still ambiguous, null.
 - startTime: a clock they stated, including "around seven" / "7-ish" as "7:00 PM". Null if they did not mention a time.
 - Separate travel logistics from event logistics. Airport codes, airlines, flight numbers, and airport-to-airport routes are travel details, not event locations. So are transit hubs, transfer cities, and driving/train as transport.
@@ -239,7 +243,7 @@ export async function extractPlanWithOpenRouter(
       openai: { strictJsonSchema: false, reasoningEffort: "low" },
     },
     system:
-      "You extract event logistics from messy host notes. You never invent facts. You never guess a timezone from a city.",
+      "You extract event logistics from messy host notes. You never invent facts. You never coin an event title from lodging or timing. You never guess a timezone from a city.",
     prompt: extractionPrompt(plan, today),
   });
   void extraction.catch(() => {});

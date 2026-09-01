@@ -889,6 +889,38 @@ describe("agent API (create / patch / guests)", () => {
     ).toMatchObject({ status: "extracted", value: "LGA terminal B" });
   });
 
+  it("dump with lodging + weekend does not coin Cabin weekend as Event name", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    vi.mocked(extractPlanWithOpenRouter).mockResolvedValueOnce({
+      siteName: "Cabin weekend",
+      location: "Cabin in Lake Placid",
+      lodging: "Cabin in Lake Placid",
+    });
+
+    const res = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: {
+          plan: "We're driving. Cabin in Lake Placid all weekend.",
+          preset: "weekend",
+        },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.published).toBe(false);
+    expect(body.content.trip.siteName).toBe("Untitled event");
+    expect(body.content.trip.siteName).not.toMatch(/Cabin weekend/i);
+    expect(body.content.trip.location).toBe("Cabin in Lake Placid");
+    const name = body.draftReview.facts.find((f: { path: string }) => f.path === "trip.siteName");
+    expect(name?.status).toBe("missing");
+    expect(name?.value).toBeUndefined();
+    expect(
+      body.draftReview.facts.find((f: { path: string }) => f.path === "trip.location"),
+    ).toMatchObject({ status: "extracted", value: "Cabin in Lake Placid" });
+  });
+
   it("dump create cannot publish until the host acknowledges the fact review", async () => {
     const mem = createMemoryDb();
     vi.mocked(getDb).mockReturnValue(mem.db as never);

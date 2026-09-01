@@ -109,6 +109,22 @@ function settledText(value: string | undefined): string | undefined {
   return cleaned && !isUnknown(cleaned) ? cleaned : undefined;
 }
 
+/** Event name the host actually wrote — never a coined lodging+weekend (or similar) title. */
+export function statedExtractedTitle(
+  plan: string,
+  name: string | undefined,
+  places: { location?: string; lodging?: string } = {},
+): string | undefined {
+  const title = settledText(name)?.slice(0, 100);
+  if (!title) return undefined;
+  if (!plan.toLowerCase().includes(title.toLowerCase())) return undefined;
+  const n = title.toLowerCase();
+  for (const place of [places.location, places.lodging]) {
+    if (place && place.toLowerCase().includes(n)) return undefined;
+  }
+  return title;
+}
+
 function packingFromPlan(plan: string): PackingItem[] | undefined {
   const labeledPack = labeled(plan, ["pack", "packing", "bring"]);
   const raw = settledText(labeledPack.value);
@@ -380,12 +396,14 @@ export function assembleIngestion(
 ): IngestionResult {
   const titled = { value: extracted.siteName, source: extracted.siteNameSource };
   const overrideTitle = statedEventTitle(clean(overrides.siteName));
-  const extractedTitle = statedEventTitle(titled.value);
-  const title = overrideTitle ?? extractedTitle;
   const startDate = clean(overrides.startDate) ?? extracted.startDate;
   const endDate = clean(overrides.endDate) ?? extracted.endDate;
   const locationValue = settledText(extracted.location);
   const lodgingValue = settledText(extracted.lodging);
+  const extractedTitle = statedEventTitle(
+    statedExtractedTitle(plan, titled.value, { location: locationValue, lodging: lodgingValue }),
+  );
+  const title = overrideTitle ?? extractedTitle;
   const rawTimezone = extracted.timezoneRaw;
   const timezone = settledTimeZone(rawTimezone);
   const packing = extracted.packing;

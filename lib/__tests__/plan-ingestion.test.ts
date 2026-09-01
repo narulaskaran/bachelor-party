@@ -370,6 +370,54 @@ describe("model-backed event plan ingestion", () => {
     });
   });
 
+  it("does not coin Cabin weekend from lodging + weekend; Where stays Cabin in Lake Placid", async () => {
+    const plan = "We're driving. Cabin in Lake Placid all weekend.";
+    const { content, review } = await ingestEventPlan(
+      plan,
+      { preset: "weekend" },
+      {
+        extract: async (dump) =>
+          factsFromModelOutput(
+            {
+              siteName: "Cabin weekend",
+              tagline: null,
+              startDate: null,
+              endDate: null,
+              startTime: null,
+              location: "Cabin in Lake Placid",
+              address: null,
+              timezone: null,
+              lodgingName: "Cabin in Lake Placid",
+              packing: null,
+              schedule: null,
+            },
+            dump,
+          ),
+      },
+    );
+    expect(content.trip.siteName).toBe("Untitled event");
+    expect(content.trip.siteName).not.toMatch(/Cabin weekend/i);
+    expect(content.trip.location).toBe("Cabin in Lake Placid");
+    expect(content.trip.address).toBeUndefined();
+    const name = review.facts.find((item) => item.path === "trip.siteName");
+    expect(name).toMatchObject({ status: "missing" });
+    expect(name?.value).toBeUndefined();
+    expect(name?.status).not.toBe("confirmed");
+    expect(name?.status).not.toBe("extracted");
+    expect(review.facts.find((item) => item.path === "trip.location")).toMatchObject({
+      status: "extracted",
+      value: "Cabin in Lake Placid",
+    });
+    const reconciled = draftFactsForContent(content, review.facts);
+    expect(reconciled.find((item) => item.path === "trip.siteName")).toMatchObject({ status: "missing" });
+    expect(reconciled.find((item) => item.path === "trip.siteName")?.value).toBeUndefined();
+    expect(reconciled.find((item) => item.path === "trip.location")).toMatchObject({
+      status: "extracted",
+      value: "Cabin in Lake Placid",
+    });
+    expect(review.acknowledged).toBe(false);
+  });
+
   it("keeps Catskills cabin as Where from an Amtrak transfer dump, not Amtrak or Hudson", async () => {
     const plan = "Amtrak to Hudson then drive to the Catskills cabin";
     const { content, review } = await ingestEventPlan(
