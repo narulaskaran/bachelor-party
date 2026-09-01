@@ -4,7 +4,16 @@ import {
 } from "@/lib/plan-ingest-errors";
 import { formatDateLabel, isValidCalendarDate } from "@/lib/trip-dates";
 import { parseEventPreset, type EventPreset } from "@/lib/event-preset";
-import type { DraftFact, DraftFactStatus, DraftReview, PackingItem, PartyContent, ScheduleDay } from "@/lib/party-types";
+import {
+  statedEventTitle,
+  UNTITLED_EVENT_TITLE,
+  type DraftFact,
+  type DraftFactStatus,
+  type DraftReview,
+  type PackingItem,
+  type PartyContent,
+  type ScheduleDay,
+} from "@/lib/party-types";
 import { settledTimeZone } from "@/lib/timezones";
 
 export type IngestionOverrides = {
@@ -126,7 +135,7 @@ function fact(path: string, label: string, status: DraftFactStatus, value?: stri
 export function draftFactsForContent(content: PartyContent, previousFacts: DraftFact[] = []): DraftFact[] {
   const previousByPath = new Map(previousFacts.map((item) => [item.path, item]));
   const values: Record<string, string | undefined> = {
-    "trip.siteName": content.trip.siteName,
+    "trip.siteName": statedEventTitle(content.trip.siteName),
     "trip.startDate": [content.trip.startDate, content.trip.startTime].filter(Boolean).join(" ") || undefined,
     "trip.endDate": content.trip.endDate,
     "trip.tagline": content.trip.tagline,
@@ -136,6 +145,7 @@ export function draftFactsForContent(content: PartyContent, previousFacts: Draft
     schedule: content.schedule?.length ? `${content.schedule.reduce((count, day) => count + day.entries.length, 0)} item(s)` : undefined,
   };
   const notes: Record<string, string | undefined> = {
+    "trip.siteName": "Add a name before sharing.",
     "trip.endDate": "A second date is not confirmed.",
     "trip.tagline": "Add a one-line description when you know it.",
     "trip.location": "Location stays TBD until you confirm it.",
@@ -369,7 +379,9 @@ export function assembleIngestion(
   overrides: IngestionOverrides = {},
 ): IngestionResult {
   const titled = { value: extracted.siteName, source: extracted.siteNameSource };
-  const title = clean(overrides.siteName) ?? titled.value;
+  const overrideTitle = statedEventTitle(clean(overrides.siteName));
+  const extractedTitle = statedEventTitle(titled.value);
+  const title = overrideTitle ?? extractedTitle;
   const startDate = clean(overrides.startDate) ?? extracted.startDate;
   const endDate = clean(overrides.endDate) ?? extracted.endDate;
   const locationValue = settledText(extracted.location);
@@ -386,7 +398,7 @@ export function assembleIngestion(
   const lodgingForContent = nightOut ? undefined : lodgingValue;
   const scheduleForContent = nightOut ? undefined : schedule;
   const packingForContent = nightOut ? undefined : packing;
-  const titleStatus: DraftFactStatus = overrides.siteName ? "confirmed" : title ? "extracted" : "missing";
+  const titleStatus: DraftFactStatus = overrideTitle ? "confirmed" : extractedTitle ? "extracted" : "missing";
   const startDateStatus: DraftFactStatus = overrides.startDate ? "confirmed" : startDate ? "extracted" : "missing";
   const endDateStatus: DraftFactStatus = overrides.endDate ? "confirmed" : endDate ? "extracted" : "missing";
   const locationStatus: DraftFactStatus = locationValue ? "extracted" : "missing";
@@ -405,7 +417,7 @@ export function assembleIngestion(
       : undefined;
   const whenValue = [startDate, nightOut ? startTime : undefined].filter(Boolean).join(" ") || undefined;
   const facts: DraftFact[] = [
-    fact("trip.siteName", "Event name", titleStatus, title, title ? undefined : "Add a name before sharing.", titled.source),
+    fact("trip.siteName", "Event name", titleStatus, title, title ? undefined : "Add a name before sharing.", title ? titled.source : undefined),
     fact("trip.startDate", "When", startDateStatus, whenValue, dateNote, extracted.datesSource),
     fact("trip.endDate", "End date", endDateStatus, endDate, endDate ? undefined : "A second date is not confirmed.", extracted.datesSource),
     fact("trip.tagline", "What", tagline ? "extracted" : "missing", tagline, "Add a one-line description when you know it.", extracted.taglineSource),
@@ -429,7 +441,7 @@ export function assembleIngestion(
     preset,
     presentation: { style: "clean" },
     trip: {
-      siteName: title ?? "Untitled event",
+      siteName: title ?? UNTITLED_EVENT_TITLE,
       ...(tagline ? { tagline } : {}),
       ...(startDate ? { startDate } : {}),
       ...(endDate ? { endDate } : {}),

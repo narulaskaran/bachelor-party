@@ -6,6 +6,7 @@ import {
 } from "@/lib/trip-dates";
 import { parseEventPreset, type EventPreset } from "@/lib/event-preset";
 import { NOTES_UNAVAILABLE_MESSAGE } from "@/lib/plan-ingest-errors";
+import { UNTITLED_EVENT_TITLE } from "@/lib/party-types";
 import { unguessableEventSlug } from "@/lib/slug";
 
 export { END_BEFORE_START_MESSAGE, formatDateLabel, isInvertedDateRange };
@@ -61,7 +62,7 @@ export function createTripRequestInit(fields: CreateTripFields): RequestInit {
     startDate?: string;
     endDate?: string;
     dateLabel?: string;
-  } = { siteName: siteName || "Untitled event" };
+  } = { siteName: siteName || UNTITLED_EVENT_TITLE };
   if (startDate) trip.startDate = startDate;
   if (endDate) trip.endDate = endDate;
   const dateLabel = formatDateLabel(startDate, endDate);

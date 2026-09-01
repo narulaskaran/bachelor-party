@@ -864,6 +864,31 @@ describe("agent API (create / patch / guests)", () => {
     expect(mem.parties[0].published).toBe(false);
   });
 
+  it("dump with no implied name keeps Untitled event as content fallback and Event name missing", async () => {
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    vi.mocked(extractPlanWithOpenRouter).mockResolvedValueOnce({
+      location: "LGA terminal B",
+    });
+
+    const res = await POST(
+      makeRequest(null, {
+        method: "POST",
+        body: { plan: "meet at LGA terminal B Friday", preset: "night-out" },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.content.trip.siteName).toBe("Untitled event");
+    expect(body.content.trip.location).toBe("LGA terminal B");
+    const name = body.draftReview.facts.find((f: { path: string }) => f.path === "trip.siteName");
+    expect(name?.status).toBe("missing");
+    expect(name?.value).toBeUndefined();
+    expect(
+      body.draftReview.facts.find((f: { path: string }) => f.path === "trip.location"),
+    ).toMatchObject({ status: "extracted", value: "LGA terminal B" });
+  });
+
   it("dump create cannot publish until the host acknowledges the fact review", async () => {
     const mem = createMemoryDb();
     vi.mocked(getDb).mockReturnValue(mem.db as never);

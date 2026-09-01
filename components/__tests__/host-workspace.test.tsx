@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
+import { ingestEventPlan } from "@/lib/plan-ingestion";
 import type { PartyContent } from "@/lib/party-types";
 
 vi.mock("@/components/host-party-preview", () => ({
@@ -156,5 +157,21 @@ describe("HostWorkspace layout and preview", () => {
     await waitFor(() => expect(screen.getByText(/PREVIEW:Untitled event/)).toBeTruthy());
     expect((screen.getByLabelText("Event title") as HTMLInputElement).value).toBe("");
     expect(screen.getByRole("heading", { name: "Untitled event" })).toBeTruthy();
+  });
+
+  it("keeps Untitled event as a display fallback without confirming Event name after a nameless dump", async () => {
+    const { content } = await ingestEventPlan(
+      "driving up to the Catskills Friday",
+      { preset: "night-out" },
+      { extract: async () => ({ location: "the Catskills" }) },
+    );
+    renderWorkspace({ initial: content });
+    expect(screen.getByRole("heading", { name: "Untitled event" })).toBeTruthy();
+    expect(screen.getByText(/PREVIEW:Untitled event:the Catskills/)).toBeTruthy();
+    const nameFact = screen.getByText("Event name").closest("li");
+    expect(nameFact?.textContent).toMatch(/missing/i);
+    expect(nameFact?.textContent).not.toMatch(/confirmed/i);
+    expect(nameFact?.textContent).not.toMatch(/Untitled event/i);
+    expect(screen.getByText("Where").closest("li")?.textContent).toMatch(/extracted/i);
   });
 });

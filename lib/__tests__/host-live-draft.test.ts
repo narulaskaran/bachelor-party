@@ -120,6 +120,8 @@ describe("host live draft preview", () => {
     expect(eventTitleOrFallback("")).toBe(UNTITLED_EVENT_TITLE);
     expect(eventTitleOrFallback("   ")).toBe(UNTITLED_EVENT_TITLE);
     expect(eventTitleOrFallback(undefined)).toBe(UNTITLED_EVENT_TITLE);
+    expect(eventTitleOrFallback(UNTITLED_EVENT_TITLE)).toBe(UNTITLED_EVENT_TITLE);
+    expect(eventTitleOrFallback("Friday drinks")).toBe("Friday drinks");
 
     const empty = livePreviewContent(
       input({
@@ -152,5 +154,39 @@ describe("host live draft preview", () => {
       content,
     );
     expect(missing.trip.siteName).toBe(UNTITLED_EVENT_TITLE);
+  });
+
+  it("does not confirm the Untitled event crash-guard as a stated Event name", () => {
+    const nameless: PartyContent = {
+      ...content,
+      trip: { ...content.trip, siteName: "" },
+      draftReview: {
+        acknowledged: false,
+        facts: [{ path: "trip.siteName", label: "Event name", status: "missing" }],
+      },
+    };
+    const built = buildHostDraft(input({}, nameless));
+    expect(built).toMatchObject({ ok: true, content: { trip: { siteName: UNTITLED_EVENT_TITLE } } });
+    if (!built.ok) throw new Error("expected a valid draft");
+    expect(built.content.draftReview?.facts.find((item) => item.path === "trip.siteName")).toMatchObject({
+      status: "missing",
+    });
+    expect(built.content.draftReview?.facts.find((item) => item.path === "trip.siteName")?.value).toBeUndefined();
+
+    const storedPlaceholder = buildHostDraft(
+      input(
+        {},
+        {
+          ...nameless,
+          trip: { ...nameless.trip, siteName: UNTITLED_EVENT_TITLE },
+        },
+      ),
+    );
+    expect(storedPlaceholder).toMatchObject({ ok: true, content: { trip: { siteName: UNTITLED_EVENT_TITLE } } });
+    if (!storedPlaceholder.ok) throw new Error("expected a valid draft");
+    expect(storedPlaceholder.content.draftReview?.facts.find((item) => item.path === "trip.siteName")).toMatchObject({
+      status: "missing",
+    });
+    expect(storedPlaceholder.content.draftReview?.facts.find((item) => item.path === "trip.siteName")?.value).toBeUndefined();
   });
 });

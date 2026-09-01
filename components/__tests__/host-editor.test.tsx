@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HostEditor } from "@/components/host-editor";
 import { hostKeyStorageKey, rememberHostKey } from "@/lib/host-key-storage";
-import { ingestEventPlanFromHeuristics } from "@/lib/plan-ingestion";
+import { ingestEventPlan, ingestEventPlanFromHeuristics } from "@/lib/plan-ingestion";
 import type { PartyContent } from "@/lib/party-types";
 
 const initial: PartyContent = {
@@ -134,6 +134,33 @@ describe("HostEditor draft review safety", () => {
     expect(whenFact?.textContent).toMatch(/timezone needed/i);
     expect(whenFact?.textContent).not.toMatch(/confirmed/i);
     expect(screen.getByText("Guests will see: Fri, Sep 4 · time TBD")).toBeTruthy();
+  });
+
+  it("treats a nameless dump's Untitled event placeholder as a missing Event name", async () => {
+    const { content } = await ingestEventPlan(
+      "meet at LGA terminal B Friday",
+      { preset: "night-out" },
+      { extract: async () => ({ location: "LGA terminal B" }) },
+    );
+    render(
+      <HostEditor
+        slug="lga-meetup"
+        initial={content}
+        published={false}
+        save={vi.fn(async () => ({ ok: true as const }))}
+        publish={vi.fn(async () => ({ ok: true as const }))}
+      />,
+    );
+
+    const nameFact = screen.getByText("Event name").closest("li");
+    expect(nameFact?.textContent).toMatch(/missing/i);
+    expect(nameFact?.textContent).toMatch(/TBD — needs confirmation/i);
+    expect(nameFact?.textContent).not.toMatch(/confirmed/i);
+    expect(nameFact?.textContent).not.toMatch(/extracted/i);
+    expect(nameFact?.textContent).not.toMatch(/Untitled event/i);
+    const whereFact = screen.getByText("Where").closest("li");
+    expect(whereFact?.textContent).toMatch(/extracted/i);
+    expect(whereFact?.textContent).toMatch(/LGA terminal B/);
   });
 
   it("recomputes saved review facts from the edited canonical fields", async () => {
