@@ -17,8 +17,12 @@ describe("messy event plan ingestion", () => {
     expect(content.trip.startDate).toBeUndefined();
     expect(content.trip.location).toBeUndefined();
     expect(review.acknowledged).toBe(false);
+    expect(review.facts.find((item) => item.path === "trip.siteName")).toMatchObject({
+      status: "missing",
+    });
+    expect(review.facts.find((item) => item.path === "trip.siteName")?.value).toBeUndefined();
     expect(review.facts.filter((item) => item.status === "missing").map((item) => item.path)).toEqual(
-      expect.arrayContaining(["trip.startDate", "trip.location", "lodging.name", "trip.timezone"]),
+      expect.arrayContaining(["trip.siteName", "trip.startDate", "trip.location", "lodging.name", "trip.timezone"]),
     );
   });
 
@@ -319,6 +323,7 @@ describe("model-backed event plan ingestion", () => {
       {},
       { extract: async () => ({}) },
     );
+    expect(content.trip.siteName).toBe("Untitled event");
     expect(content.trip.startDate).toBeUndefined();
     expect(content.trip.location).toBeUndefined();
     expect(content.trip.address).toBeUndefined();
@@ -326,8 +331,42 @@ describe("model-backed event plan ingestion", () => {
     expect(content.lodging).toBeUndefined();
     expect(content.schedule).toBeUndefined();
     expect(content.rsvp?.maxPartySize).toBeUndefined();
+    expect(review.facts.find((item) => item.path === "trip.siteName")).toMatchObject({ status: "missing" });
+    expect(review.facts.find((item) => item.path === "trip.siteName")?.value).toBeUndefined();
     expect(review.facts.find((item) => item.path === "trip.startDate")?.status).toBe("missing");
     expect(review.facts.find((item) => item.path === "trip.location")?.status).toBe("missing");
+    expect(draftFactsForContent(content, review.facts).find((item) => item.path === "trip.siteName")).toMatchObject({
+      status: "missing",
+    });
+  });
+
+  it.each([
+    ["meet at LGA terminal B Friday", { location: "LGA terminal B" }],
+    ["driving up to the Catskills Friday", { location: "the Catskills" }],
+  ] as const)("does not confirm Untitled event as Event name when the dump named no event (%s)", async (plan, extracted) => {
+    const { content, review } = await ingestEventPlan(
+      plan,
+      { preset: "night-out" },
+      { extract: async () => extracted },
+    );
+    expect(content.trip.siteName).toBe("Untitled event");
+    expect(content.trip.location).toBe(extracted.location);
+    const name = review.facts.find((item) => item.path === "trip.siteName");
+    expect(name).toMatchObject({ status: "missing" });
+    expect(name?.value).toBeUndefined();
+    expect(name?.status).not.toBe("confirmed");
+    expect(name?.status).not.toBe("extracted");
+    expect(review.facts.find((item) => item.path === "trip.location")).toMatchObject({
+      status: "extracted",
+      value: extracted.location,
+    });
+    const reconciled = draftFactsForContent(content, review.facts);
+    expect(reconciled.find((item) => item.path === "trip.siteName")).toMatchObject({ status: "missing" });
+    expect(reconciled.find((item) => item.path === "trip.siteName")?.value).toBeUndefined();
+    expect(reconciled.find((item) => item.path === "trip.location")).toMatchObject({
+      status: "extracted",
+      value: extracted.location,
+    });
   });
 
   it("treats a non-IANA timezone as missing even if the model returned one", async () => {

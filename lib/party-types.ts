@@ -50,8 +50,15 @@ export type Trip = {
 /** Preview/header fallback when the live editor title is empty. Save can still require a name. */
 export const UNTITLED_EVENT_TITLE = "Untitled event";
 
+/** Stated name for review facts. The crash-guard display placeholder is not a fact. */
+export function statedEventTitle(name: string | undefined): string | undefined {
+  const trimmed = name?.trim();
+  if (!trimmed || trimmed === UNTITLED_EVENT_TITLE) return undefined;
+  return trimmed;
+}
+
 export function eventTitleOrFallback(name: string | undefined): string {
-  return name?.trim() || UNTITLED_EVENT_TITLE;
+  return statedEventTitle(name) ?? UNTITLED_EVENT_TITLE;
 }
 
 export type Lodging = {
