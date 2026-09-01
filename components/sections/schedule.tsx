@@ -22,7 +22,7 @@ export function ScheduleSection({
   if (days.length === 0) return null;
 
   return (
-    <section id={id} className="scroll-mt-20 py-12 sm:py-16">
+    <section id={id} className="scroll-mt-20 py-10 sm:py-12">
       <h2 className={sectionTitleClass}>{picker ? "Key events" : "Schedule"}</h2>
       {picker ? (
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">{KEY_EVENT_HINT}</p>

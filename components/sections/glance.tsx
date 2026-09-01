@@ -8,7 +8,7 @@ export function Glance({ trip, lodging }: { trip: Trip; lodging?: Lodging }) {
   if (facts.length === 0) return null;
 
   return (
-    <section id="glance" className="scroll-mt-20 py-12 sm:py-16">
+    <section id="glance" className="scroll-mt-20 py-10 sm:py-12">
       <h2 className={sectionTitleClass}>At a glance</h2>
 
       <div className="mt-6 flex flex-col gap-3 sm:grid sm:grid-cols-2 md:flex md:flex-row">

@@ -23,7 +23,7 @@ export function actionItemCtaLabel(anchor: string): string {
 
 export function ActionItems({ actionItems }: { actionItems: ActionItem[] }) {
   return (
-    <section id="do-your-part" className="scroll-mt-20 py-12 sm:py-16">
+    <section id="do-your-part" className="scroll-mt-20 py-10 sm:py-12">
       <h2 className={sectionTitleClass}>Do your part</h2>
 
       <ol className={cn("mt-8 overflow-hidden", contentGroupClass)}>

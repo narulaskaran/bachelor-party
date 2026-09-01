@@ -19,7 +19,7 @@ export function ActivitiesSection({
   }
 
   return (
-    <section id="activities" className="scroll-mt-20 py-12 sm:py-16">
+    <section id="activities" className="scroll-mt-20 py-10 sm:py-12">
       <h2 className={sectionTitleClass}>Activities</h2>
 
       {core.length > 0 ? (

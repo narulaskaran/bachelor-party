@@ -38,7 +38,7 @@ export function RsvpSectionView({
     : "new";
 
   return (
-    <section id="rsvp" className="scroll-mt-20 py-12 sm:py-16">
+    <section id="rsvp" className="scroll-mt-20 py-10 sm:py-12">
       <h2 className={sectionTitleClass}>{heading || "RSVP"}</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">
         {description || (sample

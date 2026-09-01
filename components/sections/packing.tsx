@@ -32,7 +32,7 @@ export function PackingSection({
 
 function PackingShell({ children }: { children: ReactNode }) {
   return (
-    <section id="pack" className="scroll-mt-20 py-12 sm:py-16">
+    <section id="pack" className="scroll-mt-20 py-10 sm:py-12">
       <h2 className={sectionTitleClass}>Pack</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">Don&apos;t forget these.</p>
       <ul className={cn("mt-8 flex max-w-xl flex-col overflow-hidden", contentGroupClass)}>{children}</ul>
