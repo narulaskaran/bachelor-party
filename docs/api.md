@@ -15,7 +15,7 @@ is `url`, `hostUrl` (`/{slug}/host`), `guestUrl` (always `null` until publish),
 use `hostUrl` + `adminToken`. Create never mints a guest URL.
 
 Create accepts either a **plan dump** (`plan`, optional `preset` of
-`night-out` | `weekend`, optional `siteName`, optional `startDate` /
+`night-out` | `weekend` | `celebration`, optional `siteName`, optional `startDate` /
 `endDate` overrides) or structured `content` (the only required structured
 field is `content.trip.siteName`). A plan dump reuses `ingestEventPlan` —
 the same path as the landing “Create draft” button. The server asks
@@ -85,6 +85,11 @@ curl https://your-deploy.vercel.app/api/admin/trips \
 curl https://your-deploy.vercel.app/api/admin/trips \
   -H "Content-Type: application/json" \
   -d '{"content":{"trip":{"siteName":"Jackson Hole '\''26"}}}'
+
+# Celebration starter — details + RSVP; optional logistics can be added later
+curl https://your-deploy.vercel.app/api/admin/trips \
+  -H "Content-Type: application/json" \
+  -d '{"plan":"Maya birthday dinner on Saturday at 7; venue TBD","preset":"celebration"}'
 
 # Merge-patch a Saturday dinner (use the packet's adminToken)
 curl https://your-deploy.vercel.app/api/admin/trips/jackson-hole-26 \

@@ -136,7 +136,7 @@ const guestUpdateSchema = z.object({
 
 export const partyContentSchema = z.object({
   kind: z.literal("trip").optional(),
-  preset: z.enum(["night-out", "weekend"]).optional(),
+  preset: z.enum(EVENT_PRESETS).optional(),
   trip: tripSchema,
   presentation: z.object({ style: z.enum(["clean", "editorial"]) }).optional(),
   draftReview: draftReviewSchema.optional(),

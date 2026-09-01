@@ -11,6 +11,7 @@ import {
   nonemptySchedule,
   showFlightFields,
   visibleSections,
+  guestRsvpExtras,
 } from "@/lib/trip-sections";
 
 const sparse: PartyContent = {
@@ -60,6 +61,28 @@ describe("visibleSections", () => {
       packing: false,
       rsvp: true,
     });
+  });
+
+  it("keeps celebration to details and RSVP by default, with optional data still visible", () => {
+    const celebration: PartyContent = {
+      preset: "celebration" as PartyContent["preset"],
+      trip: { siteName: "Maya's birthday", location: "Rita's" },
+    };
+    expect(visibleSections(celebration)).toEqual({
+      glance: false,
+      actionItems: false,
+      schedule: false,
+      activities: false,
+      lodging: false,
+      packing: false,
+      rsvp: true,
+    });
+    expect(
+      visibleSections({
+        ...celebration,
+        schedule: [{ key: "2026-09-04", date: "2026-09-04", weekday: "Friday", label: "Friday", timed: false, entries: [{ title: "Cake" }] }],
+      }).schedule,
+    ).toBe(true);
   });
 
   it("shows every section on the demo trip", () => {
@@ -181,6 +204,18 @@ describe("visibleSections", () => {
     ).toBe(false);
   });
 });
+
+describe("guestRsvpExtras", () => {
+  it("keeps celebration travel fields off by default but renders supplied flight data", () => {
+    const celebration: PartyContent = {
+      preset: "celebration" as PartyContent["preset"],
+      trip: { siteName: "Maya's birthday" },
+    };
+    expect(guestRsvpExtras(celebration)).toEqual({ flights: false, food: false, votes: false, notes: false });
+    expect(guestRsvpExtras({ ...celebration, trip: { ...celebration.trip, airport: "JFK" } }).flights).toBe(true);
+  });
+});
+
 
 describe("heroMeta", () => {
   it("omits missing coordinates and elevation", () => {

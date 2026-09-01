@@ -90,6 +90,17 @@ describe("bigsend MCP tools", () => {
     ]);
   });
 
+  it("create maps celebration through the MCP preset schema", () => {
+    expect(argvForTool("create", { plan: "Birthday dinner", preset: "celebration" })).toEqual([
+      "create",
+      "--plan",
+      "Birthday dinner",
+      "--preset",
+      "celebration",
+    ]);
+    expect(BIGSEND_TOOLS.find((tool) => tool.name === "create")?.inputSchema.preset).toBeTruthy();
+  });
+
   it("publish argv is the explicit host verb", () => {
     expect(argvForTool("publish", { slug: "cabin" })).toEqual(["publish", "cabin"]);
   });

@@ -29,11 +29,11 @@ export const BIGSEND_TOOLS: ToolDef[] = [
   {
     name: "create",
     description:
-      'Create an unpublished draft (no token required). Never publishes. Dump a plan with { "plan": "..." } or a name with { "name": "E2E Smoke" }. Store adminToken as BIGSEND_TOKEN. Example: { "plan": "Cabin weekend in Denver", "preset": "weekend" }',
+      'Create an unpublished draft (no token required). Never publishes. Dump a plan with { "plan": "..." } or a name with { "name": "Birthday dinner" }. Store adminToken as BIGSEND_TOKEN. Example: { "plan": "Maya birthday dinner", "preset": "celebration" }',
     inputSchema: {
-      name: z.string().optional().describe("Trip name (siteName)"),
+      name: z.string().optional().describe("Event name (siteName)"),
       plan: z.string().optional().describe("Messy event plan dump; ingested into a draft"),
-      preset: z.enum(["night-out", "weekend"]).optional(),
+      preset: z.enum(["night-out", "weekend", "celebration"]).optional(),
       siteName: z.string().optional().describe("Optional name override when dumping a plan"),
       file: z.string().optional().describe("Path to a create JSON file"),
       slug: z.string().optional(),

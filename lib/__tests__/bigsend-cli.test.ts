@@ -107,6 +107,18 @@ describe("bigsend CLI", () => {
     });
   });
 
+  it("create --plan accepts the celebration preset", async () => {
+    const calls: Call[] = [];
+    const { io } = ioHarness({
+      fetchImpl: async (url, init) => {
+        calls.push({ method: init?.method ?? "GET", url, body: JSON.parse(String(init?.body)) });
+        return jsonResponse(201, { slug: "birthday", password: "guest-pw", adminToken: "party-tok" });
+      },
+    });
+    expect(await runBigsend(["create", "--plan", "Birthday dinner", "--preset", "celebration"], io)).toBe(0);
+    expect(calls[0].body).toEqual({ plan: "Birthday dinner", preset: "celebration" });
+  });
+
   it("schedule add GETs then PATCHes with the stored slug token, not a leftover env token", async () => {
     const auths: string[] = [];
     const calls: Call[] = [];

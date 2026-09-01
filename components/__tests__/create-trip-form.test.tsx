@@ -89,7 +89,7 @@ describe("CreateTripForm", () => {
     expect(heading.className).not.toMatch(/ring-3/);
     expect(screen.getByRole("radio", { name: /party/i })).toBeTruthy();
     expect(screen.getByRole("radio", { name: /group trip/i })).toBeTruthy();
-    expect(screen.getByText("Details + RSVP")).toBeTruthy();
+    expect(screen.getAllByText("Details + RSVP")).toHaveLength(2);
     expect(screen.getByText("Adds schedule, lodge, activities, pack")).toBeTruthy();
 
     const notes = screen.getByLabelText(/^describe your event$/i);

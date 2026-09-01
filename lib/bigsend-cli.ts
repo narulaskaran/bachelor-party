@@ -27,6 +27,7 @@ an explicit host publish (site Publish button, or bigsend publish).
 
   bigsend create --name "E2E Smoke"
   bigsend create --plan "Cabin weekend in Denver" --preset weekend
+  bigsend create --plan "Maya birthday dinner" --preset celebration
   bigsend get <slug>
   bigsend set <slug> --patch '{"trip":{"airport":"JAC"}}'
   bigsend publish <slug>
@@ -241,7 +242,7 @@ async function cmdCreate(
   } else if (flags.plan) {
     body = { plan: flags.plan };
     if (flags.name) body.siteName = flags.name;
-    if (flags.preset === "night-out" || flags.preset === "weekend") {
+    if (flags.preset === "night-out" || flags.preset === "weekend" || flags.preset === "celebration") {
       body.preset = flags.preset;
     }
   } else if (flags.name) {

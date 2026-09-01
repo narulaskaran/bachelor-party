@@ -3,6 +3,8 @@ import {
   EVENT_PRESET_HINTS,
   EVENT_PRESET_LABELS,
   EVENT_PRESET_PLACEHOLDERS,
+  EVENT_PRESETS,
+  isEventPreset,
   parseEventPreset,
   showWeekendEditorBlock,
   weekendBlocksFilled,
@@ -19,6 +21,15 @@ const weekend: PartyContent = {
 };
 
 describe("event presets", () => {
+  it("round-trips celebration as a valid preset with birthday-oriented copy", () => {
+    expect(EVENT_PRESETS).toContain("celebration");
+    expect(isEventPreset("celebration")).toBe(true);
+    expect(parseEventPreset("celebration")).toBe("celebration");
+    expect(EVENT_PRESET_LABELS.celebration).toBe("Celebration");
+    expect(EVENT_PRESET_HINTS.celebration).toBe("Details + RSVP");
+    expect(EVENT_PRESET_PLACEHOLDERS.celebration).toMatch(/birthday|celebration/i);
+  });
+
   it("defaults unknown values to weekend without inventing blocks", () => {
     expect(parseEventPreset(undefined)).toBe("weekend");
     expect(parseEventPreset("night-out")).toBe("night-out");
@@ -57,5 +68,15 @@ describe("event presets", () => {
         "schedule",
       ),
     ).toBe(false);
+  });
+
+  it("keeps celebration focused on details and RSVP while rendering supplied optional blocks", () => {
+    const celebration: PartyContent = {
+      kind: "trip",
+      preset: "celebration" as PartyContent["preset"],
+      trip: { siteName: "Maya's birthday" },
+    };
+    expect(showWeekendEditorBlock(celebration, "schedule")).toBe(false);
+    expect(showWeekendEditorBlock({ ...celebration, packing: weekend.packing }, "packing")).toBe(true);
   });
 });

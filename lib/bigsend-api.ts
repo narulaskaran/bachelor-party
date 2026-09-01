@@ -13,7 +13,7 @@ export type CreateTripBody = {
   slug?: string;
   password?: string;
   plan?: string;
-  preset?: "night-out" | "weekend";
+  preset?: "night-out" | "weekend" | "celebration";
   siteName?: string;
   content?: { trip: { siteName: string }; [key: string]: unknown };
 };

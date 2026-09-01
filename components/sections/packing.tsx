@@ -9,7 +9,8 @@ import {
   subscribePackingChecks,
   writePackingChecks,
 } from "@/lib/packing-storage";
-import type { PackingItem } from "@/lib/party-types";
+import type { EventPreset, PackingItem } from "@/lib/party-types";
+import { eventBlockLabel } from "@/lib/event-preset";
 import { nonemptyPacking } from "@/lib/trip-sections";
 import { contentGroupClass, sectionTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
@@ -18,22 +19,24 @@ export function PackingSection({
   packing,
   slug,
   preview = false,
+  preset = "weekend",
 }: {
   packing: PackingItem[];
   slug: string;
   /** Host guest preview — static list, no checkoff or packing-storage writes. */
   preview?: boolean;
+  preset?: EventPreset;
 }) {
   const items = nonemptyPacking(packing);
   if (items.length === 0) return null;
-  if (preview) return <StaticPackingList items={items} />;
-  return <InteractivePackingList items={items} slug={slug} />;
+  if (preview) return <StaticPackingList items={items} preset={preset} />;
+  return <InteractivePackingList items={items} slug={slug} preset={preset} />;
 }
 
-function PackingShell({ children }: { children: ReactNode }) {
+function PackingShell({ children, preset = "weekend" }: { children: ReactNode; preset?: EventPreset }) {
   return (
     <section id="pack" className="scroll-mt-20 py-10 sm:py-12">
-      <h2 className={sectionTitleClass}>Pack</h2>
+      <h2 className={sectionTitleClass}>{eventBlockLabel(preset, "packing")}</h2>
       <p className="mt-2 max-w-xl text-sm text-muted-foreground">Don&apos;t forget these.</p>
       <ul className={cn("mt-8 flex max-w-xl flex-col overflow-hidden", contentGroupClass)}>{children}</ul>
     </section>
@@ -49,9 +52,9 @@ function ItemCopy({ item }: { item: PackingItem }) {
   );
 }
 
-function StaticPackingList({ items }: { items: PackingItem[] }) {
+function StaticPackingList({ items, preset = "weekend" }: { items: PackingItem[]; preset?: EventPreset }) {
   return (
-    <PackingShell>
+    <PackingShell preset={preset}>
       {items.map((item, index) => (
         <li key={`${item.title}-${index}`} className="border-b border-border px-4 last:border-b-0 sm:px-5">
           <div className="flex min-h-11 flex-col items-start justify-center text-left">
@@ -66,9 +69,11 @@ function StaticPackingList({ items }: { items: PackingItem[] }) {
 function InteractivePackingList({
   items,
   slug,
+  preset = "weekend",
 }: {
   items: PackingItem[];
   slug: string;
+  preset?: EventPreset;
 }) {
   const raw = useSyncExternalStore(
     subscribePackingChecks,
@@ -85,7 +90,7 @@ function InteractivePackingList({
   }
 
   return (
-    <PackingShell>
+    <PackingShell preset={preset}>
       {items.map((item, index) => {
         const id = `pack-${index}`;
         const isChecked = Boolean(checked[item.title]);

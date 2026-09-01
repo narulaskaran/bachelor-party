@@ -26,6 +26,15 @@ describe("partyContentSchema", () => {
     ).toBe(true);
   });
 
+  it("accepts celebration in structured content and create payloads", () => {
+    expect(
+      partyContentSchema.safeParse({ preset: "celebration", trip: { siteName: "Maya's birthday" } }).success,
+    ).toBe(true);
+    expect(
+      createPartySchema.safeParse({ preset: "celebration", plan: "Maya's birthday dinner" }).success,
+    ).toBe(true);
+  });
+
   it("defaults kind to absent (read as trip) and rejects event", () => {
     expect(partyContentSchema.safeParse({ trip: { siteName: "X" } }).success).toBe(
       true,
