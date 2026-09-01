@@ -1,19 +1,26 @@
 -- Remove legacy Celebration records after the preset was intentionally retired.
 -- Match only rows whose current or draft content uses the removed preset.
--- Dependent guests and immutable audit snapshots must be removed first.
-CREATE TEMP TABLE legacy_celebration_parties ON COMMIT DROP AS
-SELECT id
-FROM parties
-WHERE content ->> 'preset' = 'celebration'
-   OR draft_content ->> 'preset' = 'celebration';
+-- Keep the cleanup in one PostgreSQL statement: the production migrator uses
+-- Neon HTTP, which accepts one statement per migration chunk.
+DO $$
+DECLARE
+  legacy_party_ids integer[];
+BEGIN
+  SELECT COALESCE(array_agg(id), ARRAY[]::integer[])
+    INTO legacy_party_ids
+    FROM parties
+   WHERE content ->> 'preset' = 'celebration'
+      OR draft_content ->> 'preset' = 'celebration';
 
-ALTER TABLE content_versions DISABLE TRIGGER content_versions_no_delete;
-DELETE FROM content_versions
-WHERE party_id IN (SELECT id FROM legacy_celebration_parties);
-ALTER TABLE content_versions ENABLE TRIGGER content_versions_no_delete;
+  IF cardinality(legacy_party_ids) > 0 THEN
+    -- content_versions is append-only during normal application operation.
+    -- This one-time record deletion must temporarily bypass its delete guard.
+    EXECUTE 'ALTER TABLE content_versions DISABLE TRIGGER content_versions_no_delete';
+    DELETE FROM content_versions WHERE party_id = ANY(legacy_party_ids);
+    EXECUTE 'ALTER TABLE content_versions ENABLE TRIGGER content_versions_no_delete';
 
-DELETE FROM guests
-WHERE party_id IN (SELECT id FROM legacy_celebration_parties);
-
-DELETE FROM parties
-WHERE id IN (SELECT id FROM legacy_celebration_parties);
+    DELETE FROM guests WHERE party_id = ANY(legacy_party_ids);
+    DELETE FROM parties WHERE id = ANY(legacy_party_ids);
+  END IF;
+END
+$$;
