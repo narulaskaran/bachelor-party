@@ -22,6 +22,7 @@ vi.mock("ai", async (importOriginal) => {
 
 const MESSY =
   "yeah so friday drinks at the dead rabbit in nyc september 4 around seven we should get there early I don't know the address yet maybe 12 people";
+const AIRPORT_CONFUSION = "Alaska JFK→SFO then dinner in the Mission.";
 
 describe("factsFromModelOutput", () => {
   it("keeps stated venue/date/time and drops address, timezone, and headcount", () => {
@@ -165,12 +166,12 @@ describe("extractPlanWithOpenRouter", () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     generateTextMock.mockResolvedValueOnce({
       output: {
-        siteName: "Friday drinks",
+        siteName: "dinner in the Mission",
         tagline: null,
-        startDate: "2026-09-04",
+        startDate: null,
         endDate: null,
-        startTime: "7:00 PM",
-        location: "The Dead Rabbit, NYC",
+        startTime: null,
+        location: "the Mission",
         address: null,
         timezone: null,
         lodgingName: null,
@@ -179,12 +180,10 @@ describe("extractPlanWithOpenRouter", () => {
       },
     });
 
-    const facts = await extractPlanWithOpenRouter(MESSY);
+    const facts = await extractPlanWithOpenRouter(AIRPORT_CONFUSION);
     expect(facts).toMatchObject({
-      siteName: "Friday drinks",
-      startDate: "2026-09-04",
-      startTime: "7:00 PM",
-      location: "The Dead Rabbit, NYC",
+      siteName: "dinner in the Mission",
+      location: "the Mission",
     });
     expect(generateTextMock).toHaveBeenCalledTimes(1);
     const call = generateTextMock.mock.calls[0]?.[0] as {
@@ -192,11 +191,19 @@ describe("extractPlanWithOpenRouter", () => {
       maxOutputTokens?: number;
       maxRetries?: number;
       providerOptions?: { openai?: { reasoningEffort?: string } };
+      prompt?: string;
     };
     expect(call.abortSignal).toBeInstanceOf(AbortSignal);
     expect(call.maxOutputTokens).toBe(2048);
     expect(call.maxRetries).toBe(1);
     expect(call.providerOptions?.openai?.reasoningEffort).toBe("low");
+    expect(call.prompt).toContain("Separate travel logistics from event logistics.");
+    expect(call.prompt).toContain(
+      "Airport codes, airlines, flight numbers, and airport-to-airport routes are travel details, not event locations.",
+    );
+    expect(call.prompt).toContain(
+      'For example, "Alaska JFK→SFO then dinner in the Mission." means location="the Mission"; JFK and SFO are not the location.',
+    );
   });
 
   it("does not abort a 20s OpenRouter completion, then maps a later abort to unavailable", async () => {
