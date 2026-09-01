@@ -26,13 +26,13 @@ describe("partyContentSchema", () => {
     ).toBe(true);
   });
 
-  it("accepts celebration in structured content and create payloads", () => {
+  it("rejects the removed preset in structured content and create payloads", () => {
     expect(
-      partyContentSchema.safeParse({ preset: "celebration", trip: { siteName: "Maya's birthday" } }).success,
-    ).toBe(true);
+      partyContentSchema.safeParse({ preset: "celebration", trip: { siteName: "Removed" } }).success,
+    ).toBe(false);
     expect(
-      createPartySchema.safeParse({ preset: "celebration", plan: "Maya's birthday dinner" }).success,
-    ).toBe(true);
+      createPartySchema.safeParse({ preset: "celebration", plan: "Removed" }).success,
+    ).toBe(false);
   });
 
   it("defaults kind to absent (read as trip) and rejects event", () => {

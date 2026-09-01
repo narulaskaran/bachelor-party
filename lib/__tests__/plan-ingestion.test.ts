@@ -243,22 +243,6 @@ describe("messy event plan ingestion", () => {
     expect(content.presentation?.style).toBe("clean");
   });
 
-  it("keeps celebration drafts focused by default but preserves supplied optional logistics", () => {
-    const { content, review } = ingestEventPlan(
-      "Maya's birthday\nLocation: Rita's\nLodging: The Garden Room\nPack: candles\n2026-09-04 7:00 PM — cake",
-      { preset: "celebration" },
-    );
-    expect(content.preset).toBe("celebration");
-    expect(content.trip.location).toBe("Rita's");
-    expect(content.schedule?.[0].entries[0].title).toBe("cake");
-    expect(content.packing).toEqual([{ title: "candles" }]);
-    expect(content.lodging).toEqual({ name: "The Garden Room" });
-    expect(review.facts.find((item) => item.path === "lodging.name")).toMatchObject({
-      status: "extracted",
-      value: "The Garden Room",
-    });
-  });
-
   it("uses the stated range end and a Lodge: name, not a guessed middle day", () => {
     const { content, review } = ingestEventPlan(
       [

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import type { PartyContent } from "@/lib/party-types";
-import { parseEventPreset } from "@/lib/event-preset";
 import { visibleSections } from "@/lib/trip-sections";
 import { Hero } from "@/components/sections/hero";
 import { Glance } from "@/components/sections/glance";
@@ -29,7 +28,6 @@ export function PartyChrome({
   sample?: boolean;
 }) {
   const sections = visibleSections(content);
-  const preset = parseEventPreset(content.preset);
   const footerBits = [
     content.trip.location,
     content.trip.elevation,
@@ -49,16 +47,16 @@ export function PartyChrome({
         <ActionItems actionItems={content.actionItems} />
       ) : null}
       {sections.schedule && content.schedule ? (
-        <ScheduleSection schedule={content.schedule} preset={preset} />
+        <ScheduleSection schedule={content.schedule} />
       ) : null}
       {sections.activities && content.activities ? (
         <ActivitiesSection activities={content.activities} />
       ) : null}
       {sections.lodging && content.lodging ? (
-        <BasecampSection trip={content.trip} lodging={content.lodging} preset={preset} />
+        <BasecampSection trip={content.trip} lodging={content.lodging} />
       ) : null}
       {sections.packing && content.packing ? (
-        <PackingSection packing={content.packing} slug={slug ?? ""} preview={preview} preset={preset} />
+        <PackingSection packing={content.packing} slug={slug ?? ""} preview={preview} />
       ) : null}
       {rsvp}
 

@@ -291,7 +291,8 @@ describe("homepage create", () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
     expect(screen.getByRole("radio", { name: /party/i })).toBeTruthy();
     expect(screen.getByRole("radio", { name: /group trip/i })).toBeTruthy();
-    expect(screen.getAllByText(EVENT_PRESET_HINTS["night-out"])).toHaveLength(2);
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    expect(screen.getByText(EVENT_PRESET_HINTS["night-out"])).toBeTruthy();
     expect(screen.getByText(EVENT_PRESET_HINTS.weekend)).toBeTruthy();
 
     await settlePosterHide();
@@ -390,17 +391,4 @@ describe("homepage create", () => {
     expect(notes.getAttribute("placeholder")).toBe(EVENT_PRESET_PLACEHOLDERS["night-out"]);
   });
 
-  it("lets a host choose Celebration with birthday copy", async () => {
-    const user = userEvent.setup();
-    render(<LandingView />);
-    await user.click(screen.getByRole("link", { name: /^get started$/i }));
-
-    const celebration = screen.getByRole("radio", { name: /celebration/i });
-    expect(celebration).toBeTruthy();
-    expect(celebration.textContent).toMatch(/details \+ rsvp/i);
-    await user.click(celebration);
-    expect(screen.getByLabelText(/^describe your event$/i).getAttribute("placeholder")).toMatch(
-      /birthday|celebration/i,
-    );
-  });
 });

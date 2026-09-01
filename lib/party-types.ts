@@ -6,7 +6,7 @@
 // Legacy rows may still contain `groomName`; it is ignored on read.
 
 export type TripKind = "trip";
-export type EventPreset = "night-out" | "weekend" | "celebration";
+export type EventPreset = "night-out" | "weekend";
 
 export type GuestUpdate = {
   at: string;
@@ -118,7 +118,7 @@ export type RsvpConfig = {
 
 export type PartyContent = {
   kind?: TripKind;
-  /** Party or celebration (details + RSVP), or group trip (optional schedule/lodge/activities/pack). */
+  /** Party (details + RSVP) or group trip (optional schedule/lodge/activities/pack). */
   preset?: EventPreset;
   trip: Trip;
   presentation?: { style: "clean" | "editorial" };

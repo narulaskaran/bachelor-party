@@ -145,7 +145,7 @@ export function visibleSections(content: PartyContent): VisibleSections {
     packing: hasPacking(content),
     rsvp: true,
   };
-  if ((content.preset ?? "weekend") === "night-out" || content.preset === "celebration") {
+  if ((content.preset ?? "weekend") === "night-out") {
     return {
       glance: false,
       actionItems: false,
@@ -167,14 +167,6 @@ export function guestRsvpExtras(content: PartyContent): {
 } {
   if ((content.preset ?? "weekend") === "night-out") {
     return { flights: false, food: false, votes: false, notes: false };
-  }
-  if (content.preset === "celebration") {
-    return {
-      flights: showFlightFields(content),
-      food: false,
-      votes: pollActivities(content).length > 0,
-      notes: false,
-    };
   }
   return {
     flights: showFlightFields(content),

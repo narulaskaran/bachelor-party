@@ -7,6 +7,7 @@ import {
   type CreateTripBody,
 } from "@/lib/bigsend-api";
 import { slugFromName } from "@/lib/slug";
+import { isEventPreset } from "@/lib/event-preset";
 import {
   defaultConfigPath,
   emptyConfig,
@@ -27,7 +28,6 @@ an explicit host publish (site Publish button, or bigsend publish).
 
   bigsend create --name "E2E Smoke"
   bigsend create --plan "Cabin weekend in Denver" --preset weekend
-  bigsend create --plan "Maya birthday dinner" --preset celebration
   bigsend get <slug>
   bigsend set <slug> --patch '{"trip":{"airport":"JAC"}}'
   bigsend publish <slug>
@@ -225,6 +225,9 @@ async function cmdCreate(
     preset?: string;
   },
 ): Promise<number> {
+  if (flags.preset !== undefined && !isEventPreset(flags.preset)) {
+    return fail(io, `Unknown preset '${flags.preset}'. Choose night-out or weekend.`);
+  }
   const apiUrl = io.env.BIGSEND_API_URL;
   if (!apiUrl) return fail(io, "BIGSEND_API_URL is not set");
   const api = createBigsendClient({ apiUrl, fetch: io.fetch });
@@ -242,13 +245,16 @@ async function cmdCreate(
   } else if (flags.plan) {
     body = { plan: flags.plan };
     if (flags.name) body.siteName = flags.name;
-    if (flags.preset === "night-out" || flags.preset === "weekend" || flags.preset === "celebration") {
+    if (flags.preset === "night-out" || flags.preset === "weekend") {
       body.preset = flags.preset;
     }
   } else if (flags.name) {
     body = { content: { trip: { siteName: flags.name } } };
   } else {
     return fail(io, "create requires --name, --plan, or --file");
+  }
+  if (body.preset !== undefined && !isEventPreset(body.preset)) {
+    return fail(io, `Unknown preset '${String(body.preset)}'. Choose night-out or weekend.`);
   }
   if (flags.slug) body.slug = flags.slug;
   if (flags.password) body.password = flags.password;

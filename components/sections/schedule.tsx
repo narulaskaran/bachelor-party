@@ -1,5 +1,4 @@
-import type { EventPreset, ScheduleDay } from "@/lib/party-types";
-import { eventBlockLabel } from "@/lib/event-preset";
+import type { ScheduleDay } from "@/lib/party-types";
 import { KEY_EVENT_HINT, isKeyEvent, keyEventCount } from "@/lib/key-events";
 import { nonemptySchedule } from "@/lib/trip-sections";
 import { kickerClass, sectionTitleClass } from "@/lib/type";
@@ -14,19 +13,17 @@ export function ScheduleSection({
   schedule,
   picker,
   id = "schedule",
-  preset = "weekend",
 }: {
   schedule: ScheduleDay[];
   picker?: SchedulePicker;
   id?: string;
-  preset?: EventPreset;
 }) {
   const days = nonemptySchedule(schedule);
   if (days.length === 0) return null;
 
   return (
     <section id={id} className="scroll-mt-20 py-10 sm:py-12">
-      <h2 className={sectionTitleClass}>{picker ? "Key events" : eventBlockLabel(preset, "schedule")}</h2>
+      <h2 className={sectionTitleClass}>{picker ? "Key events" : "Schedule"}</h2>
       {picker ? (
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">{KEY_EVENT_HINT}</p>
       ) : (

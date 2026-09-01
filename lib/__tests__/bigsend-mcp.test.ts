@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { z } from "zod";
 import {
   BIGSEND_TOOL_NAMES,
   BIGSEND_TOOLS,
@@ -90,15 +91,10 @@ describe("bigsend MCP tools", () => {
     ]);
   });
 
-  it("create maps celebration through the MCP preset schema", () => {
-    expect(argvForTool("create", { plan: "Birthday dinner", preset: "celebration" })).toEqual([
-      "create",
-      "--plan",
-      "Birthday dinner",
-      "--preset",
-      "celebration",
-    ]);
-    expect(BIGSEND_TOOLS.find((tool) => tool.name === "create")?.inputSchema.preset).toBeTruthy();
+  it("MCP create schema rejects the removed preset", () => {
+    const preset = BIGSEND_TOOLS.find((tool) => tool.name === "create")?.inputSchema.preset;
+    expect(preset).toBeTruthy();
+    expect(z.safeParse(preset!, "celebration").success).toBe(false);
   });
 
   it("publish argv is the explicit host verb", () => {

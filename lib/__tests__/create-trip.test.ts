@@ -81,19 +81,6 @@ describe("create-from-UI helper", () => {
     });
   });
 
-  it("sends celebration through the same create API payload", () => {
-    const init = createTripRequestInit({
-      siteName: "Maya's birthday",
-      preset: "celebration",
-      plan: "Birthday dinner on September 4",
-    });
-    expect(JSON.parse(String(init.body))).toMatchObject({
-      siteName: "Maya's birthday",
-      preset: "celebration",
-      plan: "Birthday dinner on September 4",
-    });
-  });
-
   it("does not use a multi-fact dump as the event title", () => {
     const init = createTripRequestInit({
       siteName: "",

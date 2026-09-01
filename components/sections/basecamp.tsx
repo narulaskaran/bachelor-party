@@ -1,12 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import type { EventPreset, Trip, Lodging } from "@/lib/party-types";
-import { eventBlockLabel } from "@/lib/event-preset";
+import type { Trip, Lodging } from "@/lib/party-types";
 import { kickerClass, sectionTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
 
-export function BasecampSection({ trip, lodging, preset = "weekend" }: { trip: Trip; lodging: Lodging; preset?: EventPreset }) {
+export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodging }) {
   const facts = [
     lodging.bedrooms != null && lodging.bedrooms > 0
       ? { label: "Bedrooms", value: String(lodging.bedrooms) }
@@ -24,10 +23,7 @@ export function BasecampSection({ trip, lodging, preset = "weekend" }: { trip: T
 
   return (
     <section id="lodge" className="scroll-mt-20 py-10 sm:py-12">
-      <h2 className={cn(sectionTitleClass, "break-words")}>
-        {preset === "celebration" ? eventBlockLabel(preset, "lodging") : lodging.name}
-      </h2>
-      {preset === "celebration" ? <p className="mt-2 text-lg font-medium">{lodging.name}</p> : null}
+      <h2 className={cn(sectionTitleClass, "break-words")}>{lodging.name}</h2>
       {subtitle.length > 0 ? (
         <p className="mt-2 max-w-xl text-muted-foreground">{subtitle.join(" · ")}</p>
       ) : null}

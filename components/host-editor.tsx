@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { END_BEFORE_START_MESSAGE } from "@/lib/trip-dates";
 import { type HostPublishStatus } from "@/lib/draft-publish";
-import { eventBlockLabel, parseEventPreset, showWeekendEditorBlock, WEEKEND_SECTION_OPTIONS, type WeekendBlock } from "@/lib/event-preset";
+import { parseEventPreset, showWeekendEditorBlock, WEEKEND_SECTION_OPTIONS, type WeekendBlock } from "@/lib/event-preset";
 import { draftFactsForContent } from "@/lib/plan-ingestion";
 import {
   rowsFromActivities,
@@ -432,7 +432,7 @@ export function HostEditor({
                 <option value="">Choose…</option>
                 {WEEKEND_SECTION_OPTIONS.filter((option) => hiddenBlocks.includes(option.block)).map((option) => (
                   <option key={option.block} value={option.block}>
-                    {eventBlockLabel(preset, option.block)}
+                    {option.label}
                   </option>
                 ))}
               </select>
@@ -441,13 +441,13 @@ export function HostEditor({
 
           {enabledBlocks.lodging ? (
             <fieldset disabled={isPending || sample} className="space-y-4">
-              <legend className="text-lg font-semibold">{eventBlockLabel(preset, "lodging")}</legend>
+              <legend className="text-lg font-semibold">Lodge</legend>
               <p className="text-sm text-muted-foreground">Name, address, maps — no beds or headcount required.</p>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={preset === "celebration" ? "Venue / stay name" : "Lodging name"} name="lodgingName" value={lodgingName} onChange={setLodgingName} />
-                <Field label={preset === "celebration" ? "Venue address" : "Lodge address"} name="lodgingAddress" value={lodgingAddress} onChange={setLodgingAddress} />
-                <Field label={preset === "celebration" ? "Venue URL (HTTPS)" : "Listing URL (HTTPS)"} name="lodgingUrl" type="url" value={lodgingUrl} onChange={setLodgingUrl} />
-                <Field label={preset === "celebration" ? "Venue maps URL (HTTPS)" : "Lodge maps URL (HTTPS)"} name="lodgingMapsUrl" type="url" value={lodgingMapsUrl} onChange={setLodgingMapsUrl} />
+                <Field label="Lodging name" name="lodgingName" value={lodgingName} onChange={setLodgingName} />
+                <Field label="Lodge address" name="lodgingAddress" value={lodgingAddress} onChange={setLodgingAddress} />
+                <Field label="Listing URL (HTTPS)" name="lodgingUrl" type="url" value={lodgingUrl} onChange={setLodgingUrl} />
+                <Field label="Lodge maps URL (HTTPS)" name="lodgingMapsUrl" type="url" value={lodgingMapsUrl} onChange={setLodgingMapsUrl} />
               </div>
             </fieldset>
           ) : null}
@@ -470,7 +470,7 @@ export function HostEditor({
 
           {enabledBlocks.schedule ? (
             <fieldset disabled={isPending || sample} className="space-y-3">
-              <legend className="text-lg font-semibold">{eventBlockLabel(preset, "schedule")}</legend>
+              <legend className="text-lg font-semibold">Schedule</legend>
               <p className="text-sm text-muted-foreground">Add or remove rows. Hidden for guests when empty.</p>
               <ol className="space-y-3">
                 {scheduleRows.map((row, index) => (
@@ -590,7 +590,7 @@ export function HostEditor({
 
           {enabledBlocks.packing ? (
             <fieldset disabled={isPending || sample} className="space-y-3">
-              <legend className="text-lg font-semibold">{eventBlockLabel(preset, "packing")}</legend>
+              <legend className="text-lg font-semibold">Pack list</legend>
               <p className="text-sm text-muted-foreground">Host-authored list. Guests check items off in their own browser. Hidden when empty.</p>
               <ol className="space-y-3">
                 {packingRows.map((row, index) => (
