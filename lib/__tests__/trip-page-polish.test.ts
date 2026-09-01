@@ -253,5 +253,12 @@ describe("trip page polish", () => {
     expect(html).toContain('href="#pack"');
     expect(html).toContain(">Pack<");
     expect(html).not.toContain("Go to your info");
+    const rsvpCta = html.match(/<a\b[^>]*>RSVP<\/a>/)?.[0];
+    const packCta = html.match(/<a\b[^>]*>Pack<\/a>/)?.[0];
+    expect(rsvpCta).toMatch(/min-h-11/);
+    expect(rsvpCta).toContain('data-size="sm"');
+    expect(rsvpCta).toContain('data-variant="default"');
+    expect(packCta).toMatch(/min-h-11/);
+    expect(packCta).toContain('data-size="sm"');
   });
 });
