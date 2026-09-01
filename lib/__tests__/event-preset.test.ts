@@ -24,7 +24,9 @@ describe("event presets", () => {
   it("exposes only Party and Group trip and rejects the removed preset", () => {
     expect(EVENT_PRESETS).toEqual(["night-out", "weekend"]);
     expect(isEventPreset("celebration")).toBe(false);
-    expect(parseEventPreset("celebration")).toBe("weekend");
+    expect(() => parseEventPreset("celebration")).toThrowError(
+      'Event preset "celebration" is no longer supported',
+    );
     expect(EVENT_PRESET_LABELS["night-out"]).toBe("Party");
     expect(EVENT_PRESET_LABELS.weekend).toBe("Group trip");
     expect(EVENT_PRESET_HINTS["night-out"]).toBe("Details + RSVP");

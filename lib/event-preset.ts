@@ -27,6 +27,9 @@ export function isEventPreset(value: unknown): value is EventPreset {
 }
 
 export function parseEventPreset(value: unknown): EventPreset {
+  if (value === "celebration") {
+    throw new Error('Event preset "celebration" is no longer supported');
+  }
   return isEventPreset(value) ? value : "weekend";
 }
 
