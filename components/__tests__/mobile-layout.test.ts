@@ -62,7 +62,7 @@ describe("mobile trip layout", () => {
     expect(html).toContain('href="#pack"');
     expect(html).not.toContain("#basecamp");
     expect(html).toContain("Alpine Weekend");
-    expect(html).not.toContain("The Big Send");
+    expect(html).not.toContain("Party Time");
     expect(html).not.toContain("Try Demo");
     expect(html).not.toContain("data-demo-link");
     expect(html).toContain("RSVP");
@@ -100,7 +100,7 @@ describe("mobile trip layout", () => {
     expect(html).not.toContain("<details");
     expect(html).toContain('id="site-nav-marketing"');
     expect(html).toContain("data-marketing-brand");
-    expect(html).toContain("The Big Send");
+    expect(html).toContain("Party Time");
     expect(html).toContain("ml-auto");
     expect(html).toContain('aria-label="Dark theme"');
     expect(html).toContain("Try Demo");

@@ -27,7 +27,7 @@ function unavailableHtml(): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(TRIP_UNAVAILABLE_HEADING)} — The Big Send</title>
+<title>${esc(TRIP_UNAVAILABLE_HEADING)} — Party Time</title>
 <style>
   body { margin: 0; min-height: 100vh; display: flex; align-items: center;
          justify-content: center; background: #fafaf9; color: #1c1917;
@@ -42,7 +42,7 @@ function unavailableHtml(): string {
 </head>
 <body>
 <main>
-  <p class="brand">The Big Send</p>
+  <p class="brand">Party Time</p>
   <h1>${esc(TRIP_UNAVAILABLE_HEADING)}</h1>
   <p>${esc(TRIP_UNAVAILABLE_MESSAGE)}</p>
 </main>

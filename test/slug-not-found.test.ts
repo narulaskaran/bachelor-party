@@ -93,7 +93,7 @@ describe("unknown guest slug 404", () => {
   it("renders branded copy and a home link, not the Next.js error fallback", () => {
     const html = branded404Html(createElement(TripNotFound));
     expect(html).toContain("No trip at this link");
-    expect(html).toContain("The Big Send");
+    expect(html).toContain("Party Time");
     expect(html).toContain("Back home");
     expect(html).toContain('href="/"');
     expect(html).not.toContain("Enter an invite link or trip name");

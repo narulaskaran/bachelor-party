@@ -1,4 +1,4 @@
-# The Big Send
+# Party Time
 
 A private event page: when, where, what, and who’s coming. One deploy hosts
 as many events as you want. This repo doesn’t ship anyone’s real itinerary.

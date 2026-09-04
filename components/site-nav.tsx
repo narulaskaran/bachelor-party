@@ -64,7 +64,7 @@ export function SiteNav({
           data-marketing-brand={tripChrome ? undefined : ""}
           className="min-w-0 truncate text-sm font-semibold tracking-tight"
         >
-          {siteName ?? "The Big Send"}
+          {siteName ?? "Party Time"}
           {dateLabel && !host ? (
             <span className="hidden text-sm font-normal normal-case tracking-normal text-muted-foreground lg:inline">
               {" "}

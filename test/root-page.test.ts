@@ -126,7 +126,7 @@ describe("GET /", () => {
   });
 
   it("root meta description is private-link product copy, not a group-chat password", () => {
-    expect(metadata.title).toBe("The Big Send");
+    expect(metadata.title).toBe("Party Time");
     expect(metadata.description).toMatch(/messy plan/i);
     expect(metadata.description).toMatch(/private link/i);
     expect(metadata.description).not.toMatch(/password's in the group chat/i);
@@ -198,7 +198,7 @@ describe("GET /", () => {
       RootLayout({ children: createElement("p", null, "LANDING_BODY") }),
     );
 
-    expect(html).toContain("The Big Send");
+    expect(html).toContain("Party Time");
     expect(html).toContain("LANDING_BODY");
     expect(html).toContain('id="site-nav-marketing"');
     expect(html).toContain("data-marketing-brand");
@@ -277,7 +277,7 @@ describe("GET /{slug} chrome", () => {
     );
 
     expect(html).toContain(TRIP_NAME);
-    expect(html).not.toContain("The Big Send");
+    expect(html).not.toContain("Party Time");
     expect(html).toContain(DATE_LABEL);
     expect(html).toContain('href="#rsvp"');
     expect(html).toContain("RSVP");
@@ -324,7 +324,7 @@ describe("GET /{slug} chrome", () => {
     const html = renderToStaticMarkup(RootLayout({ children: gate }));
 
     expect(html).toContain("Who Goes There");
-    expect(html).toContain("The Big Send");
+    expect(html).toContain("Party Time");
     expect(html).toContain('id="site-nav-marketing"');
     expect(html).toContain("data-marketing-brand");
     expect(html).not.toContain("Create a trip");
@@ -352,7 +352,7 @@ describe("GET /{slug} chrome", () => {
 
     expect(html).toContain("Who Goes There");
     expect(html).toContain('id="site-nav-marketing"');
-    expect(html).toContain("The Big Send");
+    expect(html).toContain("Party Time");
     expect(html).not.toContain(TRIP_NAME);
     expect(html).not.toContain('href="#schedule"');
     expect(html).not.toContain("data-trip-chrome");
@@ -373,7 +373,7 @@ describe("GET /{slug} chrome", () => {
     );
 
     expect(html).toContain("Alpine Weekend");
-    expect(html).not.toContain("The Big Send");
+    expect(html).not.toContain("Party Time");
     expect(html).toContain("data-trip-chrome");
     expect(html).toContain('href="#rsvp"');
     expect(html).toContain("RSVP");

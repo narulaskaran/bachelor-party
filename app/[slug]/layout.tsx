@@ -35,7 +35,7 @@ export default async function TripLayout({
     return (
       <>
         <SiteNav
-          siteName={tripChrome?.content.trip.siteName ?? "The Big Send"}
+          siteName={tripChrome?.content.trip.siteName ?? "Party Time"}
           slug={slug}
           host
         />
