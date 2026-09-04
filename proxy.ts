@@ -61,6 +61,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
+  // public/llms.txt — pass through so Next serves the static file (do not
+  // treat it as a missing guest slug). Matcher also excludes this path.
+  if (pathname === "/llms.txt") {
+    return nextWithPathname(request);
+  }
+
   if (isAdminHtmlPath(pathname)) {
     const response = nextWithPathname(request);
     applyAdminHtmlSecurityHeaders(response.headers);
@@ -131,6 +137,8 @@ export async function proxy(request: NextRequest) {
  * `/api/:path*` are listed so exact `/api` and `/api/` return JSON 404 (and
  * other `/api/…/` paths still 308-strip) under skipTrailingSlashRedirect.
  * `/api-2` is not an `/api` segment and still hits the guest matcher.
+ * `favicon.ico`, `icon.svg`, and `llms.txt` are excluded so public static
+ * files are not rewritten as missing guest slugs.
  *
  * Duplicated inline in `config.matcher`: Next requires matcher entries to be
  * static string literals.
@@ -139,7 +147,7 @@ export const API_ROOT_MATCHER = "/api";
 export const API_SUBPATH_MATCHER = "/api/:path*";
 
 export const GUEST_PATH_MATCHER =
-  "/((?!api(?:/|$)|_next|_not-found|favicon.ico|icon.svg|admin(?:/|$)).*)";
+  "/((?!api(?:/|$)|_next|_not-found|favicon.ico|icon.svg|llms.txt|admin(?:/|$)).*)";
 
 export const config = {
   matcher: [
@@ -147,6 +155,6 @@ export const config = {
     "/admin/:path*",
     "/api",
     "/api/:path*",
-    "/((?!api(?:/|$)|_next|_not-found|favicon.ico|icon.svg|admin(?:/|$)).*)",
+    "/((?!api(?:/|$)|_next|_not-found|favicon.ico|icon.svg|llms.txt|admin(?:/|$)).*)",
   ],
 };

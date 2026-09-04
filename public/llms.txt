@@ -1,0 +1,26 @@
+# Party Time
+
+> Private event pages from a messy plan. Guests get an unguessable link — not a group-chat password.
+
+Live: https://party.narula.xyz
+Human: Get started on the landing page, or try /demo.
+
+## For agents
+
+Create a draft (no auth):
+POST https://party.narula.xyz/api/admin/trips
+Body: { "plan": "…messy notes…", "preset": "night-out" | "weekend" }  // preset optional
+201: organizer packet with hostUrl + adminToken. guestUrl is null until publish.
+Never auto-publishes. Publish is host-only (site Publish, or POST /api/admin/trips/:slug/publish with Bearer adminToken).
+
+Same extract path as the landing “Create draft” button. Extract only — never invent time, place, address, or headcount.
+Guest RSVP stays on the guest page (/g/…); don’t try to RSVP via the API.
+
+## Machine surface
+
+- OpenAPI: GET /api/openapi.json
+- Docs: https://github.com/narulaskaran/bachelor-party/blob/main/docs/api.md
+- CLI: bigsend (pnpm bigsend)
+- MCP: pnpm mcp
+
+Point at OpenAPI + docs/api.md for verbs. Product name is Party Time (not Big Send).

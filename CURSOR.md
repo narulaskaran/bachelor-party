@@ -27,5 +27,5 @@ Do not split into two apps. Schema: `lib/party-types.ts`, `lib/party-schema.ts`.
 
 ## Machine surface
 
-Admin API, `bigsend` CLI, and MCP: [docs/api.md](docs/api.md). Not the R1
-human loop.
+Admin API, `bigsend` CLI, and MCP: [docs/api.md](docs/api.md). Public agent
+file: `/llms.txt`. Not the R1 human loop.
