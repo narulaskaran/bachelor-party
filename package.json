@@ -20,7 +20,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.50",
+    "@ai-sdk/openai": "^4.0.53",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/analytics": "^2.0.1",
