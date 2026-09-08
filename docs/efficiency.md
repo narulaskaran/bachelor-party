@@ -31,3 +31,5 @@ Living notes from the efficiency dig on prod `party.narula.xyz`. Track work via 
 - Timeout: `PLAN_EXTRACT_TIMEOUT_MS = 50_000`; `maxRetries: 1` in `extractPlanWithOpenRouter`.
 - Versions: `recordContentVersion` uses `ORDER BY version DESC LIMIT 1`.
 - Host page: `loadHostPageState` (one parties read) then guests. Parked: guest RSVP double lookup; OpenRouter 50s dump timeout.
+
+Shipped on `main`: `c7ea24892474640bce08613471682d89a2640847` (items 1–3).

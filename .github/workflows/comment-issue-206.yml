@@ -1,0 +1,64 @@
+# One-shot: Cursor's git token cannot write issue comments (issues=write).
+# GITHUB_TOKEN in Actions can. Delete this workflow after #206 is updated.
+name: Comment efficiency SHA on #206
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment shipped SHA on #206
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const shipped = 'c7ea24892474640bce08613471682d89a2640847';
+            const body = [
+              'Shipped efficiency-dig items **1–3** on `main` (direct commit, no PR / no Neon preview branch).',
+              '',
+              `**Main SHA:** [\`${shipped.slice(0, 7)}\`](https://github.com/narulaskaran/bachelor-party/commit/${shipped}) (\`${shipped}\`)`,
+              '',
+              'CI: [build-and-test](https://github.com/narulaskaran/bachelor-party/actions/runs/34256177257) green on that SHA.',
+              '',
+              '### 1. Host preview debounce / dirty-section',
+              '- lg+ split kept live. Draft→preview debounce is **200ms**.',
+              '- Unchanged packing/schedule/RSVP/etc. keep object identity; `PartyChrome` / pack / RSVP slices are memoized.',
+              '- Below lg: Edit tab does **not** rebuild preview. Preview tab builds on show when the draft changed.',
+              '- Preview stays inert/static. Create/publish behavior unchanged.',
+              '',
+              '### 2. Host page party jsonb reads',
+              '- Host workspace GET uses `loadHostPageState`: **one** `parties` content/draft jsonb fetch, then guests.',
+              '- Auth/ownership still require the host cookie (or reserved `/demo`).',
+              '',
+              '### 3. `content_versions` head',
+              '- Head lookup is `ORDER BY version DESC LIMIT 1`.',
+              '- Full snapshots still stored for audit.',
+              '',
+              '### Parked',
+              '- Guest RSVP sequential double resolve / `force-dynamic`',
+              '- OpenRouter 50s dump timeout / retry',
+              '- `getDb()` singleton',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 206,
+              per_page: 100,
+            });
+            if (comments.some((c) => (c.body || '').includes(shipped))) {
+              console.log('Issue #206 already mentions the shipped SHA');
+              return;
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 206,
+              body,
+            });
