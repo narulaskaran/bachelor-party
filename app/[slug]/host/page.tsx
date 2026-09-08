@@ -3,8 +3,7 @@ import { OrganizerRoster } from "@/components/organizer-roster";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { HostScheduleView } from "@/components/host-schedule-view";
 import { HostWorkspace } from "@/components/host-workspace";
-import { getHostGuests, getHostEditorState, hostSessionForSlug, publishHostDraft, saveHostDraft } from "@/lib/host-access";
-import { resolvePartyBySlug } from "@/lib/resolve-party";
+import { loadHostPageState, publishHostDraft, saveHostDraft } from "@/lib/host-access";
 import { hasSchedule } from "@/lib/trip-sections";
 import { login } from "./actions";
 import { HostLoginForm } from "./host-login-form";
@@ -16,11 +15,10 @@ type Params = { params: Promise<{ slug: string }> };
 export default async function HostPage({ params }: Params) {
   const { slug } = await params;
   const isDemo = slug === "demo";
-  const resolved = await resolvePartyBySlug(slug);
-  if (resolved.status === "missing") notFound();
+  const page = await loadHostPageState(slug);
+  if (page.status === "missing") notFound();
 
-  const authed = await hostSessionForSlug(slug);
-  if (!authed) {
+  if (page.status === "unauthenticated") {
     const loginWithSlug = login.bind(null, slug);
     return (
       <div className="mx-auto flex min-h-[70vh] max-w-5xl items-center justify-center px-4 py-16">
@@ -39,9 +37,7 @@ export default async function HostPage({ params }: Params) {
     );
   }
 
-  const editor = await getHostEditorState(slug);
-  if (!editor.ok) notFound();
-  const guests = await getHostGuests(slug);
+  const { editor, guests } = page;
 
   return (
     <>

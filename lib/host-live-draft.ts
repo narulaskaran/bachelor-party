@@ -170,10 +170,34 @@ export function buildHostDraft(
   return { ok: true, content: next };
 }
 
+function sameJson(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** Keep unchanged section object identity so memoized preview sections skip re-render. */
+export function reuseUnchangedPreviewSections(
+  next: PartyContent,
+  previous: PartyContent,
+): PartyContent {
+  if (next === previous) return next;
+  const reused: PartyContent = { ...next };
+  if (sameJson(next.trip, previous.trip)) reused.trip = previous.trip;
+  if (sameJson(next.schedule, previous.schedule)) reused.schedule = previous.schedule;
+  if (sameJson(next.packing, previous.packing)) reused.packing = previous.packing;
+  if (sameJson(next.activities, previous.activities)) reused.activities = previous.activities;
+  if (sameJson(next.lodging, previous.lodging)) reused.lodging = previous.lodging;
+  if (sameJson(next.rsvp, previous.rsvp)) reused.rsvp = previous.rsvp;
+  if (sameJson(next.presentation, previous.presentation)) reused.presentation = previous.presentation;
+  if (sameJson(next.guestUpdate, previous.guestUpdate)) reused.guestUpdate = previous.guestUpdate;
+  if (sameJson(next.actionItems, previous.actionItems)) reused.actionItems = previous.actionItems;
+  return reused;
+}
+
 /** Apply unsaved valid fields onto the last good preview. Invalid dates/URLs/rows stay put. */
 export function livePreviewContent(input: HostLiveDraftInput, lastValid: PartyContent): PartyContent {
   const built = buildHostDraft(input);
-  if (built.ok) return built.content;
+  if (built.ok) return reuseUnchangedPreviewSections(built.content, lastValid);
 
   const next: PartyContent = {
     ...lastValid,
@@ -235,7 +259,7 @@ export function livePreviewContent(input: HostLiveDraftInput, lastValid: PartyCo
     next.lodging = undefined;
   }
 
-  return next;
+  return reuseUnchangedPreviewSections(next, lastValid);
 }
 
 export function hostPreviewCaption(source: HostPreviewSource, dirty: boolean): string | null {

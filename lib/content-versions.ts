@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import type { PartyContent } from "@/lib/party-types";
 
@@ -39,13 +39,14 @@ export async function recordContentVersion(
   input: RecordContentVersionInput,
 ): Promise<void> {
   try {
-    // Per-party head version. Small tables; MAX-in-JS keeps this portable
-    // across the real driver and the in-memory test double.
-    const heads = await db
+    // Per-party head: indexed (party_id, version) unique key, one row.
+    const [head] = await db
       .select({ version: schema.contentVersions.version })
       .from(schema.contentVersions)
-      .where(eq(schema.contentVersions.partyId, input.partyId));
-    const baseVersion = heads.reduce((max, row) => Math.max(max, row.version), 0);
+      .where(eq(schema.contentVersions.partyId, input.partyId))
+      .orderBy(desc(schema.contentVersions.version))
+      .limit(1);
+    const baseVersion = head?.version ?? 0;
 
     await db.insert(schema.contentVersions).values({
       partyId: input.partyId,

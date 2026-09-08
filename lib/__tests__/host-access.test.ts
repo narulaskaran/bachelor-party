@@ -37,6 +37,7 @@ import {
   getHostEditorState,
   getHostGuests,
   hostSessionForSlug,
+  loadHostPageState,
   openAsHost,
   publishHostDraft,
   saveHostDraft,
@@ -589,5 +590,44 @@ describe("unlockHostTrip / setScheduleKeyEvent", () => {
 
     cookieGet.mockReturnValue({ value: "guest-cookie" });
     await expect(getHostGuests("cabin-weekend")).resolves.toEqual([]);
+  });
+
+  it("loads the host page with one parties jsonb read before the guests query", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      id: 9,
+      slug: "cabin-weekend",
+      adminToken: "host-tok",
+      content: { kind: "trip", trip: { siteName: "Cabin Weekend" } },
+      draftContent: { kind: "trip", trip: { siteName: "Cabin Weekend" } },
+      published: true,
+    });
+    mem.seedGuest({ partyId: 9, name: "Mina" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue({ value: await hostCookieValue(9, "host-tok") });
+
+    const page = await loadHostPageState("cabin-weekend");
+    expect(page.status).toBe("ok");
+    if (page.status !== "ok") return;
+    expect(page.editor.content.trip.siteName).toBe("Cabin Weekend");
+    expect(page.guests).toEqual([expect.objectContaining({ name: "Mina" })]);
+    expect(mem.selectCounts.parties).toBe(1);
+    expect(mem.selectCounts.guests).toBe(1);
+  });
+
+  it("does not query guests when the host cookie is missing", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({
+      id: 9,
+      slug: "cabin-weekend",
+      adminToken: "host-tok",
+      content: { kind: "trip", trip: { siteName: "Cabin Weekend" } },
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    cookieGet.mockReturnValue(undefined);
+
+    await expect(loadHostPageState("cabin-weekend")).resolves.toEqual({ status: "unauthenticated" });
+    expect(mem.selectCounts.parties).toBe(1);
+    expect(mem.selectCounts.guests).toBe(0);
   });
 });

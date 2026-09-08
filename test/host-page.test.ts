@@ -24,14 +24,8 @@ vi.mock("next/link", () => ({
   }) => createElement("a", { href, ...props }, children),
 }));
 
-vi.mock("@/lib/resolve-party", () => ({
-  resolvePartyBySlug: vi.fn(),
-}));
-
 vi.mock("@/lib/host-access", () => ({
-  hostSessionForSlug: vi.fn(),
-  getHostEditorState: vi.fn(),
-  getHostGuests: vi.fn(),
+  loadHostPageState: vi.fn(),
   saveHostDraft: vi.fn(),
   publishHostDraft: vi.fn(),
   setScheduleKeyEvent: vi.fn(),
@@ -56,8 +50,7 @@ vi.mock("@/components/party-view", () => ({
 }));
 
 import HostPage from "@/app/[slug]/host/page";
-import { getHostEditorState, getHostGuests, hostSessionForSlug } from "@/lib/host-access";
-import { resolvePartyBySlug } from "@/lib/resolve-party";
+import { loadHostPageState } from "@/lib/host-access";
 
 const nightOut: PartyContent = {
   kind: "trip",
@@ -72,24 +65,22 @@ const nightOut: PartyContent = {
 
 describe("host guest preview", () => {
   afterEach(() => {
-    vi.mocked(resolvePartyBySlug).mockReset();
-    vi.mocked(hostSessionForSlug).mockReset();
-    vi.mocked(getHostEditorState).mockReset();
-    vi.mocked(getHostGuests).mockReset();
+    vi.mocked(loadHostPageState).mockReset();
   });
 
   it("does not mark a real draft as the /demo sample", async () => {
-    vi.mocked(resolvePartyBySlug).mockResolvedValue({ status: "unpublished" });
-    vi.mocked(hostSessionForSlug).mockResolvedValue(true);
-    vi.mocked(getHostEditorState).mockResolvedValue({
-      ok: true,
-      content: nightOut,
-      published: false,
-      publishStatus: "draft-only",
-      // The route, not an editor-state flag, owns the explicit /demo mode.
-      sample: true,
+    vi.mocked(loadHostPageState).mockResolvedValue({
+      status: "ok",
+      editor: {
+        ok: true,
+        content: nightOut,
+        published: false,
+        publishStatus: "draft-only",
+        // The route, not an editor-state flag, owns the explicit /demo mode.
+        sample: true,
+      },
+      guests: [],
     });
-    vi.mocked(getHostGuests).mockResolvedValue([]);
 
     const html = renderToStaticMarkup(
       (await HostPage({ params: Promise.resolve({ slug: "friday-drinks" }) })) as ReactElement,
@@ -108,20 +99,18 @@ describe("host guest preview", () => {
   });
 
   it("keeps /demo host preview on sample copy", async () => {
-    vi.mocked(resolvePartyBySlug).mockResolvedValue({
-      status: "open",
-      content: nightOut,
+    vi.mocked(loadHostPageState).mockResolvedValue({
+      status: "ok",
+      editor: {
+        ok: true,
+        content: nightOut,
+        published: true,
+        publishStatus: "live",
+        // The route, not an editor-state flag, owns the explicit /demo mode.
+        sample: false,
+      },
+      guests: [],
     });
-    vi.mocked(hostSessionForSlug).mockResolvedValue(true);
-    vi.mocked(getHostEditorState).mockResolvedValue({
-      ok: true,
-      content: nightOut,
-      published: true,
-      publishStatus: "live",
-      // The route, not an editor-state flag, owns the explicit /demo mode.
-      sample: false,
-    });
-    vi.mocked(getHostGuests).mockResolvedValue([]);
 
     const html = renderToStaticMarkup(
       (await HostPage({ params: Promise.resolve({ slug: "demo" }) })) as ReactElement,
@@ -132,8 +121,7 @@ describe("host guest preview", () => {
   });
 
   it("shows a host-key field when the create cookie is missing", async () => {
-    vi.mocked(resolvePartyBySlug).mockResolvedValue({ status: "unpublished" });
-    vi.mocked(hostSessionForSlug).mockResolvedValue(false);
+    vi.mocked(loadHostPageState).mockResolvedValue({ status: "unauthenticated" });
 
     const html = renderToStaticMarkup(
       (await HostPage({ params: Promise.resolve({ slug: "friday-drinks" }) })) as ReactElement,
@@ -146,28 +134,29 @@ describe("host guest preview", () => {
   });
 
   it("does not mount Key events for a night out with empty schedule days", async () => {
-    vi.mocked(resolvePartyBySlug).mockResolvedValue({ status: "unpublished" });
-    vi.mocked(hostSessionForSlug).mockResolvedValue(true);
-    vi.mocked(getHostEditorState).mockResolvedValue({
-      ok: true,
-      content: {
-        ...nightOut,
-        schedule: [
-          {
-            key: "2026-09-04",
-            date: "2026-09-04",
-            weekday: "Friday",
-            label: "Friday",
-            timed: false,
-            entries: [],
-          },
-        ],
+    vi.mocked(loadHostPageState).mockResolvedValue({
+      status: "ok",
+      editor: {
+        ok: true,
+        content: {
+          ...nightOut,
+          schedule: [
+            {
+              key: "2026-09-04",
+              date: "2026-09-04",
+              weekday: "Friday",
+              label: "Friday",
+              timed: false,
+              entries: [],
+            },
+          ],
+        },
+        published: false,
+        publishStatus: "draft-only",
+        sample: false,
       },
-      published: false,
-      publishStatus: "draft-only",
-      sample: false,
+      guests: [],
     });
-    vi.mocked(getHostGuests).mockResolvedValue([]);
 
     const html = renderToStaticMarkup(
       (await HostPage({ params: Promise.resolve({ slug: "friday-drinks" }) })) as ReactElement,
@@ -182,16 +171,17 @@ describe("host guest preview", () => {
   });
 
   it("does not nest a second main landmark on the host workspace", async () => {
-    vi.mocked(resolvePartyBySlug).mockResolvedValue({ status: "unpublished" });
-    vi.mocked(hostSessionForSlug).mockResolvedValue(true);
-    vi.mocked(getHostEditorState).mockResolvedValue({
-      ok: true,
-      content: nightOut,
-      published: false,
-      publishStatus: "draft-only",
-      sample: false,
+    vi.mocked(loadHostPageState).mockResolvedValue({
+      status: "ok",
+      editor: {
+        ok: true,
+        content: nightOut,
+        published: false,
+        publishStatus: "draft-only",
+        sample: false,
+      },
+      guests: [],
     });
-    vi.mocked(getHostGuests).mockResolvedValue([]);
 
     const html = renderToStaticMarkup(
       (await HostPage({ params: Promise.resolve({ slug: "friday-drinks" }) })) as ReactElement,

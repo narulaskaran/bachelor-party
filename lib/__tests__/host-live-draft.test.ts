@@ -189,4 +189,24 @@ describe("host live draft preview", () => {
     });
     expect(storedPlaceholder.content.draftReview?.facts.find((item) => item.path === "trip.siteName")?.value).toBeUndefined();
   });
+
+  it("reuses unchanged section objects so only dirty preview slices remount", () => {
+    const baseline = livePreviewContent(input(), content);
+    const next = livePreviewContent(
+      input({
+        content: {
+          ...content,
+          trip: { ...content.trip, siteName: "Updated title" },
+        },
+      }),
+      baseline,
+    );
+    expect(next.trip.siteName).toBe("Updated title");
+    expect(next.packing).toBe(baseline.packing);
+    expect(next.schedule).toBe(baseline.schedule);
+    expect(next.lodging).toBe(baseline.lodging);
+    expect(next.rsvp).toBe(baseline.rsvp);
+    expect(next.presentation).toBe(baseline.presentation);
+    expect(next.trip).not.toBe(baseline.trip);
+  });
 });

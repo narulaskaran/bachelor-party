@@ -40,16 +40,56 @@ function applyWhere(rows: Row[], cond: unknown): Row[] {
   return rows.filter((row) => keys.every((k) => getRowValue(row, k) === filters[k]));
 }
 
+function sortKeyFromOrderExpr(expr: unknown): { field: string; dir: 1 | -1 } | null {
+  if (!expr || typeof expr !== "object") return null;
+  const rec = expr as { name?: string; queryChunks?: unknown[] };
+  if (typeof rec.name === "string") return { field: rec.name, dir: 1 };
+  if (!Array.isArray(rec.queryChunks)) return null;
+  let field: string | undefined;
+  let dir: 1 | -1 = 1;
+  const walk = (nodes: unknown[]) => {
+    for (const node of nodes) {
+      if (!node || typeof node !== "object") continue;
+      const n = node as { name?: string; value?: unknown; queryChunks?: unknown[] };
+      if (typeof n.name === "string") field = n.name;
+      const bits = Array.isArray(n.value) ? n.value : [n.value];
+      for (const bit of bits) {
+        if (typeof bit === "string" && /\bdesc\b/i.test(bit)) dir = -1;
+      }
+      if (Array.isArray(n.queryChunks)) walk(n.queryChunks);
+    }
+  };
+  walk(rec.queryChunks);
+  return field ? { field, dir } : null;
+}
+
+function applyOrder(rows: Row[], exprs: unknown[]): Row[] {
+  const keys = exprs.map(sortKeyFromOrderExpr).filter((key): key is { field: string; dir: 1 | -1 } => key != null);
+  if (keys.length === 0) return rows;
+  return [...rows].sort((a, b) => {
+    for (const { field, dir } of keys) {
+      const av = getRowValue(a, field);
+      const bv = getRowValue(b, field);
+      if (av === bv) continue;
+      if (av == null) return -1 * dir;
+      if (bv == null) return 1 * dir;
+      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
+      return (String(av) < String(bv) ? -1 : 1) * dir;
+    }
+    return 0;
+  });
+}
+
 function makeQuery(getRows: () => Row[]) {
   return {
     where(cond: unknown) {
       return makeQuery(() => applyWhere(getRows(), cond));
     },
     limit(n: number) {
-      return Promise.resolve(getRows().slice(0, n));
+      return makeQuery(() => getRows().slice(0, n));
     },
-    orderBy() {
-      return Promise.resolve(getRows());
+    orderBy(...exprs: unknown[]) {
+      return makeQuery(() => applyOrder(getRows(), exprs));
     },
     leftJoin() {
       return {
@@ -70,6 +110,7 @@ export function createMemoryDb() {
   const parties: Row[] = [];
   const guests: Row[] = [];
   const contentVersions: Row[] = [];
+  const selectCounts = { parties: 0, guests: 0, contentVersions: 0 };
   let partySeq = 1;
   let guestSeq = 1;
   let versionSeq = 1;
@@ -92,6 +133,10 @@ export function createMemoryDb() {
     select() {
       return {
         from(table: object) {
+          const name = tableName(table);
+          if (name === "parties") selectCounts.parties += 1;
+          if (name === "guests") selectCounts.guests += 1;
+          if (name === "content_versions") selectCounts.contentVersions += 1;
           return makeQuery(() => rowsFor(table));
         },
       };
@@ -179,6 +224,7 @@ export function createMemoryDb() {
     parties,
     guests,
     contentVersions,
+    selectCounts,
     seedParty(partial: Row) {
       const row: Row = {
         id: partySeq++,

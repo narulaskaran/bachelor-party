@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import type { PartyContent } from "@/lib/party-types";
 import { visibleSections } from "@/lib/trip-sections";
 import { Hero } from "@/components/sections/hero";
@@ -9,6 +9,14 @@ import { ActivitiesSection } from "@/components/sections/activities";
 import { BasecampSection } from "@/components/sections/basecamp";
 import { PackingSection } from "@/components/sections/packing";
 import { InitialHashFocus } from "@/components/initial-hash-focus";
+
+const MemoHero = memo(Hero);
+const MemoGlance = memo(Glance);
+const MemoActionItems = memo(ActionItems);
+const MemoScheduleSection = memo(ScheduleSection);
+const MemoActivitiesSection = memo(ActivitiesSection);
+const MemoBasecampSection = memo(BasecampSection);
+const MemoPackingSection = memo(PackingSection);
 
 export function PartyChrome({
   content,
@@ -39,24 +47,24 @@ export function PartyChrome({
       className="mx-auto w-full min-w-0 max-w-5xl px-4"
       data-presentation={content.presentation?.style ?? "clean"}
     >
-      <Hero trip={content.trip} guestUpdate={content.guestUpdate} sample={sample} />
+      <MemoHero trip={content.trip} guestUpdate={content.guestUpdate} sample={sample} />
       {sections.glance ? (
-        <Glance trip={content.trip} lodging={content.lodging} />
+        <MemoGlance trip={content.trip} lodging={content.lodging} />
       ) : null}
       {sections.actionItems && content.actionItems ? (
-        <ActionItems actionItems={content.actionItems} />
+        <MemoActionItems actionItems={content.actionItems} />
       ) : null}
       {sections.schedule && content.schedule ? (
-        <ScheduleSection schedule={content.schedule} />
+        <MemoScheduleSection schedule={content.schedule} />
       ) : null}
       {sections.activities && content.activities ? (
-        <ActivitiesSection activities={content.activities} />
+        <MemoActivitiesSection activities={content.activities} />
       ) : null}
       {sections.lodging && content.lodging ? (
-        <BasecampSection trip={content.trip} lodging={content.lodging} />
+        <MemoBasecampSection trip={content.trip} lodging={content.lodging} />
       ) : null}
       {sections.packing && content.packing ? (
-        <PackingSection packing={content.packing} slug={slug ?? ""} preview={preview} />
+        <MemoPackingSection packing={content.packing} slug={slug ?? ""} preview={preview} />
       ) : null}
       {rsvp}
 

@@ -125,6 +125,67 @@ export type HostEditorState =
     }
   | { ok: false; error: string };
 
+function editorStateFromLoadedParty(party: {
+  slug: string;
+  content: import("@/lib/party-types").PartyContent;
+  draftContent?: import("@/lib/party-types").PartyContent | null;
+  published: boolean | null;
+  guestToken?: string | null;
+  adminToken: string | null;
+}): HostEditorState {
+  if (!party.adminToken) return { ok: false, error: "Trip not found." };
+  const published = party.published !== false;
+  return {
+    ok: true,
+    content: draftForParty({
+      content: party.content,
+      draftContent: party.draftContent,
+      published,
+    }),
+    published,
+    publishStatus: hostPublishStatus({
+      content: party.content,
+      draftContent: party.draftContent,
+      published,
+    }),
+    sample: false,
+    ...(published
+      ? {
+          guestUrl: publishedGuestPath(party),
+          publishedSnapshot: party.content,
+        }
+      : {}),
+  };
+}
+
+async function guestsForLoadedParty(
+  loaded: Extract<Awaited<ReturnType<typeof loadHostParty>>, { status: "ok" }>,
+): Promise<OrganizerVisibleRosterEntry[]> {
+  try {
+    const guests = await loaded.db
+      .select({
+        id: schema.guests.id,
+        name: schema.guests.name,
+        attendanceStatus: schema.guests.attendanceStatus,
+        partySize: schema.guests.partySize,
+        plusOneName: schema.guests.plusOneName,
+        phone: schema.guests.phone,
+        arrivalFlight: schema.guests.arrivalFlight,
+        arrivalTime: schema.guests.arrivalTime,
+        departureFlight: schema.guests.departureFlight,
+        departureTime: schema.guests.departureTime,
+        dietary: schema.guests.dietary,
+      })
+      .from(schema.guests)
+      .where(eq(schema.guests.partyId, loaded.party.id))
+      .orderBy(schema.guests.name);
+    return organizerVisibleRoster(guests);
+  } catch (err) {
+    console.error("getHostGuests failed", err);
+    return [];
+  }
+}
+
 export async function getHostEditorState(slug: string): Promise<HostEditorState> {
   if (slug === "demo") {
     return {
@@ -143,24 +204,7 @@ export async function getHostEditorState(slug: string): Promise<HostEditorState>
   if (!(await hostCookieMatches(loaded.party))) {
     return { ok: false, error: WRONG_HOST_KEY };
   }
-  const published = loaded.party.published !== false;
-  return {
-    ok: true,
-    content: draftForParty(loaded.party),
-    published,
-    publishStatus: hostPublishStatus({
-      content: loaded.party.content,
-      draftContent: loaded.party.draftContent,
-      published,
-    }),
-    sample: false,
-    ...(published
-      ? {
-          guestUrl: publishedGuestPath(loaded.party),
-          publishedSnapshot: loaded.party.content,
-        }
-      : {}),
-  };
+  return editorStateFromLoadedParty(loaded.party);
 }
 
 async function hostCookieMatches(party: { id: number; adminToken: string | null }) {
@@ -260,30 +304,51 @@ export async function getHostGuests(
 ): Promise<OrganizerVisibleRosterEntry[]> {
   const auth = await authenticatedHostParty(slug);
   if (!auth.ok) return [];
+  return guestsForLoadedParty(auth.loaded);
+}
 
-  try {
-    const guests = await auth.loaded.db
-      .select({
-        id: schema.guests.id,
-        name: schema.guests.name,
-        attendanceStatus: schema.guests.attendanceStatus,
-        partySize: schema.guests.partySize,
-        plusOneName: schema.guests.plusOneName,
-        phone: schema.guests.phone,
-        arrivalFlight: schema.guests.arrivalFlight,
-        arrivalTime: schema.guests.arrivalTime,
-        departureFlight: schema.guests.departureFlight,
-        departureTime: schema.guests.departureTime,
-        dietary: schema.guests.dietary,
-      })
-      .from(schema.guests)
-      .where(eq(schema.guests.partyId, auth.loaded.party.id))
-      .orderBy(schema.guests.name);
-    return organizerVisibleRoster(guests);
-  } catch (err) {
-    console.error("getHostGuests failed", err);
-    return [];
+export type HostPageState =
+  | { status: "missing" }
+  | { status: "unauthenticated" }
+  | {
+      status: "ok";
+      editor: Extract<HostEditorState, { ok: true }>;
+      guests: OrganizerVisibleRosterEntry[];
+    };
+
+/**
+ * One `parties` jsonb read for the host workspace GET, then guests.
+ * Auth/ownership still require the host cookie (or the reserved /demo slug).
+ */
+export async function loadHostPageState(slug: string): Promise<HostPageState> {
+  if (slug === "demo") {
+    return {
+      status: "ok",
+      editor: {
+        ok: true,
+        content: DEMO_PARTY,
+        published: true,
+        publishStatus: "live",
+        sample: true,
+        guestUrl: "/demo",
+        publishedSnapshot: DEMO_PARTY,
+      },
+      guests: [],
+    };
   }
+
+  const loaded = await loadHostParty(slug);
+  if (loaded.status !== "ok") return { status: "missing" };
+  if (!(await hostCookieMatches(loaded.party))) {
+    return { status: "unauthenticated" };
+  }
+  const editor = editorStateFromLoadedParty(loaded.party);
+  if (!editor.ok) return { status: "missing" };
+  return {
+    status: "ok",
+    editor,
+    guests: await guestsForLoadedParty(loaded),
+  };
 }
 
 export async function setScheduleKeyEvent(

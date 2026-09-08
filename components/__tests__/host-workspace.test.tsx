@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
 import { ingestEventPlan } from "@/lib/plan-ingestion";
+import { HOST_PREVIEW_DEBOUNCE_MS } from "@/lib/host-preview-sync";
 import type { PartyContent } from "@/lib/party-types";
 
 vi.mock("@/components/host-party-preview", () => ({
@@ -59,9 +60,27 @@ function renderWorkspace(overrides: Partial<ComponentProps<typeof HostWorkspace>
   );
 }
 
+function stubSplitViewport(matchesLg: boolean) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn((query: string) => ({
+      matches: query.includes("min-width: 1024px") ? matchesLg : false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+}
+
 describe("HostWorkspace layout and preview", () => {
-  afterEach(() => cleanup());
-  beforeEach(() => sessionStorage.clear());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+  beforeEach(() => {
+    sessionStorage.clear();
+    stubSplitViewport(true);
+  });
 
   it("uses a split editor/preview at lg and Edit | Preview tabs below lg", () => {
     const { container } = renderWorkspace();
@@ -102,6 +121,7 @@ describe("HostWorkspace layout and preview", () => {
     expect(screen.queryByText("Previewing unsaved")).toBeNull();
 
     fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Updated title" } });
+    expect(screen.queryByText(/PREVIEW:Updated title/)).toBeNull();
     await waitFor(() => expect(screen.getByText(/PREVIEW:Updated title/)).toBeTruthy());
     expect(screen.getByText("Previewing unsaved")).toBeTruthy();
     expect(screen.queryByText("Guests currently see")).toBeNull();
@@ -173,5 +193,16 @@ describe("HostWorkspace layout and preview", () => {
     expect(nameFact?.textContent).not.toMatch(/confirmed/i);
     expect(nameFact?.textContent).not.toMatch(/Untitled event/i);
     expect(screen.getByText("Where").closest("li")?.textContent).toMatch(/extracted/i);
+  });
+
+  it("does not rebuild the guest preview on the Edit tab below lg", async () => {
+    stubSplitViewport(false);
+    renderWorkspace();
+    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Updated title" } });
+    await new Promise((resolve) => setTimeout(resolve, HOST_PREVIEW_DEBOUNCE_MS + 50));
+    expect(screen.queryByText(/PREVIEW:Updated title/)).toBeNull();
+    expect(screen.getByText(/PREVIEW:Cabin Weekend/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: /^preview$/i }));
+    await waitFor(() => expect(screen.getByText(/PREVIEW:Updated title/)).toBeTruthy());
   });
 });

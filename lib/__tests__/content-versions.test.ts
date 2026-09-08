@@ -83,6 +83,42 @@ describe("recordContentVersion", () => {
     expect(aRows[0].baseVersion ?? null).toBeNull();
   });
 
+  it("takes the highest existing version as head even when rows are not insertion-ordered", async () => {
+    const mem = createMemoryDb();
+    const party = mem.seedParty({ slug: "cabin", adminToken: "tok-1" });
+    mem.contentVersions.push(
+      {
+        id: 91,
+        partyId: party.id,
+        version: 2,
+        state: "draft",
+        contentSnapshot: content("older"),
+        actorType: "host",
+      },
+      {
+        id: 90,
+        partyId: party.id,
+        version: 10,
+        state: "published",
+        contentSnapshot: content("newest"),
+        actorType: "host",
+      },
+    );
+
+    await recordContentVersion(mem.db as never, {
+      partyId: party.id as number,
+      state: "draft",
+      content: content("after-head"),
+      actorType: "host",
+    });
+
+    const versions = mem.contentVersions
+      .filter((row) => row.partyId === party.id)
+      .map((row) => row.version as number);
+    expect(versions).toContain(11);
+    expect(mem.selectCounts.contentVersions).toBe(1);
+  });
+
   it("records an actor credential fingerprint, never the raw secret", async () => {
     const mem = createMemoryDb();
     const party = mem.seedParty({ slug: "cabin", adminToken: "raw-tok-123" });

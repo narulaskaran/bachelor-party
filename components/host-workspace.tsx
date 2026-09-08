@@ -7,6 +7,7 @@ import { HostKeyBanner } from "@/components/host-key-banner";
 import { HostPreviewPane } from "@/components/host-preview-pane";
 import { HOST_PUBLISH_STATUS_COPY, type HostPublishStatus } from "@/lib/draft-publish";
 import type { HostPreviewSource } from "@/lib/host-live-draft";
+import { useHostPreviewContent } from "@/lib/host-preview-sync";
 import { eventTitleOrFallback, type PartyContent } from "@/lib/party-types";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +41,7 @@ export function HostWorkspace({
   const [mobilePane, setMobilePane] = useState<"edit" | "preview">("edit");
   const [previewSource, setPreviewSource] = useState<HostPreviewSource>("draft");
   const [guestSnapshot, setGuestSnapshot] = useState(publishedSnapshot);
+  const previewDraft = useHostPreviewContent(liveContent, mobilePane);
   const liveRef = useRef(liveContent);
   useEffect(() => {
     liveRef.current = liveContent;
@@ -130,7 +132,7 @@ export function HostWorkspace({
           )}
         >
           <HostPreviewPane
-            draftContent={liveContent}
+            draftContent={previewDraft}
             publishedSnapshot={guestSnapshot}
             published={published || Boolean(publishedUrl)}
             dirty={dirty}
