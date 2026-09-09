@@ -53,14 +53,16 @@ List/create/get responses include both `trips`/`trip` (canonical) and
 
 ## Content version history (P2-3 audit trail)
 
-Every content change appends one immutable row to the `content_versions`
-table with a **full content snapshot** (not a diff): draft saves and
-publishes from the host editor (`actorType: "host"`) and content PATCHes
-via the admin API (`actorType: "admin"`). Rows are never updated or
-deleted — enforced in application code and again by `BEFORE UPDATE/DELETE`
-triggers in migration `0006_content_versions.sql`, so published history
-survives forever. The bearer/admin credential is stored only as a one-way
-fingerprint (`sha256:<12 hex>`), never raw.
+Every content change appends one row to `content_versions` with a **full
+content snapshot** (not a diff): draft saves and publishes from the host
+editor (`actorType: "host"`) and content PATCHes via the admin API
+(`actorType: "admin"`). Consecutive identical snapshots (same state and
+document) are skipped. The newest 20 **draft** rows per trip are retained;
+older drafts are pruned. **Published** rows are never deleted, so guest-facing
+history stays reconstructible. UPDATE is still rejected by the 0006 trigger;
+0008 allows draft DELETE only inside `prune_draft_content_versions`. The
+bearer/admin credential is stored only as a one-way fingerprint
+(`sha256:<12 hex>`), never raw.
 
 Read it back with:
 

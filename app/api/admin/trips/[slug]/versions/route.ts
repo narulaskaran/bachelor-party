@@ -11,10 +11,9 @@ type Params = { params: Promise<{ slug: string }> };
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
 
-// GET /api/admin/trips/:slug/versions — immutable content_versions audit
-// trail, newest first. Admin-token scoped to the one trip, like every other
-// /:slug route. Read-only by design: there is no update or delete path here,
-// matching the append-only table (and its database triggers).
+// GET /api/admin/trips/:slug/versions — content_versions audit
+// trail, newest first. Admin-token scoped to the one trip. Read-only:
+// there is no update path; surplus drafts are pruned on write.
 export async function GET(request: Request, ctx: Params) {
   const { slug }: { slug: string } = await ctx.params;
   let auth: Awaited<ReturnType<typeof authorizePartyBySlug>>;

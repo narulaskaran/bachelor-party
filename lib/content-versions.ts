@@ -1,9 +1,12 @@
 import { createHash } from "node:crypto";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import type { PartyContent } from "@/lib/party-types";
 
 type Db = NonNullable<ReturnType<typeof getDb>>;
+
+/** Newest draft snapshots kept per party. All published rows are retained. */
+export const CONTENT_VERSION_DRAFT_RETENTION = 20;
 
 export type RecordContentVersionInput = {
   partyId: number;
@@ -26,27 +29,70 @@ export function credentialFingerprint(token: string): string {
   return `sha256:${digest.slice(0, 12)}`;
 }
 
+function snapshotsMatch(a: unknown, b: unknown): boolean {
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+}
+
+async function pruneDraftVersions(db: Db, partyId: number): Promise<void> {
+  const execute = (db as { execute?: (query: unknown) => Promise<unknown> }).execute;
+  if (typeof execute === "function") {
+    await execute(
+      sql`SELECT prune_draft_content_versions(${partyId}, ${CONTENT_VERSION_DRAFT_RETENTION})`,
+    );
+    return;
+  }
+
+  const rows = await db
+    .select({
+      id: schema.contentVersions.id,
+      version: schema.contentVersions.version,
+      state: schema.contentVersions.state,
+    })
+    .from(schema.contentVersions)
+    .where(eq(schema.contentVersions.partyId, partyId));
+  const extra = rows
+    .filter((row) => row.state === "draft")
+    .sort((a, b) => b.version - a.version)
+    .slice(CONTENT_VERSION_DRAFT_RETENTION);
+  for (const row of extra) {
+    await db.delete(schema.contentVersions).where(eq(schema.contentVersions.id, row.id));
+  }
+}
+
 /**
- * Append one immutable row to content_versions with a FULL content snapshot
- * (not a diff). Version numbers are per-party monotonic. Best-effort: an
- * audit-write failure is logged but never blocks the underlying save or
- * publish — the trail must not become the reason a trip becomes unsavable.
- * Rows are never updated or deleted; the 0006 migration enforces this with
- * database triggers too.
+ * Append one content_versions row with a full content snapshot. Version
+ * numbers stay per-party monotonic. Identical consecutive snapshots (same
+ * state + same document) are skipped. Surplus draft rows beyond
+ * CONTENT_VERSION_DRAFT_RETENTION are pruned; published rows are kept.
+ * Best-effort: an audit-write failure is logged but never blocks save/publish.
  */
 export async function recordContentVersion(
   db: Db,
   input: RecordContentVersionInput,
 ): Promise<void> {
   try {
-    // Per-party head: indexed (party_id, version) unique key, one row.
     const [head] = await db
-      .select({ version: schema.contentVersions.version })
+      .select({
+        version: schema.contentVersions.version,
+        state: schema.contentVersions.state,
+        contentSnapshot: schema.contentVersions.contentSnapshot,
+      })
       .from(schema.contentVersions)
       .where(eq(schema.contentVersions.partyId, input.partyId))
       .orderBy(desc(schema.contentVersions.version))
       .limit(1);
     const baseVersion = head?.version ?? 0;
+    if (
+      head &&
+      head.state === input.state &&
+      snapshotsMatch(head.contentSnapshot, input.content)
+    ) {
+      return;
+    }
 
     await db.insert(schema.contentVersions).values({
       partyId: input.partyId,
@@ -59,6 +105,7 @@ export async function recordContentVersion(
       ...(input.changeSummary ? { changeSummary: input.changeSummary } : {}),
       ...(input.publishedAt ? { publishedAt: input.publishedAt } : {}),
     });
+    await pruneDraftVersions(db, input.partyId);
   } catch (err) {
     console.error("recordContentVersion failed", err);
   }

@@ -233,9 +233,9 @@ export function openApiSpec() {
           operationId: "listTripVersions",
           tags: ["trips"],
           summary:
-            "Immutable content_versions audit trail (full snapshots), newest first",
+            "Content versions audit trail (full snapshots; last 20 drafts + all published)",
           description:
-            "Append-only history of every draft save and publish. Rows are never updated or deleted (enforced by database triggers too). actorId is a one-way credential fingerprint, never a raw token.",
+            "History of draft saves and publishes. Newest 20 drafts are retained; published rows are kept. actorId is a one-way credential fingerprint, never a raw token.",
           security: bearer,
           parameters: [
             { $ref: "#/components/parameters/slug" },

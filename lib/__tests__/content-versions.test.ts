@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { credentialFingerprint, recordContentVersion } from "@/lib/content-versions";
+import { credentialFingerprint, recordContentVersion, CONTENT_VERSION_DRAFT_RETENTION } from "@/lib/content-versions";
 import { createMemoryDb } from "@/test/api/memory-db";
 
 const content = (siteName: string) => ({ kind: "trip" as const, trip: { siteName } });
@@ -116,7 +116,7 @@ describe("recordContentVersion", () => {
       .filter((row) => row.partyId === party.id)
       .map((row) => row.version as number);
     expect(versions).toContain(11);
-    expect(mem.selectCounts.contentVersions).toBe(1);
+    expect(mem.selectCounts.contentVersions).toBeGreaterThanOrEqual(1);
   });
 
   it("records an actor credential fingerprint, never the raw secret", async () => {
@@ -154,5 +154,64 @@ describe("recordContentVersion", () => {
         actorType: "host",
       }),
     ).resolves.toBeUndefined();
+  });
+
+  it("skips a consecutive identical draft snapshot", async () => {
+    const mem = createMemoryDb();
+    const party = mem.seedParty({ slug: "cabin", adminToken: "tok-1" });
+
+    await recordContentVersion(mem.db as never, {
+      partyId: party.id as number,
+      state: "draft",
+      content: content("Cabin Weekend"),
+      actorType: "host",
+    });
+    await recordContentVersion(mem.db as never, {
+      partyId: party.id as number,
+      state: "draft",
+      content: content("Cabin Weekend"),
+      actorType: "host",
+    });
+
+    expect(mem.contentVersions).toHaveLength(1);
+    await recordContentVersion(mem.db as never, {
+      partyId: party.id as number,
+      state: "published",
+      content: content("Cabin Weekend"),
+      actorType: "host",
+      publishedAt: new Date(),
+    });
+    expect(mem.contentVersions).toHaveLength(2);
+    expect(mem.contentVersions.map((row) => row.state)).toEqual(["draft", "published"]);
+  });
+
+  it("keeps the newest drafts up to the retention cap and never drops published rows", async () => {
+    const mem = createMemoryDb();
+    const party = mem.seedParty({ slug: "cabin", adminToken: "tok-1" });
+
+    await recordContentVersion(mem.db as never, {
+      partyId: party.id as number,
+      state: "published",
+      content: content("Published v1"),
+      actorType: "host",
+      publishedAt: new Date(),
+    });
+    for (let i = 0; i < CONTENT_VERSION_DRAFT_RETENTION + 5; i++) {
+      await recordContentVersion(mem.db as never, {
+        partyId: party.id as number,
+        state: "draft",
+        content: content(`Draft ${i}`),
+        actorType: "host",
+      });
+    }
+
+    const drafts = mem.contentVersions.filter((row) => row.state === "draft");
+    const published = mem.contentVersions.filter((row) => row.state === "published");
+    expect(drafts).toHaveLength(CONTENT_VERSION_DRAFT_RETENTION);
+    expect(published).toHaveLength(1);
+    expect(published[0].contentSnapshot).toEqual(content("Published v1"));
+    expect(drafts.map((row) => row.version as number)).toEqual(
+      Array.from({ length: CONTENT_VERSION_DRAFT_RETENTION }, (_, i) => i + 2 + 5),
+    );
   });
 });

@@ -61,11 +61,10 @@ export const guests = pgTable(
   ]
 );
 
-// Immutable audit trail for trip content. One append-only row per draft save
-// or publish, storing a FULL content snapshot (not a diff). Rows are never
-// updated or deleted by application code, and the 0006 migration installs a
-// trigger that rejects UPDATE/DELETE at the database level so published
-// history survives forever.
+// Immutable audit trail for trip content. One row per draft save or
+// publish with a full content snapshot. Surplus drafts are pruned (keep
+// last 20); published rows are retained. UPDATE is still rejected.
+
 export type ContentVersionState = "draft" | "published";
 export type ContentVersionActorType = "host" | "admin" | "agent";
 export const contentVersions = pgTable(
