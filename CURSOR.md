@@ -2,8 +2,10 @@
 
 Next.js App Router site (Vercel) for private event pages. Neon/Drizzle when
 `DATABASE_URL` is set. Design tokens in `app/globals.css` (stone / charcoal,
-amber primary). Tests: Vitest. Add UI primitives with `npx shadcn@latest`
-(`components.json`); the CLI is not a runtime dependency.
+amber primary). Tests: Vitest. `shadcn` is a **devDependency** so `@import "shadcn/tailwind.css"`
+in `app/globals.css` resolves at build time; add UI primitives with
+`npx shadcn@latest` (`components.json`). Do not add it back to production
+`dependencies`.
 
 ## Human product
 
