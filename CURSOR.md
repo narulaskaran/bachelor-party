@@ -2,7 +2,8 @@
 
 Next.js App Router site (Vercel) for private event pages. Neon/Drizzle when
 `DATABASE_URL` is set. Design tokens in `app/globals.css` (stone / charcoal,
-amber primary). Tests: Vitest.
+amber primary). Tests: Vitest. Add UI primitives with `npx shadcn@latest`
+(`components.json`); the CLI is not a runtime dependency.
 
 ## Human product
 
