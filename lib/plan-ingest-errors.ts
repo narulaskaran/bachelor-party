@@ -3,7 +3,7 @@ export const NOTES_UNAVAILABLE_MESSAGE =
   "Couldn't read your notes right now. Try again in a minute.";
 
 /** GLM 5.3 Flash always reasons; slow providers often take ~20s. Abort must outlast that. */
-export const PLAN_EXTRACT_TIMEOUT_MS = 50_000;
+export const PLAN_EXTRACT_TIMEOUT_MS = 25_000;
 
 export class PlanExtractionUnavailableError extends Error {
   constructor(message = NOTES_UNAVAILABLE_MESSAGE) {

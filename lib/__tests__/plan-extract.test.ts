@@ -307,7 +307,7 @@ describe("extractPlanWithOpenRouter", () => {
     };
     expect(call.abortSignal).toBeInstanceOf(AbortSignal);
     expect(call.maxOutputTokens).toBe(2048);
-    expect(call.maxRetries).toBe(1);
+    expect(call.maxRetries).toBe(0);
     expect(call.providerOptions?.openai?.reasoningEffort).toBe("low");
     expect(call.prompt).toContain("Separate travel logistics from event logistics.");
     expect(call.prompt).toContain(AIRPORT_CONFUSION);

@@ -237,7 +237,7 @@ export async function extractPlanWithOpenRouter(
     }),
     temperature: 0,
     maxOutputTokens: 2048,
-    maxRetries: 1,
+    maxRetries: 0,
     abortSignal: controller.signal,
     providerOptions: {
       openai: { strictJsonSchema: false, reasoningEffort: "low" },

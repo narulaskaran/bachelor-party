@@ -7,7 +7,7 @@ Living notes from the efficiency dig on prod `party.narula.xyz`. Track work via 
 | Sev | Waste | Paths | Minimal fix | Dogfood risk |
 |-----|--------|-------|-------------|--------------|
 | High | Host preview rebuilds full guest tree every keystroke | `components/host-editor.tsx`, `lib/host-live-draft.ts`, `components/host-workspace.tsx`, `components/host-party-preview.tsx` | **Shipped:** debounce ~200ms; dirty-section identity + memo; Preview-tab-only below `lg`; desktop split kept | Low |
-| High | Dump→draft OpenRouter: 50s abort + `maxRetries: 1` | `lib/plan-ingest-errors.ts`, `lib/plan-extract.ts`, `lib/create-trip.ts`, `lib/admin-api/collection.ts` | Heuristic-first when useful; shorter timeout; `maxRetries: 0` on create; fail to heuristics on abort | Medium |
+| High | Dump→draft OpenRouter: 50s abort + `maxRetries: 1` | `lib/plan-ingest-errors.ts`, `lib/plan-extract.ts`, `lib/create-trip.ts`, `lib/admin-api/collection.ts` | **Shipped:** 25s abort; `maxRetries: 0`; fail to labeled/ISO heuristics or 503. No Untitled success for messy dumps | Medium |
 | High | `content_versions` full snapshots; head = SELECT all + MAX in JS | `lib/content-versions.ts`, `drizzle/0006_content_versions.sql`, `lib/host-access.ts` | **Shipped (head only):** `ORDER BY version DESC LIMIT 1`. Full snapshots kept for audit; retention/diff later | Low / med |
 | Med–High | Host page 3–4× `parties` lookups (full jsonb) | `app/[slug]/host/page.tsx`, `lib/host-access.ts` | **Shipped:** one `loadHostPageState` parties fetch, then guests. Auth/ownership unchanged | Low |
 | Med | Guest RSVP sequential double resolve; `force-dynamic` | `components/sections/rsvp.tsx`, `lib/rsvp-roster.ts`, `app/g/[token]/page.tsx` | **Shipped:** `loadPublicRsvp` + React `cache()` for RSC token lookup; proxy uses meta-only columns. `force-dynamic` kept | Low |
@@ -25,13 +25,13 @@ Living notes from the efficiency dig on prod `party.narula.xyz`. Track work via 
 - Guest `/g/{token}`: proxy meta lookup (no jsonb); RSC layout/page/RSVP share one token resolve; `loadPublicRsvp` loads roster+prefill together.
 
 ## Quick wins vs later
-**Quick:** preview debounce, host load coalesce, version head query, `getDb` singleton, create timeout/retry tweak.  
+**Quick:** preview debounce, host load coalesce, version head query, `getDb` singleton, create timeout/retry tweak (shipped).  
 **Later:** async OpenRouter extract, version retention/diffs, CDN/static for published chrome.
 
 ## Evidence anchors
 - Preview: `useHostPreviewContent` in `host-workspace.tsx`; `livePreviewContent` reuses unchanged sections; `PartyChrome` memoizes slices.
-- Timeout: `PLAN_EXTRACT_TIMEOUT_MS = 50_000`; `maxRetries: 1` in `extractPlanWithOpenRouter`.
+- Timeout: `PLAN_EXTRACT_TIMEOUT_MS = 25_000`; `maxRetries: 0` in `extractPlanWithOpenRouter`.
 - Versions: `recordContentVersion` uses `ORDER BY version DESC LIMIT 1`.
-- Host page: `loadHostPageState` (one parties read) then guests. Parked: OpenRouter 50s dump timeout.
+- Host page: `loadHostPageState` (one parties read) then guests.
 
 Shipped on `main`: `c7ea24892474640bce08613471682d89a2640847` (items 1–3).
