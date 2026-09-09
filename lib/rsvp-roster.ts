@@ -1,5 +1,5 @@
 import { cookies, headers } from "next/headers";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import {
   getCurrentParty,
@@ -42,7 +42,7 @@ export async function getGuests(inviteToken?: string) {
         attendanceStatus: schema.guests.attendanceStatus,
       })
       .from(schema.guests)
-      .where(and(eq(schema.guests.partyId, current.partyId)))
+      .where(eq(schema.guests.partyId, current.partyId))
       .orderBy(schema.guests.name);
     return guestVisibleRoster(guests);
   } catch (err) {

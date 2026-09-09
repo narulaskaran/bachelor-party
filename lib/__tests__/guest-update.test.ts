@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { criticalGuestChanges, guestUpdateForPublish, guestUpdateLabel } from "@/lib/guest-update";
+import { criticalGuestChanges, guestUpdateForPublish, guestUpdateRelativeLabel } from "@/lib/guest-update";
 import type { PartyContent } from "@/lib/party-types";
 
 const published: PartyContent = {
@@ -22,7 +22,7 @@ describe("guest-visible updates after publish", () => {
       at: "2026-08-20T12:00:00.000Z",
       fields: ["When", "Where"],
     });
-    expect(guestUpdateLabel(update!, new Date("2026-08-20T12:00:00Z"))).toBe("Updated just now");
+    expect(guestUpdateRelativeLabel(update!, new Date("2026-08-20T12:00:00Z"))).toBe("Updated just now");
 
     const copyOnly: PartyContent = {
       ...moved,

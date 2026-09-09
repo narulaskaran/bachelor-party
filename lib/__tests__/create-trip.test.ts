@@ -4,11 +4,11 @@ import {
   CREATE_TRIP_PATH,
   createTripFromUi,
   createTripRequestInit,
-  formatDateLabel,
   parseOrganizerPacket,
   visitorSafeCreateError,
 } from "@/lib/create-trip";
 import { NOTES_UNAVAILABLE_MESSAGE, PLAN_EXTRACT_TIMEOUT_MS } from "@/lib/plan-ingest-errors";
+import { formatDateLabel } from "@/lib/trip-dates";
 import { getDb } from "@/lib/db";
 import { resetRateLimitStore } from "@/lib/rate-limit";
 import { createMemoryDb } from "../../test/api/memory-db";

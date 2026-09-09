@@ -1,6 +1,5 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { eq, sql } from "drizzle-orm";
@@ -9,6 +8,7 @@ import { getDb, schema } from "@/lib/db";
 import { getCurrentParty, partyFromGuestInvite, type CurrentParty } from "@/lib/current-party";
 import { DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
 import { sessionCookieOptions } from "@/lib/cookie-hash";
+import { unguessableGuestToken } from "@/lib/guest-invite";
 import { pollActivities } from "@/lib/party-types";
 import {
   parseRsvpSubmission,
@@ -23,10 +23,6 @@ import {
 import { findGuestByToken, rsvpIdentityToken } from "@/lib/rsvp-identity";
 
 const prefValues = ["hyped", "fine", "pass"] as const;
-
-function newGuestToken(): string {
-  return randomBytes(16).toString("hex");
-}
 
 async function partyForRsvp(inviteRaw: FormDataEntryValue | null): Promise<CurrentParty | null> {
   if (typeof inviteRaw === "string" && inviteRaw.trim()) {
@@ -164,7 +160,7 @@ export async function submitGuestInfo(
 
   const cookieStore = await cookies();
   const cookieToken = await rsvpIdentityToken(db, current.partyId, cookieStore);
-  const guestToken = cookieToken ?? newGuestToken();
+  const guestToken = cookieToken ?? unguessableGuestToken();
   const clears = explicitClearsFromFormData(formData);
 
   try {

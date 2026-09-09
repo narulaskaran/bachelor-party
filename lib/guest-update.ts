@@ -48,10 +48,6 @@ export function guestUpdateRelativeLabel(update: GuestUpdate, now = new Date()):
   return `Updated ${formatRelativeTime(at, now)}`;
 }
 
-export function guestUpdateLabel(update: GuestUpdate, now = new Date()): string {
-  return guestUpdateRelativeLabel(update, now);
-}
-
 function formatRelativeTime(at: Date, now: Date): string {
   const diffMs = now.getTime() - at.getTime();
   const diffMin = Math.round(diffMs / 60000);
