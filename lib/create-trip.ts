@@ -13,8 +13,6 @@ import {
 import { UNTITLED_EVENT_TITLE } from "@/lib/party-types";
 import { unguessableEventSlug } from "@/lib/slug";
 
-export { END_BEFORE_START_MESSAGE, formatDateLabel, isInvertedDateRange };
-
 export type OrganizerPacket = {
   url: string;
   slug: string;

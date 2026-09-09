@@ -9,13 +9,6 @@ import { EVENT_PRESETS } from "@/lib/event-preset";
 import { isReservedSlug, RESERVED_SLUG_MESSAGE, RESERVED_SLUGS } from "@/lib/slug";
 import { isIanaTimeZone } from "@/lib/timezones";
 
-export {
-  END_BEFORE_START_MESSAGE,
-  INVALID_CALENDAR_DATE_MESSAGE,
-  isInvertedDateRange,
-  isValidCalendarDate,
-};
-
 // Mirrors lib/party-types.ts, used to validate content posted to the
 // admin API (agents send arbitrary JSON — this is the actual gate).
 // Extra keys (including legacy `groomName`) are stripped. All trip

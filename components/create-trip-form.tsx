@@ -22,8 +22,6 @@ import { rememberHostKey } from "@/lib/host-key-storage";
 import { sectionTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
 
-export { hostKeyStorageKey } from "@/lib/host-key-storage";
-
 export function CreateTripForm({
   create = createTripFromUi,
 }: {
