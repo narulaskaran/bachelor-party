@@ -6,9 +6,9 @@ import {
 } from "@/lib/trip-dates";
 import { parseEventPreset, type EventPreset } from "@/lib/event-preset";
 import {
+  CREATE_TRIP_CLIENT_TIMEOUT_MS,
   isAbortError,
   NOTES_UNAVAILABLE_MESSAGE,
-  PLAN_EXTRACT_TIMEOUT_MS,
 } from "@/lib/plan-ingest-errors";
 import { UNTITLED_EVENT_TITLE } from "@/lib/party-types";
 import { unguessableEventSlug } from "@/lib/slug";
@@ -152,7 +152,7 @@ export async function createTripFromUi(
       const error = new Error("This operation was aborted");
       error.name = "AbortError";
       reject(error);
-    }, PLAN_EXTRACT_TIMEOUT_MS);
+    }, CREATE_TRIP_CLIENT_TIMEOUT_MS);
   });
 
   let request: Promise<Response>;

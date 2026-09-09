@@ -8,7 +8,11 @@ import { getDb, schema } from "@/lib/db";
 import { hostSessionCookie } from "@/lib/host-auth";
 import { organizerPacket } from "@/lib/organizer-packet";
 import { extractPlanWithOpenRouter } from "@/lib/plan-extract";
-import { isPlanExtractionUnavailable, NOTES_UNAVAILABLE_MESSAGE } from "@/lib/plan-ingest-errors";
+import {
+  isPlanExtractionUnavailable,
+  NOTES_UNAVAILABLE_MESSAGE,
+  raceWithPlanIngestDeadline,
+} from "@/lib/plan-ingest-errors";
 import { ingestEventPlan } from "@/lib/plan-ingestion";
 import { createPartySchema } from "@/lib/party-schema";
 import type { PartyContent } from "@/lib/party-types";
@@ -130,15 +134,17 @@ export async function POST(request: Request) {
   if (parsed.data.plan?.trim()) {
     let ingested;
     try {
-      ingested = await ingestEventPlan(
-        parsed.data.plan,
-        {
-          siteName: parsed.data.siteName,
-          startDate: parsed.data.startDate,
-          endDate: parsed.data.endDate,
-          preset: parsed.data.preset,
-        },
-        { extract: extractPlanWithOpenRouter },
+      ingested = await raceWithPlanIngestDeadline(
+        ingestEventPlan(
+          parsed.data.plan,
+          {
+            siteName: parsed.data.siteName,
+            startDate: parsed.data.startDate,
+            endDate: parsed.data.endDate,
+            preset: parsed.data.preset,
+          },
+          { extract: extractPlanWithOpenRouter },
+        ),
       );
     } catch (err) {
       if (isPlanExtractionUnavailable(err)) {

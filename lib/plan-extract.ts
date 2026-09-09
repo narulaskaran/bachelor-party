@@ -15,6 +15,7 @@ import { isValidCalendarDate } from "@/lib/trip-dates";
 export const OPENROUTER_MODEL = "z-ai/glm-5.3-flash";
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 export { PLAN_EXTRACT_TIMEOUT_MS };
+export const PLAN_EXTRACT_MAX_RETRIES = 0;
 export const OPENROUTER_REASONING = { effort: "low" as const };
 
 /** Inject OpenRouter's unified reasoning control onto an AI SDK fetch body. */
@@ -237,7 +238,7 @@ export async function extractPlanWithOpenRouter(
     }),
     temperature: 0,
     maxOutputTokens: 2048,
-    maxRetries: 0,
+    maxRetries: PLAN_EXTRACT_MAX_RETRIES,
     abortSignal: controller.signal,
     providerOptions: {
       openai: { strictJsonSchema: false, reasoningEffort: "low" },

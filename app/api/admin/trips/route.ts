@@ -1,9 +1,9 @@
 import { GET as getCollection, POST as postCollection } from "@/lib/admin-api/collection";
+import { CREATE_TRIP_MAX_DURATION_SECONDS } from "@/lib/plan-ingest-errors";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-// Must stay above PLAN_EXTRACT_TIMEOUT_MS (25s) plus slug/insert work.
-export const maxDuration = 40;
+export const maxDuration = CREATE_TRIP_MAX_DURATION_SECONDS;
 
 export async function GET(request: Request) {
   return getCollection(request);

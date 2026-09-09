@@ -4,10 +4,16 @@ import {
   factsFromModelOutput,
   extractPlanWithOpenRouter,
   openRouterFetch,
+  PLAN_EXTRACT_MAX_RETRIES,
   PLAN_EXTRACT_TIMEOUT_MS,
   withOpenRouterReasoning,
 } from "@/lib/plan-extract";
-import { PlanExtractionUnavailableError } from "@/lib/plan-ingest-errors";
+import {
+  CREATE_TRIP_CLIENT_TIMEOUT_MS,
+  CREATE_TRIP_MAX_DURATION_SECONDS,
+  PLAN_INGEST_DEADLINE_MS,
+  PlanExtractionUnavailableError,
+} from "@/lib/plan-ingest-errors";
 import { maxDuration as createTripMaxDuration } from "@/app/api/admin/trips/route";
 
 const { generateTextMock } = vi.hoisted(() => ({
@@ -269,9 +275,16 @@ describe("extractPlanWithOpenRouter", () => {
     expect(generateTextMock).not.toHaveBeenCalled();
   });
 
-  it("gives OpenRouter more than 20s and keeps the route maxDuration above that abort", () => {
+  it("gives OpenRouter more than 20s and keeps timeouts inside maxDuration", () => {
     expect(PLAN_EXTRACT_TIMEOUT_MS).toBeGreaterThan(20_000);
-    expect(createTripMaxDuration * 1000).toBeGreaterThan(PLAN_EXTRACT_TIMEOUT_MS);
+    expect(PLAN_EXTRACT_MAX_RETRIES).toBe(0);
+    expect(PLAN_EXTRACT_TIMEOUT_MS * (1 + PLAN_EXTRACT_MAX_RETRIES)).toBeLessThan(
+      PLAN_INGEST_DEADLINE_MS,
+    );
+    expect(PLAN_INGEST_DEADLINE_MS).toBeLessThan(CREATE_TRIP_CLIENT_TIMEOUT_MS);
+    expect(CREATE_TRIP_CLIENT_TIMEOUT_MS).toBeLessThan(CREATE_TRIP_MAX_DURATION_SECONDS * 1000);
+    expect(createTripMaxDuration).toBe(CREATE_TRIP_MAX_DURATION_SECONDS);
+    expect(createTripMaxDuration * 1000).toBeGreaterThan(PLAN_INGEST_DEADLINE_MS);
   });
 
   it("passes an abort signal and a bounded output budget into generateText", async () => {
@@ -307,7 +320,7 @@ describe("extractPlanWithOpenRouter", () => {
     };
     expect(call.abortSignal).toBeInstanceOf(AbortSignal);
     expect(call.maxOutputTokens).toBe(2048);
-    expect(call.maxRetries).toBe(0);
+    expect(call.maxRetries).toBe(PLAN_EXTRACT_MAX_RETRIES);
     expect(call.providerOptions?.openai?.reasoningEffort).toBe("low");
     expect(call.prompt).toContain("Separate travel logistics from event logistics.");
     expect(call.prompt).toContain(AIRPORT_CONFUSION);

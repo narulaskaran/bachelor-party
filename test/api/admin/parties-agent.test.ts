@@ -10,6 +10,7 @@ import { AUTH_COOKIE } from "@/lib/auth";
 import { DEMO_PARTY } from "@/lib/demo-party";
 import { getDb } from "@/lib/db";
 import { extractPlanWithOpenRouter } from "@/lib/plan-extract";
+import { NOTES_UNAVAILABLE_MESSAGE, PLAN_INGEST_DEADLINE_MS } from "@/lib/plan-ingest-errors";
 import { cookieAuthenticatesHost, HOST_COOKIE } from "@/lib/host-auth";
 import { CREATE_RATE_LIMIT, consumeRateLimit, createRateLimitKey, resetRateLimitStore } from "@/lib/rate-limit";
 import { createMemoryDb } from "../memory-db";
@@ -58,7 +59,8 @@ describe("agent API (create / patch / guests)", () => {
     delete process.env.ADMIN_API_TOKEN;
     resetRateLimitStore();
     vi.mocked(getDb).mockReset();
-    vi.mocked(extractPlanWithOpenRouter).mockClear();
+    vi.mocked(extractPlanWithOpenRouter).mockReset();
+    vi.useRealTimers();
   });
 
   it("unauthenticated POST siteName-only → 201 organizer packet", async () => {
@@ -876,6 +878,43 @@ describe("agent API (create / patch / guests)", () => {
       body.draftReview.facts.find((f: { path: string }) => f.path === "trip.timezone")?.status,
     ).toBe("missing");
     expect(mem.parties[0].published).toBe(false);
+  });
+
+  it("POST plan returns 503 before the function timeout when extract never resolves", async () => {
+    vi.useFakeTimers();
+    const mem = createMemoryDb();
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+    vi.mocked(extractPlanWithOpenRouter).mockImplementation(() => new Promise(() => {}));
+
+    const pending = POST(
+      makeRequest(null, {
+        method: "POST",
+        body: {
+          plan: "yeah so friday drinks at the dead rabbit in nyc september 4 around seven",
+          preset: "night-out",
+        },
+      }),
+    );
+    let settled = false;
+    void pending.then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
+    );
+
+    await vi.advanceTimersByTimeAsync(PLAN_INGEST_DEADLINE_MS - 1);
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+    const res = await pending;
+    expect(settled).toBe(true);
+    expect(res.status).toBe(503);
+    await expect(res.json()).resolves.toEqual({ error: NOTES_UNAVAILABLE_MESSAGE });
+    expect(mem.parties).toHaveLength(0);
   });
 
   it("dump with no implied name keeps Untitled event as content fallback and Event name missing", async () => {

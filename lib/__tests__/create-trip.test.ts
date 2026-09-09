@@ -7,7 +7,7 @@ import {
   parseOrganizerPacket,
   visitorSafeCreateError,
 } from "@/lib/create-trip";
-import { NOTES_UNAVAILABLE_MESSAGE, PLAN_EXTRACT_TIMEOUT_MS } from "@/lib/plan-ingest-errors";
+import { NOTES_UNAVAILABLE_MESSAGE, CREATE_TRIP_CLIENT_TIMEOUT_MS } from "@/lib/plan-ingest-errors";
 import { formatDateLabel } from "@/lib/trip-dates";
 import { getDb } from "@/lib/db";
 import { resetRateLimitStore } from "@/lib/rate-limit";
@@ -343,7 +343,7 @@ describe("create-from-UI helper", () => {
     expect(result).toEqual({ ok: false, error: "Couldn't reach the server. Try again." });
   });
 
-  it("fails with notes unavailable when create hangs past the extract timeout", async () => {
+  it("fails with notes unavailable when create hangs past the client timeout", async () => {
     vi.useFakeTimers();
     const pending = createTripFromUi(
       { siteName: "", plan: "Amtrak to Hudson then drive to the Catskills cabin" },
@@ -359,7 +359,7 @@ describe("create-from-UI helper", () => {
       },
     );
 
-    await vi.advanceTimersByTimeAsync(PLAN_EXTRACT_TIMEOUT_MS - 1);
+    await vi.advanceTimersByTimeAsync(CREATE_TRIP_CLIENT_TIMEOUT_MS - 1);
     await Promise.resolve();
     expect(settled).toBe(false);
 

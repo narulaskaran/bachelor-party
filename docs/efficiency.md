@@ -31,7 +31,7 @@ Living notes from the efficiency dig on prod `party.narula.xyz`. Track work via 
 
 ## Evidence anchors
 - Preview: `useHostPreviewContent` in `host-workspace.tsx`; `livePreviewContent` reuses unchanged sections; `PartyChrome` memoizes slices.
-- Timeout: `PLAN_EXTRACT_TIMEOUT_MS = 25_000`; `maxRetries: 0` in `extractPlanWithOpenRouter`.
+- Timeout: `PLAN_EXTRACT_TIMEOUT_MS = 25_000`; ingest deadline 28s; client 35s; `maxDuration` 40s; `maxRetries: 0`.
 - Versions: `recordContentVersion` uses `ORDER BY version DESC LIMIT 1`; draft retention 20.
 - Host page: `loadHostPageState` (one parties read) then guests.
 
