@@ -11,7 +11,7 @@ Living notes from the efficiency dig on prod `party.narula.xyz`. Track work via 
 | High | `content_versions` full snapshots; head = SELECT all + MAX in JS | `lib/content-versions.ts`, `drizzle/0006_content_versions.sql`, `lib/host-access.ts` | **Shipped (head only):** `ORDER BY version DESC LIMIT 1`. Full snapshots kept for audit; retention/diff later | Low / med |
 | Med–High | Host page 3–4× `parties` lookups (full jsonb) | `app/[slug]/host/page.tsx`, `lib/host-access.ts` | **Shipped:** one `loadHostPageState` parties fetch, then guests. Auth/ownership unchanged | Low |
 | Med | Guest RSVP sequential double resolve; `force-dynamic` | `components/sections/rsvp.tsx`, `lib/rsvp-roster.ts`, `app/g/[token]/page.tsx` | Parked. Resolve once; `Promise.all`; narrow columns | Low |
-| Med | New `neon()` client every `getDb()` | `lib/db/index.ts` | Module/`globalThis` singleton | Low |
+| Med | New `neon()` client every `getDb()` | `lib/db/index.ts` | **Shipped:** module/`globalThis` singleton keyed by `DATABASE_URL` | Low |
 | Low | Packing localStorage fan-out (not Neon) | `lib/packing-storage.ts`, `components/sections/packing.tsx` | Only if profiled | Negligible |
 
 ## Cleared
@@ -21,6 +21,7 @@ Living notes from the efficiency dig on prod `party.narula.xyz`. Track work via 
 - Host preview: lg+ live split is debounced (~200ms) with dirty-section reuse; below `lg` the Edit tab does not rebuild preview.
 - Host workspace GET: one `parties` jsonb read (`loadHostPageState`), then guests.
 - `content_versions` head is `ORDER BY version DESC LIMIT 1` (full snapshots still stored).
+- `getDb()` reuses one Neon/drizzle client per process (`resetDb()` for tests).
 
 ## Quick wins vs later
 **Quick:** preview debounce, host load coalesce, version head query, `getDb` singleton, create timeout/retry tweak.  
