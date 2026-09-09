@@ -4,6 +4,7 @@ import { readBearerToken } from "@/lib/admin-auth";
 import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
 import { authorizePartyBySlug, type PartyAuth } from "@/lib/authorize-party";
 import { credentialFingerprint, recordContentVersion } from "@/lib/content-versions";
+import { deletePartyRecord } from "@/lib/delete-party";
 import { schema } from "@/lib/db";
 import { mergePatch } from "@/lib/merge-patch";
 import { adminPartyView } from "@/lib/admin-party-view";
@@ -147,8 +148,7 @@ export async function DELETE(request: Request, ctx: Params) {
   const { db, party } = auth;
 
   try {
-    await db.delete(schema.guests).where(eq(schema.guests.partyId, party.id));
-    await db.delete(schema.parties).where(eq(schema.parties.id, party.id));
+    await deletePartyRecord(db, party.id);
     return NextResponse.json({ deleted: slug });
   } catch (err) {
     console.error("delete trip failed", err);

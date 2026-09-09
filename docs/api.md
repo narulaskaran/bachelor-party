@@ -60,7 +60,10 @@ editor (`actorType: "host"`) and content PATCHes via the admin API
 document) are skipped. The newest 20 **draft** rows per trip are retained;
 older drafts are pruned. **Published** rows are never deleted, so guest-facing
 history stays reconstructible. UPDATE is still rejected by the 0006 trigger;
-0008 allows draft DELETE only inside `prune_draft_content_versions`. The
+0008 allows draft DELETE only inside `prune_draft_content_versions`.
+Deleting a trip (`DELETE /api/admin/trips/:slug`) runs `delete_party()` so
+versions, guests, and the party row go together — a failed delete never
+wipes RSVPs while the trip survives (0009). The
 bearer/admin credential is stored only as a one-way fingerprint
 (`sha256:<12 hex>`), never raw.
 
@@ -133,7 +136,7 @@ hides the Pack section and nav link.
 | `/api/admin/trips/:slug` | GET | Full record; `content` is the working draft |
 | `/api/admin/trips/:slug` | PATCH | Merge-patch the working draft and/or replace `password`. Does not publish. |
 | `/api/admin/trips/:slug/publish` | POST | Host-only publish. Bearer host key or host session cookie. Returns `guestUrl`. |
-| `/api/admin/trips/:slug` | DELETE | Delete the trip and its guest RSVPs |
+| `/api/admin/trips/:slug` | DELETE | Delete the trip, its guest RSVPs, and content versions (atomic) |
 | `/api/admin/trips/:slug/guests` | GET | List that trip's RSVPs |
 | `/api/admin/trips/:slug/guests/export` | GET | Download the full-detail guest roster as CSV (organizer token only) |
 | `/api/admin/trips/:slug/guests/:id` | DELETE | Remove one guest RSVP |

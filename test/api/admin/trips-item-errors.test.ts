@@ -121,6 +121,54 @@ describe("admin item endpoint JSON envelopes", () => {
     await expect(res.json()).resolves.toEqual({ error: "Failed to delete trip" });
   });
 
+  it("DELETE of a trip with guests and versions returns 200 and removes everything", async () => {
+    const mem = seededDb();
+    mem.seedGuest({ partyId: mem.parties[0].id, name: "Alex", nameKey: "alex" });
+    mem.contentVersions.push({
+      id: 1,
+      partyId: mem.parties[0].id,
+      version: 1,
+      state: "published",
+      contentSnapshot: mem.parties[0].content,
+      actorType: "host",
+    });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const res = await DELETE(makeRequest("cabin-tok"), ctx("cabin"));
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ deleted: "cabin" });
+    expect(mem.parties).toHaveLength(0);
+    expect(mem.guests).toHaveLength(0);
+    expect(mem.contentVersions).toHaveLength(0);
+  });
+
+  it("DELETE that fails inside delete_party leaves guests and versions untouched", async () => {
+    const mem = seededDb();
+    mem.seedGuest({ partyId: mem.parties[0].id, name: "Alex", nameKey: "alex" });
+    mem.contentVersions.push({
+      id: 1,
+      partyId: mem.parties[0].id,
+      version: 1,
+      state: "published",
+      contentSnapshot: mem.parties[0].content,
+      actorType: "host",
+    });
+    const db = {
+      ...mem.db,
+      execute: async () => {
+        throw new Error("delete_party failed");
+      },
+    };
+    vi.mocked(getDb).mockReturnValue(db as never);
+
+    const res = await DELETE(makeRequest("cabin-tok"), ctx("cabin"));
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toEqual({ error: "Failed to delete trip" });
+    expect(mem.parties).toHaveLength(1);
+    expect(mem.guests).toHaveLength(1);
+    expect(mem.contentVersions).toHaveLength(1);
+  });
+
   it("happy path is unchanged: PATCH with a fresh password still 200s after the guarded conflict check", async () => {
     const mem = seededDb();
     vi.mocked(getDb).mockReturnValue(mem.db as never);

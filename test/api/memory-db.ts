@@ -120,6 +120,42 @@ function isCountExpr(value: unknown): boolean {
   }
 }
 
+function sqlQueryText(query: unknown): string {
+  try {
+    return JSON.stringify(query);
+  } catch {
+    return String(query);
+  }
+}
+
+function sqlParamValues(query: unknown): unknown[] {
+  const params: unknown[] = [];
+  const walk = (node: unknown) => {
+    if (node == null) return;
+    if (typeof node === "number" || typeof node === "string" || typeof node === "boolean") {
+      params.push(node);
+      return;
+    }
+    if (typeof node !== "object") return;
+    const rec = node as { value?: unknown; queryChunks?: unknown[] };
+    if (Array.isArray(rec.queryChunks)) {
+      rec.queryChunks.forEach(walk);
+      return;
+    }
+    if ("value" in rec && rec.value !== undefined && typeof rec.value !== "object") {
+      params.push(rec.value);
+    }
+  };
+  walk(query);
+  return params;
+}
+
+function removeWhere(store: Row[], match: (row: Row) => boolean) {
+  const next = store.filter((row) => !match(row));
+  store.length = 0;
+  store.push(...next);
+}
+
 export function createMemoryDb() {
   const parties: Row[] = [];
   const guests: Row[] = [];
@@ -233,6 +269,30 @@ export function createMemoryDb() {
           };
         },
       };
+    },
+    async execute(query: unknown) {
+      const text = sqlQueryText(query);
+      const params = sqlParamValues(query);
+      if (/delete_party/.test(text)) {
+        const partyId = Number(params[0]);
+        removeWhere(contentVersions, (row) => getRowValue(row, "party_id") === partyId);
+        removeWhere(guests, (row) => getRowValue(row, "party_id") === partyId);
+        removeWhere(parties, (row) => getRowValue(row, "id") === partyId);
+        return [{ delete_party: 1 }];
+      }
+      if (/prune_draft_content_versions/.test(text)) {
+        const partyId = Number(params[0]);
+        const keep = Number(params[1]);
+        const drafts = contentVersions
+          .filter((row) => getRowValue(row, "party_id") === partyId && row.state === "draft")
+          .sort((a, b) => Number(b.version) - Number(a.version));
+        const extra = new Set(drafts.slice(Math.max(keep, 0)));
+        const next = contentVersions.filter((row) => !extra.has(row));
+        contentVersions.length = 0;
+        contentVersions.push(...next);
+        return [{ prune_draft_content_versions: extra.size }];
+      }
+      return [];
     },
   };
 
