@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { readBearerToken } from "@/lib/admin-auth";
 import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
-import { authorizePartyBySlug } from "@/lib/authorize-party";
+import { authorizePartyBySlug, type PartyAuth } from "@/lib/authorize-party";
 import { credentialFingerprint, recordContentVersion } from "@/lib/content-versions";
 import { schema } from "@/lib/db";
 import { mergePatch } from "@/lib/merge-patch";
@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type Params = { params: Promise<{ slug: string }> };
+type FullPartyAuth = PartyAuth<typeof schema.parties.$inferSelect>;
 
 function withRecord<T extends Record<string, unknown>>(party: T) {
   return { trip: party, party };
@@ -24,7 +25,7 @@ export async function GET(request: Request, ctx: Params) {
   const { slug }: { slug: string } = await ctx.params;
   // authorizePartyBySlug queries the DB unguarded; wrap so clients get the
   // JSON envelope, never an HTML 500 (same contract as collection.ts).
-  let auth: Awaited<ReturnType<typeof authorizePartyBySlug>>;
+  let auth: FullPartyAuth;
   try {
     auth = await authorizePartyBySlug(request, slug, { content: true });
   } catch (err) {
@@ -37,7 +38,7 @@ export async function GET(request: Request, ctx: Params) {
 
 export async function PATCH(request: Request, { params }: Params) {
   const { slug }: { slug: string } = await params;
-  let auth: Awaited<ReturnType<typeof authorizePartyBySlug>>;
+  let auth: FullPartyAuth;
   try {
     auth = await authorizePartyBySlug(request, slug, { content: true });
   } catch (err) {
