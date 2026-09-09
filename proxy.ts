@@ -16,7 +16,7 @@ import {
   partyExists,
   TRIP_UNAVAILABLE_REWRITE,
 } from "@/lib/party-exists";
-import { resolvePartyByGuestToken } from "@/lib/resolve-party";
+import { lookupGuestInviteMeta } from "@/lib/resolve-party";
 import { REQUEST_PATHNAME_HEADER } from "@/lib/request-pathname";
 
 function nextWithPathname(request: NextRequest) {
@@ -80,9 +80,12 @@ export async function proxy(request: NextRequest) {
 
   const guestToken = guestInviteTokenFromPathname(pathname);
   if (guestToken) {
-    let resolved: Awaited<ReturnType<typeof resolvePartyByGuestToken>>;
+    // Separate isolate from the RSC tree — cannot share React cache with
+    // `app/g/[token]`. Load only id/token/published (no content jsonb) so the
+    // page remains the source of truth for guest HTML.
+    let resolved: Awaited<ReturnType<typeof lookupGuestInviteMeta>>;
     try {
-      resolved = await resolvePartyByGuestToken(guestToken);
+      resolved = await lookupGuestInviteMeta(guestToken);
     } catch {
       const url = request.nextUrl.clone();
       url.pathname = MISSING_GUEST_REWRITE;

@@ -8,7 +8,7 @@ import {
 } from "@/lib/current-party";
 import { guestInviteTokenFromPathname } from "@/lib/party-exists";
 import { pathnameFromHeaders } from "@/lib/request-pathname";
-import { guestVisibleRoster } from "@/lib/roster-visibility";
+import { guestVisibleRoster, type GuestVisibleRosterEntry } from "@/lib/roster-visibility";
 import { findGuestByToken, rsvpIdentityToken } from "@/lib/rsvp-identity";
 import type { RsvpPrefill } from "@/lib/merge-guest";
 
@@ -30,10 +30,9 @@ export async function partyForPublicRoster(
   return getCurrentParty();
 }
 
-export async function getGuests(inviteToken?: string) {
-  const current = await partyForPublicRoster(inviteToken);
+async function guestsForParty(current: CurrentParty): Promise<GuestVisibleRosterEntry[]> {
   const db = getDb();
-  if (!current || !db || current.partyId === "demo") return [];
+  if (!db || current.partyId === "demo") return [];
   try {
     const guests = await db
       .select({
@@ -51,11 +50,9 @@ export async function getGuests(inviteToken?: string) {
   }
 }
 
-/** The guest this browser last saved on THIS event, if they're on the roster. */
-export async function getRsvpPrefill(inviteToken?: string): Promise<RsvpPrefill | null> {
-  const current = await partyForPublicRoster(inviteToken);
+async function prefillForParty(current: CurrentParty): Promise<RsvpPrefill | null> {
   const db = getDb();
-  if (!current || !db || current.partyId === "demo") return null;
+  if (!db || current.partyId === "demo") return null;
 
   const token = await rsvpIdentityToken(db, current.partyId, await cookies());
   if (!token) return null;
@@ -83,4 +80,34 @@ export async function getRsvpPrefill(inviteToken?: string): Promise<RsvpPrefill 
     console.error("getRsvpPrefill failed", err);
     return null;
   }
+}
+
+export async function getGuests(inviteToken?: string) {
+  const current = await partyForPublicRoster(inviteToken);
+  if (!current) return [];
+  return guestsForParty(current);
+}
+
+/** The guest this browser last saved on THIS event, if they're on the roster. */
+export async function getRsvpPrefill(inviteToken?: string): Promise<RsvpPrefill | null> {
+  const current = await partyForPublicRoster(inviteToken);
+  if (!current) return null;
+  return prefillForParty(current);
+}
+
+/**
+ * One party-by-token resolve, then roster + prefill in parallel.
+ * `getGuests` / `getRsvpPrefill` still work; this is the /g/{token} path.
+ */
+export async function loadPublicRsvp(inviteToken?: string): Promise<{
+  guests: GuestVisibleRosterEntry[];
+  prefill: RsvpPrefill | null;
+}> {
+  const current = await partyForPublicRoster(inviteToken);
+  if (!current) return { guests: [], prefill: null };
+  const [guests, prefill] = await Promise.all([
+    guestsForParty(current),
+    prefillForParty(current),
+  ]);
+  return { guests, prefill };
 }

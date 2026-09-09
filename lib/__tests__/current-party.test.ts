@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { createMemoryDb } from "@/test/api/memory-db";
 import { guestEventCookieValue, EVENT_COOKIE } from "@/lib/guest-event-auth";
 import { REQUEST_PATHNAME_HEADER } from "@/lib/request-pathname";
+import { resetPartyLookups } from "@/lib/resolve-party";
 
 const cookieStore = { value: undefined as string | undefined };
 const headerStore = { pathname: undefined as string | undefined };
@@ -30,6 +31,7 @@ describe("getCurrentParty", () => {
     cookieStore.value = undefined;
     headerStore.pathname = undefined;
     vi.mocked(getDb).mockReset();
+    resetPartyLookups();
     delete process.env.PARTY_PASSWORD;
   });
 

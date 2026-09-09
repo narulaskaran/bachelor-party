@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { getCurrentParty } from "@/lib/current-party";
 import { RSVP_COOKIE, rsvpCookieName } from "@/lib/merge-guest";
 import { DEMO_PARTY, DEMO_RSVP_MESSAGE } from "@/lib/demo-party";
+import { resetPartyLookups } from "@/lib/resolve-party";
 
 const cookieStore = {
   get: vi.fn(),
@@ -68,6 +69,7 @@ describe("submitGuestInfo merge upsert", () => {
     vi.mocked(getCurrentParty).mockReset();
     cookieStore.get.mockReset();
     cookieStore.set.mockReset();
+    resetPartyLookups();
   });
 
   it("does not wipe flights, phone, or notes when only dietary changes", async () => {
@@ -487,6 +489,7 @@ describe("sample trip RSVP", () => {
     vi.mocked(getCurrentParty).mockReset();
     cookieStore.get.mockReset();
     cookieStore.set.mockReset();
+    resetPartyLookups();
   });
 
   it("does not save and never consults a logged-in trip cookie", async () => {

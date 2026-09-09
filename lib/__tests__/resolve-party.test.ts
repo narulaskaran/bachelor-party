@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { DEMO_PARTY } from "@/lib/demo-party";
-import { resolvePartyBySlug } from "@/lib/resolve-party";
+import { lookupGuestInviteMeta, resolvePartyByGuestToken, resolvePartyBySlug } from "@/lib/resolve-party";
 import { createMemoryDb } from "@/test/api/memory-db";
 
 function dbOf(mem: ReturnType<typeof createMemoryDb>) {
@@ -142,5 +142,42 @@ describe("resolvePartyBySlug", () => {
     expect(resolved.status).toBe("open");
     if (resolved.status !== "open") return;
     expect(resolved.content.trip.siteName).toBe("Alpine Weekend");
+  });
+});
+
+describe("guest invite token lookup", () => {
+  it("lookupGuestInviteMeta does not need published content jsonb", async () => {
+    const mem = createMemoryDb();
+    const token = "a".repeat(32);
+    mem.seedParty({
+      slug: "cabin",
+      guestToken: token,
+      published: true,
+      content: { kind: "trip", trip: { siteName: "Cabin" } },
+    });
+
+    await expect(lookupGuestInviteMeta(token, dbOf(mem))).resolves.toEqual({
+      status: "published",
+      id: 1,
+      guestToken: token,
+    });
+  });
+
+  it("treats unpublished tokens as unpublished without exposing content", async () => {
+    const mem = createMemoryDb();
+    const token = "b".repeat(32);
+    mem.seedParty({
+      slug: "draft",
+      guestToken: token,
+      published: false,
+      content: { kind: "trip", trip: { siteName: "Secret" } },
+    });
+
+    await expect(lookupGuestInviteMeta(token, dbOf(mem))).resolves.toEqual({
+      status: "unpublished",
+    });
+    await expect(resolvePartyByGuestToken(token, dbOf(mem))).resolves.toEqual({
+      status: "unpublished",
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { getGuests, getRsvpPrefill } from "@/lib/rsvp-roster";
+import { loadPublicRsvp } from "@/lib/rsvp-roster";
 import type { Activity, RsvpConfig } from "@/lib/party-types";
 import { RsvpSectionView } from "@/components/sections/rsvp-view";
 
@@ -24,8 +24,9 @@ export async function RsvpSection({
   extras?: { flights: boolean; food: boolean; votes: boolean; notes: boolean };
 }) {
   const skipGuestCookie = sample || preview;
-  const guests = skipGuestCookie ? [] : await getGuests(inviteToken);
-  const prefill = skipGuestCookie ? null : await getRsvpPrefill(inviteToken);
+  const { guests, prefill } = skipGuestCookie
+    ? { guests: [], prefill: null }
+    : await loadPublicRsvp(inviteToken);
 
   return (
     <RsvpSectionView

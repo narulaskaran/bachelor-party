@@ -25,7 +25,8 @@ export async function partyFromGuestInvite(token: string): Promise<CurrentParty 
   const db = getDb();
   if (!db) return null;
   try {
-    const resolved = await resolvePartyByGuestToken(invite, db);
+    // One-arg resolve shares the RSC cache with layout / page for this token.
+    const resolved = await resolvePartyByGuestToken(invite);
     if (resolved.status !== "published") return null;
     return currentFromParty(resolved);
   } catch (err) {

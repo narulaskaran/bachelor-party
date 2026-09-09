@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RsvpSection } from "@/components/sections/rsvp";
-import { getGuests } from "@/lib/rsvp-roster";
+import { loadPublicRsvp } from "@/lib/rsvp-roster";
 
 vi.mock("@/components/rsvp-form", () => ({
   RsvpForm: ({ sample, preview }: { sample?: boolean; preview?: boolean }) =>
@@ -16,12 +16,13 @@ vi.mock("@/components/rsvp-form", () => ({
 vi.mock("@/lib/rsvp-roster", () => ({
   getGuests: vi.fn(async () => []),
   getRsvpPrefill: vi.fn(async () => null),
+  loadPublicRsvp: vi.fn(async () => ({ guests: [], prefill: null })),
 }));
 
 describe("RsvpSection sample copy", () => {
   beforeEach(() => {
-    vi.mocked(getGuests).mockReset();
-    vi.mocked(getGuests).mockResolvedValue([]);
+    vi.mocked(loadPublicRsvp).mockReset();
+    vi.mocked(loadPublicRsvp).mockResolvedValue({ guests: [], prefill: null });
   });
 
   it("does not tell demo visitors to come back and update a saved RSVP", async () => {
@@ -36,6 +37,7 @@ describe("RsvpSection sample copy", () => {
     expect(html).not.toMatch(/Who.?s checked in/i);
     expect(html).toContain("No one&#x27;s on this sample list");
     expect(html).not.toMatch(/Add yours above/i);
+    expect(loadPublicRsvp).not.toHaveBeenCalled();
   });
 
   it("keeps persistence copy on a real trip", async () => {
@@ -59,21 +61,24 @@ describe("RsvpSection sample copy", () => {
     expect(html).not.toMatch(/demo mode/i);
     expect(html).toContain('data-sample="false"');
     expect(html).toContain('data-preview="true"');
-    expect(getGuests).not.toHaveBeenCalled();
+    expect(loadPublicRsvp).not.toHaveBeenCalled();
   });
 
   it("shows guest roster names without private RSVP details", async () => {
-    vi.mocked(getGuests).mockResolvedValueOnce([
-      {
-        id: 7,
-        name: "Mina",
-        arrivalFlight: "UA 1523",
-        arrivalTime: "Fri 10:45 AM",
-        departureFlight: "UA 887",
-        departureTime: "Mon 3:15 PM",
-        dietary: "Vegetarian, no nuts",
-      } as never,
-    ]);
+    vi.mocked(loadPublicRsvp).mockResolvedValueOnce({
+      guests: [
+        {
+          id: 7,
+          name: "Mina",
+          arrivalFlight: "UA 1523",
+          arrivalTime: "Fri 10:45 AM",
+          departureFlight: "UA 887",
+          departureTime: "Mon 3:15 PM",
+          dietary: "Vegetarian, no nuts",
+        } as never,
+      ],
+      prefill: null,
+    });
     const html = renderToStaticMarkup(
       await RsvpSection({ sample: false, pollActivities: [], airport: "JAC" }),
     );
@@ -84,32 +89,39 @@ describe("RsvpSection sample copy", () => {
   });
 
   it("keeps private roster details out of the public sample", async () => {
-    vi.mocked(getGuests).mockResolvedValueOnce([
-      {
-        id: 7,
-        name: "Mina",
-        arrivalFlight: "UA 1523",
-        dietary: "Vegetarian, no nuts",
-      } as never,
-    ]);
+    vi.mocked(loadPublicRsvp).mockResolvedValueOnce({
+      guests: [
+        {
+          id: 7,
+          name: "Mina",
+          arrivalFlight: "UA 1523",
+          dietary: "Vegetarian, no nuts",
+        } as never,
+      ],
+      prefill: null,
+    });
     const html = renderToStaticMarkup(
       await RsvpSection({ sample: true, pollActivities: [], airport: "JAC" }),
     );
     expect(html).not.toContain("Mina");
     expect(html).not.toContain("UA 1523");
     expect(html).not.toContain("Vegetarian, no nuts");
+    expect(loadPublicRsvp).not.toHaveBeenCalled();
   });
 
   it("does not show another trip's RSVP on a brand-new invite", async () => {
     const invite = "c".repeat(32);
-    vi.mocked(getGuests).mockImplementation(async (token?: string) => {
-      if (token === invite) return [];
-      return [{ id: 1, name: "Karan", attendanceStatus: "attending" as const }];
+    vi.mocked(loadPublicRsvp).mockImplementation(async (token?: string) => {
+      if (token === invite) return { guests: [], prefill: null };
+      return {
+        guests: [{ id: 1, name: "Karan", attendanceStatus: "attending" as const }],
+        prefill: null,
+      };
     });
     const html = renderToStaticMarkup(
       await RsvpSection({ sample: false, pollActivities: [], inviteToken: invite }),
     );
-    expect(getGuests).toHaveBeenCalledWith(invite);
+    expect(loadPublicRsvp).toHaveBeenCalledWith(invite);
     expect(html).toContain("No one&#x27;s on the list yet");
     expect(html).not.toContain("Karan");
   });

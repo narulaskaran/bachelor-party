@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { getCurrentParty } from "@/lib/current-party";
 import { RSVP_COOKIE, rsvpCookieName } from "@/lib/merge-guest";
 import { REQUEST_PATHNAME_HEADER } from "@/lib/request-pathname";
+import { resetPartyLookups } from "@/lib/resolve-party";
 
 const cookieStore = {
   get: vi.fn(),
@@ -39,6 +40,7 @@ describe("public guest roster is per event", () => {
     vi.mocked(getCurrentParty).mockReset();
     cookieStore.get.mockReset();
     headerStore.pathname = undefined;
+    resetPartyLookups();
   });
 
   function seedTrips() {
@@ -112,6 +114,15 @@ describe("public guest roster is per event", () => {
     await expect(getGuests(INVITE_B)).resolves.toEqual([
       expect.objectContaining({ name: "Sam", attendanceStatus: "attending" }),
     ]);
+    expect(getCurrentParty).not.toHaveBeenCalled();
+  });
+
+  it("resolves the invite once when loading roster and prefill together", async () => {
+    const { loadPublicRsvp } = await import("@/lib/rsvp-roster");
+    const mem = seedTrips();
+    const before = mem.selectCounts.parties;
+    await expect(loadPublicRsvp(INVITE_B)).resolves.toEqual({ guests: [], prefill: null });
+    expect(mem.selectCounts.parties - before).toBe(1);
     expect(getCurrentParty).not.toHaveBeenCalled();
   });
 });
