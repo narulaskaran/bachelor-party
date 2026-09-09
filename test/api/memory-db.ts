@@ -80,16 +80,21 @@ function applyOrder(rows: Row[], exprs: unknown[]): Row[] {
   });
 }
 
-function makeQuery(getRows: () => Row[]) {
+function makeQuery(getRows: () => Row[], countKey?: string) {
+  const finalize = () => {
+    const rows = getRows();
+    if (countKey) return [{ [countKey]: rows.length }];
+    return rows;
+  };
   return {
     where(cond: unknown) {
-      return makeQuery(() => applyWhere(getRows(), cond));
+      return makeQuery(() => applyWhere(getRows(), cond), countKey);
     },
     limit(n: number) {
-      return makeQuery(() => getRows().slice(0, n));
+      return makeQuery(() => getRows().slice(0, n), countKey);
     },
     orderBy(...exprs: unknown[]) {
-      return makeQuery(() => applyOrder(getRows(), exprs));
+      return makeQuery(() => applyOrder(getRows(), exprs), countKey);
     },
     leftJoin() {
       return {
@@ -101,9 +106,18 @@ function makeQuery(getRows: () => Row[]) {
       };
     },
     then<T>(onFulfilled?: (rows: Row[]) => T, onRejected?: (err: unknown) => T) {
-      return Promise.resolve(getRows()).then(onFulfilled, onRejected);
+      return Promise.resolve(finalize()).then(onFulfilled, onRejected);
     },
   };
+}
+
+function isCountExpr(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  try {
+    return /count/i.test(JSON.stringify(value));
+  } catch {
+    return false;
+  }
 }
 
 export function createMemoryDb() {
@@ -130,14 +144,17 @@ export function createMemoryDb() {
   }
 
   const db = {
-    select() {
+    select(fields?: Record<string, unknown>) {
+      const countKey = fields
+        ? Object.entries(fields).find(([, value]) => isCountExpr(value))?.[0]
+        : undefined;
       return {
         from(table: object) {
           const name = tableName(table);
           if (name === "parties") selectCounts.parties += 1;
           if (name === "guests") selectCounts.guests += 1;
           if (name === "content_versions") selectCounts.contentVersions += 1;
-          return makeQuery(() => rowsFor(table));
+          return makeQuery(() => rowsFor(table), countKey);
         },
       };
     },

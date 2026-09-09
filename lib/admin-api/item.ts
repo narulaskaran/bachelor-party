@@ -26,7 +26,7 @@ export async function GET(request: Request, ctx: Params) {
   // JSON envelope, never an HTML 500 (same contract as collection.ts).
   let auth: Awaited<ReturnType<typeof authorizePartyBySlug>>;
   try {
-    auth = await authorizePartyBySlug(request, slug);
+    auth = await authorizePartyBySlug(request, slug, { content: true });
   } catch (err) {
     console.error("get trip failed", err);
     return NextResponse.json({ error: "Failed to get trip" }, { status: 500 });
@@ -39,7 +39,7 @@ export async function PATCH(request: Request, { params }: Params) {
   const { slug }: { slug: string } = await params;
   let auth: Awaited<ReturnType<typeof authorizePartyBySlug>>;
   try {
-    auth = await authorizePartyBySlug(request, slug);
+    auth = await authorizePartyBySlug(request, slug, { content: true });
   } catch (err) {
     console.error("update trip failed", err);
     return NextResponse.json({ error: "Failed to update trip" }, { status: 500 });

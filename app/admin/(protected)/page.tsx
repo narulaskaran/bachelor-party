@@ -2,7 +2,7 @@
 // Query shape matches lib/admin-api/collection.ts.
 
 import Link from "next/link";
-import { count, eq } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 
 export default async function Page() {
@@ -22,7 +22,8 @@ export default async function Page() {
     .select({
       id: schema.parties.id,
       slug: schema.parties.slug,
-      content: schema.parties.content,
+      siteName: sql<string | null>`${schema.parties.content}->'trip'->>'siteName'`,
+      dateLabel: sql<string | null>`${schema.parties.content}->'trip'->>'dateLabel'`,
       updatedAt: schema.parties.updatedAt,
       guestCount: count(schema.guests.id),
     })
@@ -57,10 +58,10 @@ export default async function Page() {
           {rows.map((row) => (
             <tr key={row.id} className="border-b hover:bg-muted/30">
               <td className="px-3 py-2 font-medium">
-                {row.content?.trip?.siteName ?? "\u2014"}
+                {row.siteName ?? "\u2014"}
               </td>
               <td className="px-3 py-2 text-muted-foreground">
-                {row.content?.trip?.dateLabel ?? "\u2014"}
+                {row.dateLabel ?? "\u2014"}
               </td>
               <td className="px-3 py-2 text-center">{Number(row.guestCount)}</td>
               <td className="px-3 py-2 text-muted-foreground">

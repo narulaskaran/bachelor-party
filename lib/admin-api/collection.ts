@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { readBearerToken } from "@/lib/admin-auth";
 import { issuesFromZod, readJsonBody } from "@/lib/api-errors";
 import { recordContentVersion } from "@/lib/content-versions";
@@ -23,7 +23,9 @@ function indexItem(
   party: {
     id: number;
     slug: string;
-    content: { trip?: { siteName?: string; dateLabel?: string } } | null;
+    siteName?: string | null;
+    dateLabel?: string | null;
+    content?: { trip?: { siteName?: string; dateLabel?: string } } | null;
     createdAt: Date;
     updatedAt: Date;
   },
@@ -32,8 +34,8 @@ function indexItem(
   return {
     id: party.id,
     slug: party.slug,
-    siteName: party.content?.trip?.siteName,
-    dateLabel: party.content?.trip?.dateLabel,
+    siteName: party.siteName ?? party.content?.trip?.siteName,
+    dateLabel: party.dateLabel ?? party.content?.trip?.dateLabel,
     guestCount,
     createdAt: party.createdAt,
     updatedAt: party.updatedAt,
@@ -53,10 +55,27 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Database not configured" }, { status: 503 });
   }
 
-  let party: typeof schema.parties.$inferSelect | undefined;
+  let party:
+    | {
+        id: number;
+        slug: string;
+        siteName?: string | null;
+        dateLabel?: string | null;
+        content?: { trip?: { siteName?: string; dateLabel?: string } } | null;
+        createdAt: Date;
+        updatedAt: Date;
+      }
+    | undefined;
   try {
     [party] = await db
-      .select()
+      .select({
+        id: schema.parties.id,
+        slug: schema.parties.slug,
+        siteName: sql<string | null>`${schema.parties.content}->'trip'->>'siteName'`,
+        dateLabel: sql<string | null>`${schema.parties.content}->'trip'->>'dateLabel'`,
+        createdAt: schema.parties.createdAt,
+        updatedAt: schema.parties.updatedAt,
+      })
       .from(schema.parties)
       .where(eq(schema.parties.adminToken, token))
       .limit(1);
@@ -69,18 +88,19 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 
-  let guests;
+  let guestCount = 0;
   try {
-    guests = await db
-      .select({ id: schema.guests.id })
+    const [countRow] = await db
+      .select({ guestCount: count() })
       .from(schema.guests)
       .where(eq(schema.guests.partyId, party.id));
+    guestCount = Number(countRow?.guestCount ?? 0);
   } catch (err) {
     console.error("list trips guest count failed", err);
     return NextResponse.json({ error: "Failed to list trips" }, { status: 500 });
   }
 
-  const trips = [indexItem(party, guests.length)];
+  const trips = [indexItem(party, guestCount)];
   return NextResponse.json({ trips, parties: trips });
 }
 

@@ -23,6 +23,7 @@ Living notes from the efficiency dig on prod `party.narula.xyz`. Track work via 
 - `content_versions` head is `ORDER BY version DESC LIMIT 1` (full snapshots still stored).
 - `getDb()` reuses one Neon/drizzle client per process (`resetDb()` for tests).
 - Guest `/g/{token}`: proxy meta lookup (no jsonb); RSC layout/page/RSVP share one token resolve; `loadPublicRsvp` loads roster+prefill together.
+- Admin/API list uses `count()` for RSVPs; `authorizePartyBySlug` loads jsonb only for GET/PATCH; cookie fallbacks skip `draftContent`.
 
 ## Quick wins vs later
 **Quick:** preview debounce, host load coalesce, version head query, `getDb` singleton, create timeout/retry tweak (shipped).  

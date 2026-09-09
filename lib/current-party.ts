@@ -73,7 +73,14 @@ async function partyFromAccessCookie(db: Db, raw: string | undefined): Promise<C
   const parsed = parsePartyCookie(raw);
   if (!parsed) return null;
   const [party] = await db
-    .select()
+    .select({
+      id: schema.parties.id,
+      slug: schema.parties.slug,
+      content: schema.parties.content,
+      published: schema.parties.published,
+      password: schema.parties.password,
+      guestToken: schema.parties.guestToken,
+    })
     .from(schema.parties)
     .where(eq(schema.parties.id, parsed.id))
     .limit(1);
@@ -86,7 +93,13 @@ async function partyFromEventCookie(db: Db, raw: string | undefined): Promise<Cu
   const parsed = parsePartyCookie(raw);
   if (!parsed) return null;
   const [party] = await db
-    .select()
+    .select({
+      id: schema.parties.id,
+      slug: schema.parties.slug,
+      content: schema.parties.content,
+      published: schema.parties.published,
+      guestToken: schema.parties.guestToken,
+    })
     .from(schema.parties)
     .where(eq(schema.parties.id, parsed.id))
     .limit(1);

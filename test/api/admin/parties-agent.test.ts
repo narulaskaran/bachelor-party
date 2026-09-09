@@ -237,6 +237,20 @@ describe("agent API (create / patch / guests)", () => {
     expect(index.parties).toEqual(index.trips);
   });
 
+  it("GET list guestCount is a count of RSVPs, not a full guest select", async () => {
+    const mem = createMemoryDb();
+    mem.seedParty({ slug: "alpha", adminToken: "alpha-tok", content: { trip: { siteName: "Alpha" } } });
+    mem.seedGuest({ partyId: 1, name: "Sam" });
+    mem.seedGuest({ partyId: 1, name: "Riley" });
+    vi.mocked(getDb).mockReturnValue(mem.db as never);
+
+    const listed = await listGET(makeRequest("alpha-tok"));
+    expect(listed.status).toBe(200);
+    const index = await listed.json();
+    expect(index.trips[0].guestCount).toBe(2);
+    expect(index.trips[0].siteName).toBe("Alpha");
+  });
+
   it("GET list without a token does not leak other people's trips", async () => {
     const mem = createMemoryDb();
     mem.seedParty({ slug: "alpha", adminToken: "alpha-tok" });
