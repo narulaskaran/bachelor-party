@@ -8,7 +8,9 @@ export const NOTES_UNPARSEABLE_MESSAGE = NOTES_UNAVAILABLE_MESSAGE;
 /** GLM 5.3 Flash always reasons; slow providers often take ~20s. Abort must outlast that. */
 export const PLAN_EXTRACT_TIMEOUT_MS = 25_000;
 
-/** Must stay above extract + slug/insert work, and above ingest deadline. */
+/** Must stay above extract + slug/insert work, and above ingest deadline.
+ *  app/api/admin/trips/route.ts `maxDuration` must be this same number as a
+ *  literal — Next.js cannot analyze an imported constant. */
 export const CREATE_TRIP_MAX_DURATION_SECONDS = 40;
 
 /**
