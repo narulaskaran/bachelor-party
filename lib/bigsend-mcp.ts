@@ -29,7 +29,7 @@ export const BIGSEND_TOOLS: ToolDef[] = [
   {
     name: "create",
     description:
-      'Create an unpublished draft (no token required). Never publishes. Dump a plan with { "plan": "..." } or a name with { "name": "E2E Smoke" }. Store adminToken as BIGSEND_TOKEN. Example: { "plan": "Cabin weekend in Denver", "preset": "weekend" }',
+      'Create an unpublished draft (no token required). Never publishes. Dump a plan with { "plan": "..." } or a name with { "name": "E2E Smoke" }. adminToken is stored in ~/.bigsend.json and omitted from the tool result unless showSecrets is true — do not log secrets. Example: { "plan": "Cabin weekend in Denver", "preset": "weekend" }',
     inputSchema: {
       name: z.string().optional().describe("Trip name (siteName)"),
       plan: z.string().optional().describe("Messy event plan dump; ingested into a draft"),
@@ -38,6 +38,10 @@ export const BIGSEND_TOOLS: ToolDef[] = [
       file: z.string().optional().describe("Path to a create JSON file"),
       slug: z.string().optional(),
       password: z.string().optional(),
+      showSecrets: z
+        .boolean()
+        .optional()
+        .describe("Return adminToken and password in the tool result. Default redacts them."),
     },
   },
   {
@@ -153,6 +157,7 @@ export function argvForTool(name: BigsendToolName, args: ToolArgs): string[] {
       pushFlag(argv, "file", args.file);
       pushFlag(argv, "slug", args.slug);
       pushFlag(argv, "password", args.password);
+      pushFlag(argv, "show-secrets", args.showSecrets);
       return argv;
     }
     case "get":

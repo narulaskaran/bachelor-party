@@ -149,14 +149,18 @@ accept `Authorization: Bearer` of that trip's `adminToken` only.
 
 HTTP-only (no `DATABASE_URL`). JSON on stdout; errors on stderr. `create` needs
 no token. The trip `adminToken` from the packet is stored in `~/.bigsend.json`
-(or `BIGSEND_CONFIG`). Set `BIGSEND_TOKEN` to that packet token for follow-up
-commands if the config file is not in play.
+(or `BIGSEND_CONFIG`). Human `create` output redacts `adminToken` and `password`
+by default (`--redact`). Pass `--json` or `--show-secrets` for the full
+secret-bearing packet (do not paste that into logs). MCP `create` is redacted
+the same way unless `showSecrets: true`. Set `BIGSEND_TOKEN` to that packet
+token for follow-up commands if the config file is not in play.
 
 ```bash
 export BIGSEND_API_URL=https://your-deploy.vercel.app
 
 npm run bigsend -- create --name "E2E Smoke"
 npm run bigsend -- create --plan "Cabin weekend in Denver" --preset weekend
+npm run bigsend -- create --name "E2E Smoke" --json
 npm run bigsend -- set e2e-smoke --patch '{"trip":{"airport":"JAC"}}'
 npm run bigsend -- publish e2e-smoke
 npm run bigsend -- schedule add e2e-smoke --day 2026-09-05 --title "Dinner" --key-event

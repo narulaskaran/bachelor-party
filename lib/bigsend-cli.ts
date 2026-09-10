@@ -21,13 +21,17 @@ export const USAGE = `bigsend — The Big Send admin CLI (HTTP only; no DATABASE
 Env: BIGSEND_API_URL  BIGSEND_TOKEN (trip adminToken after create)  BIGSEND_CONFIG (optional path)
 
 Create needs no token. The 201 organizer packet's adminToken is stored in
-~/.bigsend.json (or BIGSEND_CONFIG) so follow-up commands work.
+~/.bigsend.json (or BIGSEND_CONFIG) so follow-up commands work. Human create
+output redacts adminToken and password by default. Pass --json or
+--show-secrets for the full packet (secret-bearing; do not log it).
+--redact is the default.
 
 Create and set never publish. Guests keep the last published snapshot until
 an explicit host publish (site Publish button, or bigsend publish).
 
   bigsend create --name "E2E Smoke"
   bigsend create --plan "Cabin weekend in Denver" --preset weekend
+  bigsend create --plan "Cabin weekend" --json
   bigsend get <slug>
   bigsend set <slug> --patch '{"trip":{"airport":"JAC"}}'
   bigsend publish <slug>
@@ -158,6 +162,9 @@ export async function runBigsend(argv: string[], io: RunIO): Promise<number> {
         set: { type: "string" },
         marquee: { type: "boolean" },
         "key-event": { type: "boolean" },
+        json: { type: "boolean" },
+        redact: { type: "boolean" },
+        "show-secrets": { type: "boolean" },
       },
     });
   } catch (err) {
@@ -181,6 +188,7 @@ export async function runBigsend(argv: string[], io: RunIO): Promise<number> {
           file: flagStr("file"),
           plan: flagStr("plan"),
           preset: flagStr("preset"),
+          showSecrets: flags.json === true || flags["show-secrets"] === true,
         });
       case "get":
         return await cmdGet(io, rest[0]);
@@ -214,6 +222,20 @@ export async function runBigsend(argv: string[], io: RunIO): Promise<number> {
   }
 }
 
+function redactCreatePacket(
+  packet: Record<string, unknown>,
+  configPath: string,
+): Record<string, unknown> {
+  const next = { ...packet };
+  if (typeof next.adminToken === "string") {
+    next.adminToken = `<stored in ${configPath}>`;
+  }
+  if (typeof next.password === "string") {
+    next.password = "<redacted>";
+  }
+  return next;
+}
+
 async function cmdCreate(
   io: RunIO,
   flags: {
@@ -223,6 +245,7 @@ async function cmdCreate(
     file?: string;
     plan?: string;
     preset?: string;
+    showSecrets?: boolean;
   },
 ): Promise<number> {
   if (flags.preset !== undefined && !isEventPreset(flags.preset)) {
@@ -263,7 +286,7 @@ async function cmdCreate(
   const slug = String(result.slug ?? "");
   const adminToken = result.adminToken;
   saveToken(io, slug, typeof adminToken === "string" ? adminToken : undefined);
-  printJson(io, {
+  const packet = {
     url: result.url,
     hostUrl: result.hostUrl,
     guestUrl: result.guestUrl,
@@ -273,7 +296,11 @@ async function cmdCreate(
     published: result.published,
     content: result.content,
     draftReview: result.draftReview,
-  });
+  };
+  printJson(
+    io,
+    flags.showSecrets ? packet : redactCreatePacket(packet, defaultConfigPath(io.env)),
+  );
   return 0;
 }
 

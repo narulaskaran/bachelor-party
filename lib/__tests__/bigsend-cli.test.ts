@@ -66,9 +66,11 @@ describe("bigsend CLI", () => {
     expect(JSON.parse(stdout.join(""))).toEqual({
       url: "https://preview.example/e2e-smoke",
       slug: "e2e-smoke",
-      password: "guest-pw",
-      adminToken: "party-tok",
+      password: "<redacted>",
+      adminToken: "<stored in /tmp/bigsend-test.json>",
     });
+    expect(stdout.join("")).not.toContain("party-tok");
+    expect(stdout.join("")).not.toContain("guest-pw");
     expect(JSON.parse(files["/tmp/bigsend-test.json"]).tokens["e2e-smoke"]).toBe("party-tok");
   });
 
@@ -104,7 +106,33 @@ describe("bigsend CLI", () => {
       guestUrl: null,
       published: false,
       hostUrl: "/cabin-weekend/host",
+      password: "<redacted>",
+      adminToken: "<stored in /tmp/bigsend-test.json>",
     });
+    expect(stdout.join("")).not.toContain("party-tok");
+    expect(stdout.join("")).not.toContain("guest-pw");
+  });
+
+  it("create --json prints the full organizer packet for automation", async () => {
+    const { io, stdout, files } = ioHarness({
+      fetchImpl: async () =>
+        jsonResponse(201, {
+          url: "https://preview.example/e2e-smoke",
+          slug: "e2e-smoke",
+          password: "guest-pw",
+          adminToken: "party-tok",
+        }),
+    });
+
+    const code = await runBigsend(["create", "--name", "E2E Smoke", "--json"], io);
+    expect(code).toBe(0);
+    expect(JSON.parse(stdout.join(""))).toEqual({
+      url: "https://preview.example/e2e-smoke",
+      slug: "e2e-smoke",
+      password: "guest-pw",
+      adminToken: "party-tok",
+    });
+    expect(JSON.parse(files["/tmp/bigsend-test.json"]).tokens["e2e-smoke"]).toBe("party-tok");
   });
 
   it("create --plan rejects the removed preset before making an API call", async () => {

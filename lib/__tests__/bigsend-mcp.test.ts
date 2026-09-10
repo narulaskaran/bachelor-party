@@ -79,6 +79,10 @@ describe("bigsend MCP tools", () => {
       },
     ]);
     expect(JSON.parse(result.text).slug).toBe("e2e-smoke");
+    expect(JSON.parse(result.text).adminToken).toMatch(/stored in/);
+    expect(JSON.parse(result.text).password).toBe("<redacted>");
+    expect(result.text).not.toContain("\"tok\"");
+    expect(result.text).not.toContain("guest-pw");
   });
 
   it("create with a plan dump maps onto CLI --plan", () => {
@@ -88,6 +92,12 @@ describe("bigsend MCP tools", () => {
       "Cabin weekend",
       "--preset",
       "weekend",
+    ]);
+    expect(argvForTool("create", { name: "E2E Smoke", showSecrets: true })).toEqual([
+      "create",
+      "--name",
+      "E2E Smoke",
+      "--show-secrets",
     ]);
   });
 
