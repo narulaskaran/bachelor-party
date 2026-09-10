@@ -1,10 +1,9 @@
-/** User-facing copy when the notes reader cannot run. Never includes env names. */
+/** User-facing copy when notes cannot become a draft. Honest: retry or labeled lines, no “in a minute”. */
 export const NOTES_UNAVAILABLE_MESSAGE =
-  "Our planning assistant is unavailable right now. Your notes were not lost — try again in a few minutes, or use Label: value lines (Title / Dates / Location / Lodging) which don't need the assistant.";
+  "Couldn't turn those notes into a draft. Try again, or use labeled lines (Title / Dates / Location / Lodging).";
 
-/** Notes the regex fallback cannot read. Waiting a minute will not help. */
-export const NOTES_UNPARSEABLE_MESSAGE =
-  "We couldn't pull details from these notes. Try Label: value lines the parser can read, for example: Title: Friday drinks";
+/** Same family as NOTES_UNAVAILABLE_MESSAGE — unparseable dumps are not fixed by waiting. */
+export const NOTES_UNPARSEABLE_MESSAGE = NOTES_UNAVAILABLE_MESSAGE;
 
 /** GLM 5.3 Flash always reasons; slow providers often take ~20s. Abort must outlast that. */
 export const PLAN_EXTRACT_TIMEOUT_MS = 25_000;

@@ -167,7 +167,7 @@ describe("CreateTripForm", () => {
       ok: false,
       error: NOTES_UNAVAILABLE_MESSAGE,
     });
-    expect((await screen.findByRole("alert")).textContent).toMatch(/planning assistant/i);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/labeled lines/i);
     expect((screen.getByRole("button", { name: /^create draft$/i }) as HTMLButtonElement).disabled).toBe(
       false,
     );

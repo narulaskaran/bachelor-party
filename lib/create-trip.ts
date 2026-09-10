@@ -120,7 +120,7 @@ export function visitorSafeCreateError(status: number, body: unknown): string {
     if (
       error === NOTES_UNAVAILABLE_MESSAGE ||
       error === NOTES_UNPARSEABLE_MESSAGE ||
-      (/notes|assistant|Label: value/i.test(error) && !ENV_NAME_RE.test(error))
+      (/notes|assistant|Label: value|labeled lines/i.test(error) && !ENV_NAME_RE.test(error))
     ) {
       return error;
     }
