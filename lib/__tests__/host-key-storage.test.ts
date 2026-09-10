@@ -26,13 +26,14 @@ describe("host key tab storage", () => {
     sessionStorage.clear();
     const slug = "friday-drinks";
     rememberHostKey(slug, "party-tok");
-    expect(isHostKeyBannerHidden(slug)).toBe(false);
-    setHostKeyBannerHidden(slug, true);
     expect(isHostKeyBannerHidden(slug)).toBe(true);
-    expect(sessionStorage.getItem(hostKeyBannerHiddenKey(slug))).toBe("1");
-    expect(readStoredHostKey(slug)).toBe("party-tok");
     setHostKeyBannerHidden(slug, false);
     expect(isHostKeyBannerHidden(slug)).toBe(false);
+    expect(sessionStorage.getItem(hostKeyBannerHiddenKey(slug))).toBe("0");
+    expect(readStoredHostKey(slug)).toBe("party-tok");
+    setHostKeyBannerHidden(slug, true);
+    expect(isHostKeyBannerHidden(slug)).toBe(true);
+    expect(sessionStorage.getItem(hostKeyBannerHiddenKey(slug))).toBeNull();
     expect(readStoredHostKey(slug)).toBe("party-tok");
   });
 });

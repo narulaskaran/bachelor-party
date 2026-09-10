@@ -26,8 +26,19 @@ describe("HostKeyBanner", () => {
     sessionStorage.clear();
   });
 
+  it("hides the host key by default until Show host key", () => {
+    render(<HostKeyBanner slug={SLUG} />);
+
+    expect(screen.queryByText(HOST_KEY)).toBeNull();
+    expect(screen.getByRole("button", { name: /show host key/i })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /show host key/i }));
+    expect(screen.getByText(HOST_KEY)).toBeTruthy();
+    expect(sessionStorage.getItem(hostKeyBannerHiddenKey(SLUG))).toBe("0");
+  });
+
   it("copies the host key without clearing the tab session", async () => {
     render(<HostKeyBanner slug={SLUG} />);
+    fireEvent.click(screen.getByRole("button", { name: /show host key/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /copy host key/i }));
 
@@ -39,17 +50,20 @@ describe("HostKeyBanner", () => {
 
   it("hides the banner without deleting the stored host key", () => {
     render(<HostKeyBanner slug={SLUG} />);
+    fireEvent.click(screen.getByRole("button", { name: /show host key/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /^hide$/i }));
 
     expect(screen.queryByRole("button", { name: /copy host key/i })).toBeNull();
     expect(screen.getByRole("button", { name: /show host key/i })).toBeTruthy();
     expect(sessionStorage.getItem(hostKeyStorageKey(SLUG))).toBe(HOST_KEY);
-    expect(sessionStorage.getItem(hostKeyBannerHiddenKey(SLUG))).toBe("1");
+    expect(sessionStorage.getItem(hostKeyBannerHiddenKey(SLUG))).toBeNull();
   });
 
   it("keeps the key hidden after remount until Show host key", () => {
     render(<HostKeyBanner slug={SLUG} />);
+    expect(screen.queryByText(HOST_KEY)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /show host key/i }));
     fireEvent.click(screen.getByRole("button", { name: /^hide$/i }));
     cleanup();
     render(<HostKeyBanner slug={SLUG} />);

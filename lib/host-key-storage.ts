@@ -40,13 +40,13 @@ export function hostKeyBannerHiddenKey(slug: string): string {
 }
 
 export function isHostKeyBannerHidden(slug: string): boolean {
-  if (typeof window === "undefined") return false;
-  return sessionStorage.getItem(hostKeyBannerHiddenKey(slug)) === "1";
+  if (typeof window === "undefined") return true;
+  return sessionStorage.getItem(hostKeyBannerHiddenKey(slug)) !== "0";
 }
 
 export function setHostKeyBannerHidden(slug: string, hidden: boolean): void {
   if (typeof window === "undefined") return;
-  if (hidden) sessionStorage.setItem(hostKeyBannerHiddenKey(slug), "1");
-  else sessionStorage.removeItem(hostKeyBannerHiddenKey(slug));
+  if (hidden) sessionStorage.removeItem(hostKeyBannerHiddenKey(slug));
+  else sessionStorage.setItem(hostKeyBannerHiddenKey(slug), "0");
   notifyHostKeyStore();
 }
