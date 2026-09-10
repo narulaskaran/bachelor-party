@@ -1,6 +1,7 @@
 import {
   isPlanExtractionUnavailable,
   PlanExtractionUnavailableError,
+  PlanNotesUnparseableError,
 } from "@/lib/plan-ingest-errors";
 import { formatDateLabel, isValidCalendarDate } from "@/lib/trip-dates";
 import { parseEventPreset, type EventPreset } from "@/lib/event-preset";
@@ -143,8 +144,35 @@ function packingFromPlan(plan: string): PackingItem[] | undefined {
   return items.length ? items : undefined;
 }
 
+const MISSING_FACT_NOTES: Record<string, string | undefined> = {
+  "trip.siteName": "Add a name before sharing.",
+  "trip.endDate": "A second date is not confirmed.",
+  "trip.tagline": "Add a one-line description when you know it.",
+  "trip.location": "Location stays TBD until you confirm it.",
+  "trip.timezone": "Times without a timezone are not settled logistics.",
+  "lodging.name": "Lodging stays TBD until you confirm it.",
+  schedule: "Add dated times only when they are explicit in the plan.",
+};
+
+const EXTRACTED_FACT_NUDGES: Record<string, string | undefined> = {
+  "trip.location": "Confirm the extracted location before sharing.",
+  "lodging.name": "Confirm the extracted lodging before sharing.",
+};
+
+function noteForFact(
+  status: DraftFactStatus,
+  path: string,
+  missingNote?: string,
+  extractedNote?: string,
+): string | undefined {
+  if (status === "missing") return missingNote ?? MISSING_FACT_NOTES[path];
+  if (status === "extracted") return extractedNote ?? EXTRACTED_FACT_NUDGES[path];
+  return undefined;
+}
+
 function fact(path: string, label: string, status: DraftFactStatus, value?: string, note?: string, source?: string): DraftFact {
-  return { path, label, status, ...(value ? { value } : {}), ...(note ? { note } : {}), ...(source ? { source } : {}) };
+  const resolved = note ?? noteForFact(status, path);
+  return { path, label, status, ...(value ? { value } : {}), ...(resolved ? { note: resolved } : {}), ...(source ? { source } : {}) };
 }
 
 /** Reconcile review facts with the canonical fields after a host edit. */
@@ -159,15 +187,6 @@ export function draftFactsForContent(content: PartyContent, previousFacts: Draft
     "trip.timezone": content.trip.timezone,
     "lodging.name": content.lodging?.name,
     schedule: content.schedule?.length ? `${content.schedule.reduce((count, day) => count + day.entries.length, 0)} item(s)` : undefined,
-  };
-  const notes: Record<string, string | undefined> = {
-    "trip.siteName": "Add a name before sharing.",
-    "trip.endDate": "A second date is not confirmed.",
-    "trip.tagline": "Add a one-line description when you know it.",
-    "trip.location": "Location stays TBD until you confirm it.",
-    "trip.timezone": "Times without a timezone are not settled logistics.",
-    "lodging.name": "Lodging stays TBD until you confirm it.",
-    schedule: "Add dated times only when they are explicit in the plan.",
   };
   const clock = content.trip.startTime?.trim();
   const timezone = settledTimeZone(content.trip.timezone);
@@ -198,9 +217,20 @@ export function draftFactsForContent(content: PartyContent, previousFacts: Draft
     };
     if (value) next.value = value;
     if (!changed && previous?.source) next.source = previous.source;
-    if (!value) next.note = previous?.note ?? notes[path];
-    else if (timezonePending) next.note = clockNote;
-    else if (!changed && !wasTimezonePending && previous?.note) next.note = previous.note;
+    if (timezonePending) {
+      next.note = clockNote;
+    } else {
+      const keepPrevious =
+        Boolean(previous?.note) &&
+        !changed &&
+        !wasTimezonePending &&
+        next.status === "extracted" &&
+        !/stays TBD/i.test(previous?.note ?? "");
+      const resolved = keepPrevious
+        ? previous?.note
+        : noteForFact(next.status, path, MISSING_FACT_NOTES[path]);
+      if (resolved) next.note = resolved;
+    }
     return next;
   });
 }
@@ -437,15 +467,15 @@ export function assembleIngestion(
   const facts: DraftFact[] = [
     fact("trip.siteName", "Event name", titleStatus, title, title ? undefined : "Add a name before sharing.", title ? titled.source : undefined),
     fact("trip.startDate", "When", startDateStatus, whenValue, dateNote, extracted.datesSource),
-    fact("trip.endDate", "End date", endDateStatus, endDate, endDate ? undefined : "A second date is not confirmed.", extracted.datesSource),
-    fact("trip.tagline", "What", tagline ? "extracted" : "missing", tagline, "Add a one-line description when you know it.", extracted.taglineSource),
-    fact("trip.location", "Where", locationStatus, [locationValue, address].filter(Boolean).join(" · ") || undefined, "Location stays TBD until you confirm it.", extracted.locationSource),
+    fact("trip.endDate", "End date", endDateStatus, endDate, noteForFact(endDateStatus, "trip.endDate"), extracted.datesSource),
+    fact("trip.tagline", "What", tagline ? "extracted" : "missing", tagline, noteForFact(tagline ? "extracted" : "missing", "trip.tagline"), extracted.taglineSource),
+    fact("trip.location", "Where", locationStatus, [locationValue, address].filter(Boolean).join(" · ") || undefined, noteForFact(locationStatus, "trip.location"), extracted.locationSource),
     fact("trip.timezone", "Timezone", timezoneStatus, timezone, timezoneNote, extracted.timezoneSource ?? rawTimezone),
   ];
   if (!nightOut) {
     facts.push(
-      fact("lodging.name", "Lodging", lodgingStatus, lodgingForContent, "Lodging stays TBD until you confirm it.", extracted.lodgingSource),
-      fact("schedule", "Schedule", scheduleForContent ? "extracted" : "missing", scheduleForContent ? `${scheduleForContent.reduce((count, day) => count + day.entries.length, 0)} item(s)` : undefined, scheduleForContent ? undefined : "Add dated times only when they are explicit in the plan."),
+      fact("lodging.name", "Lodging", lodgingStatus, lodgingForContent, noteForFact(lodgingStatus, "lodging.name"), extracted.lodgingSource),
+      fact("schedule", "Schedule", scheduleForContent ? "extracted" : "missing", scheduleForContent ? `${scheduleForContent.reduce((count, day) => count + day.entries.length, 0)} item(s)` : undefined, noteForFact(scheduleForContent ? "extracted" : "missing", "schedule")),
     );
   }
   const review: DraftReview = {
@@ -510,9 +540,7 @@ export async function ingestEventPlan(
     if (heuristicFallbackUseful(plan)) {
       return ingestEventPlanFromHeuristics(planInput, overrides);
     }
-    throw error instanceof PlanExtractionUnavailableError
-      ? error
-      : new PlanExtractionUnavailableError();
+    throw new PlanNotesUnparseableError();
   }
 }
 

@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { factsFromModelOutput } from "@/lib/plan-extract";
-import { PlanExtractionUnavailableError } from "@/lib/plan-ingest-errors";
+import { PlanExtractionUnavailableError, PlanNotesUnparseableError } from "@/lib/plan-ingest-errors";
 import {
   draftFactsForContent,
   heuristicFallbackUseful,
   ingestEventPlan,
-  ingestEventPlanFromHeuristics as ingestEventPlanHeuristics,
+  ingestEventPlanFromHeuristics,
   reviewComplete,
   stripDraftReview,
 } from "@/lib/plan-ingestion";
 
 describe("messy event plan ingestion", () => {
-  const ingestEventPlan = ingestEventPlanHeuristics;
+  const ingestEventPlan = ingestEventPlanFromHeuristics;
   it("rejects empty input as an unreviewed draft with no invented logistics", () => {
     const { content, review } = ingestEventPlan("   ");
     expect(content.trip.siteName).toBe("Untitled event");
@@ -521,7 +521,7 @@ describe("model-backed event plan ingestion", () => {
           throw new PlanExtractionUnavailableError();
         },
       }),
-    ).rejects.toBeInstanceOf(PlanExtractionUnavailableError);
+    ).rejects.toBeInstanceOf(PlanNotesUnparseableError);
     expect(heuristicFallbackUseful(MESSY_VOICE)).toBe(false);
   });
 
@@ -553,5 +553,31 @@ describe("model-backed event plan ingestion", () => {
     );
     expect(content.trip.timezone).toBeUndefined();
     expect(review.facts.find((item) => item.path === "trip.timezone")?.status).toBe("missing");
+  });
+
+  it("shows TBD notes only for missing location, lodging, and timezone", () => {
+    const extracted = ingestEventPlanFromHeuristics(
+      "Event: Vegas weekend\nLocation: Las Vegas\nLodging: Bellagio\nTimezone: America/Los_Angeles",
+    );
+    const where = extracted.review.facts.find((item) => item.path === "trip.location");
+    const lodging = extracted.review.facts.find((item) => item.path === "lodging.name");
+    const zone = extracted.review.facts.find((item) => item.path === "trip.timezone");
+    expect(where).toMatchObject({ status: "extracted", value: "Las Vegas" });
+    expect(where?.note).toMatch(/confirm/i);
+    expect(where?.note).not.toMatch(/stays TBD/i);
+    expect(lodging).toMatchObject({ status: "extracted", value: "Bellagio" });
+    expect(lodging?.note).toMatch(/confirm/i);
+    expect(lodging?.note).not.toMatch(/stays TBD/i);
+    expect(zone?.status).toBe("extracted");
+    expect(zone?.note).toBeUndefined();
+
+    const reconciled = draftFactsForContent(extracted.content, extracted.review.facts);
+    expect(reconciled.find((item) => item.path === "trip.location")?.note).not.toMatch(/stays TBD/i);
+    expect(reconciled.find((item) => item.path === "lodging.name")?.note).not.toMatch(/stays TBD/i);
+
+    const missing = ingestEventPlanFromHeuristics("Event: Cabin Weekend");
+    expect(missing.review.facts.find((item) => item.path === "trip.location")?.note).toMatch(/stays TBD/i);
+    expect(missing.review.facts.find((item) => item.path === "lodging.name")?.note).toMatch(/stays TBD/i);
+    expect(missing.review.facts.find((item) => item.path === "trip.timezone")?.note).toMatch(/not settled/i);
   });
 });
