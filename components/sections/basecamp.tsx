@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { Trip, Lodging } from "@/lib/party-types";
+import { costEachNote } from "@/lib/trip-sections";
 import { kickerClass, sectionTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
 
@@ -93,7 +94,7 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
 
           {lodging.totalCost ? (
             <p className="mt-6 text-sm text-muted-foreground">
-              You&apos;ll get a request once we know who&apos;s coming.
+              {costEachNote(lodging.totalCost, lodging.beds)}
             </p>
           ) : null}
         </div>

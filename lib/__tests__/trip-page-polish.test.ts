@@ -191,6 +191,8 @@ describe("trip page polish", () => {
     );
     expect(lodge).toContain("Bedrooms");
     expect(lodge).toContain("Address");
+    expect(lodge).toMatch(/About \$13 each once everyone/);
+    expect(lodge).not.toContain("You'll get a request once we know who's coming.");
     expect(lodge).not.toMatch(/text-xs text-muted-foreground/);
 
     const schedule = renderToStaticMarkup(
