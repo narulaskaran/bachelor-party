@@ -219,7 +219,8 @@ describe("glanceFacts", () => {
     );
     expect(facts.some((f) => f.label === "Damage")).toBe(false);
     expect(facts.find((f) => f.label === "Total")?.value).toBe("$2,400.00");
-    expect(facts.find((f) => f.label === "Total")?.note).toBe(
+    expect(facts.find((f) => f.label === "Total")?.note).toBeUndefined();
+    expect(facts.find((f) => f.label === "Total")?.note).not.toBe(
       "You'll get a request once we know who's coming.",
     );
   });
@@ -230,7 +231,7 @@ describe("glanceFacts", () => {
       { name: "Cabin", totalCost: "$2,400.00", beds: 8 },
     );
     expect(facts.find((f) => f.label === "Total")?.note).toBe(
-      "About $300 each once everyone's in",
+      "About $300 each once everyone's in.",
     );
   });
 });

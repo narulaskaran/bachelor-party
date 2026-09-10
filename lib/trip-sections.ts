@@ -126,13 +126,13 @@ export function parseMoneyAmount(value: string): number | null {
   return n;
 }
 
-export function costEachNote(totalCost: string, headcount?: number): string {
+export function costEachNote(totalCost: string, headcount?: number): string | undefined {
   const total = parseMoneyAmount(totalCost);
   if (total != null && headcount != null && headcount > 0) {
     const each = Math.round(total / headcount);
-    return `About $${each.toLocaleString("en-US")} each once everyone's in`;
+    return `About $${each.toLocaleString("en-US")} each once everyone's in.`;
   }
-  return "You'll get a request once we know who's coming.";
+  return undefined;
 }
 
 export function visibleSections(content: PartyContent): VisibleSections {

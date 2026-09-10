@@ -20,6 +20,7 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
     lodging.totalCost ? { label: "Total cost", value: lodging.totalCost } : null,
   ].filter((fact): fact is { label: string; value: string } => fact != null);
 
+  const costNote = lodging.totalCost ? costEachNote(lodging.totalCost, lodging.beds) : undefined;
   const subtitle = [trip.location, trip.elevation, lodging.driveFromAirport].filter(Boolean);
 
   return (
@@ -92,10 +93,8 @@ export function BasecampSection({ trip, lodging }: { trip: Trip; lodging: Lodgin
             </CardContent>
           </Card>
 
-          {lodging.totalCost ? (
-            <p className="mt-6 text-sm text-muted-foreground">
-              {costEachNote(lodging.totalCost, lodging.beds)}
-            </p>
+          {costNote ? (
+            <p className="mt-6 text-sm text-muted-foreground">{costNote}</p>
           ) : null}
         </div>
       ) : null}
