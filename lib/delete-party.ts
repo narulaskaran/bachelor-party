@@ -1,11 +1,13 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { schema } from "@/lib/db";
 
+type PartyTable = typeof schema.parties | typeof schema.guests | typeof schema.contentVersions;
+
 type Db = {
-  delete: (table: unknown) => {
-    where: (cond: unknown) => Promise<unknown> | { then: Promise<unknown>["then"] };
+  delete: (table: PartyTable) => {
+    where: (cond: SQL | undefined) => Promise<unknown> | { then: Promise<unknown>["then"] };
   };
-  execute?: (query: unknown) => Promise<unknown>;
+  execute?: (query: string | SQLWrapper) => Promise<unknown> | { then: Promise<unknown>["then"] };
 };
 
 /**
