@@ -7,6 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { CreateTripForm } from "@/components/create-trip-form";
 import { OrganizerPacketView } from "@/components/organizer-packet-view";
 import type { CreateTripResult, OrganizerPacket } from "@/lib/create-trip";
+import { NOTES_UNAVAILABLE_MESSAGE } from "@/lib/plan-ingest-errors";
 
 vi.mock("next/link", () => ({
   default: ({
@@ -164,9 +165,9 @@ describe("CreateTripForm", () => {
 
     finish({
       ok: false,
-      error: "Couldn't read your notes right now. Try again in a minute.",
+      error: NOTES_UNAVAILABLE_MESSAGE,
     });
-    expect((await screen.findByRole("alert")).textContent).toMatch(/read your notes/i);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/planning assistant/i);
     expect((screen.getByRole("button", { name: /^create draft$/i }) as HTMLButtonElement).disabled).toBe(
       false,
     );

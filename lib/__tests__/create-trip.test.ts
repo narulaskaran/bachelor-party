@@ -206,9 +206,14 @@ describe("create-from-UI helper", () => {
     );
     expect(
       visitorSafeCreateError(503, {
-        error: "Couldn't read your notes right now. Try again in a minute.",
+        error: NOTES_UNAVAILABLE_MESSAGE,
       }),
-    ).toMatch(/read your notes/i);
+    ).toMatch(/planning assistant/i);
+    expect(
+      visitorSafeCreateError(503, {
+        error: "We couldn't pull details from these notes. Try Label: value lines the parser can read, for example: Title: Friday drinks",
+      }),
+    ).toMatch(/Label: value/i);
     expect(
       visitorSafeCreateError(400, {
         error: "Invalid trip payload",
@@ -320,7 +325,7 @@ describe("create-from-UI helper", () => {
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/read your notes/i);
+    expect(result.error).toMatch(/Label: value/i);
     expect(mem.parties).toHaveLength(0);
   });
 

@@ -1,6 +1,10 @@
 /** User-facing copy when the notes reader cannot run. Never includes env names. */
 export const NOTES_UNAVAILABLE_MESSAGE =
-  "Couldn't read your notes right now. Try again in a minute.";
+  "Our planning assistant is unavailable right now. Your notes were not lost — try again in a few minutes, or use Label: value lines (Title / Dates / Location / Lodging) which don't need the assistant.";
+
+/** Notes the regex fallback cannot read. Waiting a minute will not help. */
+export const NOTES_UNPARSEABLE_MESSAGE =
+  "We couldn't pull details from these notes. Try Label: value lines the parser can read, for example: Title: Friday drinks";
 
 /** GLM 5.3 Flash always reasons; slow providers often take ~20s. Abort must outlast that. */
 export const PLAN_EXTRACT_TIMEOUT_MS = 25_000;
@@ -28,8 +32,19 @@ export class PlanExtractionUnavailableError extends Error {
   }
 }
 
+export class PlanNotesUnparseableError extends PlanExtractionUnavailableError {
+  constructor(message = NOTES_UNPARSEABLE_MESSAGE) {
+    super(message);
+    this.name = "PlanNotesUnparseableError";
+  }
+}
+
 export function isPlanExtractionUnavailable(error: unknown): boolean {
   return error instanceof PlanExtractionUnavailableError;
+}
+
+export function isPlanNotesUnparseable(error: unknown): boolean {
+  return error instanceof PlanNotesUnparseableError;
 }
 
 /** Fetch/abort timeouts the landing create must surface as notes-unavailable, not a hang. */

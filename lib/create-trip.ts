@@ -9,6 +9,7 @@ import {
   CREATE_TRIP_CLIENT_TIMEOUT_MS,
   isAbortError,
   NOTES_UNAVAILABLE_MESSAGE,
+  NOTES_UNPARSEABLE_MESSAGE,
 } from "@/lib/plan-ingest-errors";
 import { UNTITLED_EVENT_TITLE } from "@/lib/party-types";
 import { unguessableEventSlug } from "@/lib/slug";
@@ -116,7 +117,11 @@ export function visitorSafeCreateError(status: number, body: unknown): string {
   if (status === 503) {
     const rec = body && typeof body === "object" ? (body as Record<string, unknown>) : null;
     const error = typeof rec?.error === "string" ? rec.error : "";
-    if (error === NOTES_UNAVAILABLE_MESSAGE || (/notes/i.test(error) && !ENV_NAME_RE.test(error))) {
+    if (
+      error === NOTES_UNAVAILABLE_MESSAGE ||
+      error === NOTES_UNPARSEABLE_MESSAGE ||
+      (/notes|assistant|Label: value/i.test(error) && !ENV_NAME_RE.test(error))
+    ) {
       return error;
     }
     return "Couldn't create a trip right now. Try again in a minute.";

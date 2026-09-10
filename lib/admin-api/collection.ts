@@ -148,7 +148,10 @@ export async function POST(request: Request) {
       );
     } catch (err) {
       if (isPlanExtractionUnavailable(err)) {
-        return NextResponse.json({ error: NOTES_UNAVAILABLE_MESSAGE }, { status: 503 });
+        return NextResponse.json(
+          { error: err instanceof Error ? err.message : NOTES_UNAVAILABLE_MESSAGE },
+          { status: 503 },
+        );
       }
       throw err;
     }
