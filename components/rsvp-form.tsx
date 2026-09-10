@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -73,13 +73,16 @@ function LiveRsvpForm({
   const allowPlusOne = plusOneAllowed(rsvpConfig);
   const [attendance, setAttendance] = useState<string>(defaults.attendanceStatus ?? "");
   const [plusOneName, setPlusOneName] = useState(defaults.plusOneName);
-  const confirmed = Boolean(state?.ok || existing);
+  const [dirty, setDirty] = useState(false);
+  const lastSavedState = useRef<typeof state>(null);
+  const confirmed = Boolean(!dirty && (state?.ok || existing));
 
   useEffect(() => {
-    if (state?.ok) {
-      toast.success("Saved. You're on the board.", { duration: 5000 });
-      router.refresh();
-    }
+    if (!state?.ok || lastSavedState.current === state) return;
+    lastSavedState.current = state;
+    setDirty(false);
+    toast.success("Saved. You're on the board.", { duration: 5000 });
+    router.refresh();
   }, [state, router]);
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -90,6 +93,9 @@ function LiveRsvpForm({
     <form
       action={locked ? undefined : formAction}
       onSubmit={onSubmit}
+      onChange={() => {
+        if (!locked) setDirty(true);
+      }}
       noValidate={locked}
       className="mx-auto max-w-2xl space-y-4 sm:space-y-5"
     >
@@ -149,7 +155,10 @@ function LiveRsvpForm({
                 value={value}
                 checked={attendance === value}
                 required={!sample}
-                onChange={() => setAttendance(value)}
+                onChange={() => {
+                  setAttendance(value);
+                  if (!locked) setDirty(true);
+                }}
               />
               {label}
             </label>
@@ -164,7 +173,10 @@ function LiveRsvpForm({
               name="plusOneName"
               placeholder="Optional"
               value={plusOneName}
-              onChange={(event) => setPlusOneName(event.target.value)}
+              onChange={(event) => {
+                setPlusOneName(event.target.value);
+                if (!locked) setDirty(true);
+              }}
               className="min-h-11 h-11"
             />
           </div>

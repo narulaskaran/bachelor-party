@@ -226,4 +226,49 @@ describe("RsvpForm", () => {
     expect(screen.getByRole("alert").textContent).toMatch(/on the board/i);
     expect((screen.getByLabelText("No") as HTMLInputElement).checked).toBe(true);
   });
+
+  it("resets Saved to Save when the guest edits after a successful submit", async () => {
+    const user = userEvent.setup();
+    render(<RsvpForm pollActivities={[]} />);
+
+    await user.type(screen.getByLabelText(/^name$/i), "Alex");
+    await user.click(screen.getByLabelText("Yes"));
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /^saved$/i })).toBeTruthy());
+    expect(screen.getByRole("alert").textContent).toMatch(/on the board/i);
+
+    await user.click(screen.getByLabelText("Maybe"));
+    expect(screen.getByRole("button", { name: /^save$/i })).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("resets Saved to Save when a returning guest edits their existing RSVP", async () => {
+    const user = userEvent.setup();
+    render(
+      <RsvpForm
+        pollActivities={[]}
+        existing={{
+          name: "Alex",
+          nameKey: "alex",
+          phone: null,
+          arrivalFlight: null,
+          arrivalTime: null,
+          departureFlight: null,
+          departureTime: null,
+          dietary: null,
+          notes: null,
+          activityPrefs: {},
+          attendanceStatus: "attending",
+          partySize: 1,
+          plusOneName: null,
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /^saved$/i })).toBeTruthy();
+    await user.click(screen.getByLabelText("Maybe"));
+    expect(screen.getByRole("button", { name: /^save$/i })).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });
