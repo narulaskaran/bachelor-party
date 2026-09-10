@@ -95,6 +95,13 @@ describe("theme tokens", () => {
     expect(hits).toEqual([]);
   });
 
+  it("does not import shadcn package CSS (CLI is not a runtime dependency)", () => {
+    expect(css).not.toMatch(/@import\s+["']shadcn\//);
+    const checkbox = readFileSync(join(ROOT, "components/ui/checkbox.tsx"), "utf8");
+    expect(checkbox).toContain("data-[state=checked]:");
+    expect(checkbox).not.toMatch(/\bdata-checked:/);
+  });
+
   it("uses stone paper light tokens on :root", () => {
     expectTokens(blockVars(css, ":root"), LIGHT);
   });
