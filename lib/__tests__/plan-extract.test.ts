@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   extractionPrompt,
@@ -285,6 +286,12 @@ describe("extractPlanWithOpenRouter", () => {
     expect(CREATE_TRIP_CLIENT_TIMEOUT_MS).toBeLessThan(CREATE_TRIP_MAX_DURATION_SECONDS * 1000);
     expect(createTripMaxDuration).toBe(CREATE_TRIP_MAX_DURATION_SECONDS);
     expect(createTripMaxDuration * 1000).toBeGreaterThan(PLAN_INGEST_DEADLINE_MS);
+  });
+
+  it("exports maxDuration as a Next.js-analyzable numeric literal", () => {
+    const route = readFileSync(new URL("../../app/api/admin/trips/route.ts", import.meta.url), "utf8");
+    expect(route).toMatch(/export const maxDuration = 40;/);
+    expect(route).not.toMatch(/maxDuration = CREATE_TRIP_MAX_DURATION_SECONDS/);
   });
 
   it("passes an abort signal and a bounded output budget into generateText", async () => {
