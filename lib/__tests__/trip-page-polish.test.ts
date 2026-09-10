@@ -129,6 +129,9 @@ describe("trip page polish", () => {
       }),
     );
     expect(html).toContain("Order is set — times may slip.");
+    expect(html).toContain("Step 1");
+    expect(html).not.toContain(">01<");
+    expect(html).not.toContain(">02<");
     expect(html).toContain("text-sm text-muted-foreground");
     expect(html).not.toMatch(/text-xs text-muted-foreground[\s\S]*Order is set/);
     expect(html).not.toContain("Order locked, times loose");
@@ -211,7 +214,7 @@ describe("trip page polish", () => {
     );
     expect(schedule).toContain("sticky top-[3.75rem]");
     expect(schedule).not.toContain("sticky top-14");
-    expect(schedule).toContain("w-14 shrink-0 break-words font-mono text-sm sm:w-20");
+    expect(schedule).toContain("w-16 shrink-0 break-words text-sm sm:w-24");
     expect(schedule).toContain("Bring layers");
     expect(schedule).toContain("Order is set — times may slip.");
     expect(schedule).not.toContain("text-muted-foreground/80");

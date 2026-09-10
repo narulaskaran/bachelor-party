@@ -54,8 +54,9 @@ describe("ScheduleSection", () => {
     expect(html).toContain("Day 01");
     expect(html).not.toContain("Day01");
     expect(html).toContain("11:00 AM");
-    expect(html).toContain("font-mono text-sm");
-    expect(html).toContain("w-14 shrink-0 break-words font-mono text-sm sm:w-20");
+    expect(html).toContain("font-mono");
+    expect(html).toContain("text-sm");
+    expect(html).toContain("w-16 shrink-0 break-words text-sm sm:w-24");
     expect(html).not.toMatch(/font-mono text-xs/);
     expect(html).toContain("sticky top-[3.75rem]");
     expect(html).not.toContain("sticky top-14");
@@ -90,6 +91,28 @@ describe("ScheduleSection", () => {
     expect(html).toContain("Times are shown for every entry");
     expect(html).toContain(">Day 01</span>");
     expect(html).toContain(">1 key event<");
+  });
+
+  it("labels untimed entries as Step N instead of zero-padded ordinals", () => {
+    const html = renderToStaticMarkup(
+      createElement(ScheduleSection, {
+        schedule: [
+          {
+            key: "saturday",
+            date: "2026-09-05",
+            weekday: "Saturday",
+            label: "Main day",
+            timed: false,
+            entries: [{ title: "Hike" }, { title: "Dinner" }],
+          },
+        ],
+      }),
+    );
+    expect(html).toContain("Step 1");
+    expect(html).toContain("Step 2");
+    expect(html).not.toContain(">01<");
+    expect(html).not.toContain(">02<");
+    expect(html).toContain("Order is set — times may slip.");
   });
 
   it("keeps a human day label and omits Plan or a weekday duplicate", () => {

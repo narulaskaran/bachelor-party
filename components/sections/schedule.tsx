@@ -86,10 +86,11 @@ export function ScheduleSection({
                       />
                       <div className="flex gap-4">
                         <div
-                          className={
-                            "w-14 shrink-0 break-words font-mono text-sm sm:w-20 " +
-                            (key ? "text-primary" : "text-muted-foreground")
-                          }
+                          className={cn(
+                            "w-16 shrink-0 break-words text-sm sm:w-24",
+                            entry.time?.trim() ? "font-mono" : "font-sans tabular-nums",
+                            key ? "text-primary" : "text-muted-foreground",
+                          )}
                         >
                           {scheduleEntryWhen(day, entry, entryIndex)}
                         </div>
@@ -140,7 +141,7 @@ export function ScheduleSection({
   );
 }
 
-/** Prefer a saved clock on every entry; untimed days still show 01/02 until those are restyled. */
+/** Prefer a saved clock; untimed slots use "Step N" so they never look like 01:00. */
 export function scheduleEntryWhen(
   day: Pick<ScheduleDay, "timed">,
   entry: Pick<ScheduleEntry, "time">,
@@ -148,7 +149,7 @@ export function scheduleEntryWhen(
 ): string {
   const clock = entry.time?.trim();
   if (clock) return formatClockTime(clock);
-  if (!day.timed) return String(entryIndex + 1).padStart(2, "0");
+  if (!day.timed) return `Step ${entryIndex + 1}`;
   return "TBD";
 }
 
