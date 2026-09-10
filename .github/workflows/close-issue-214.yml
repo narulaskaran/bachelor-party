@@ -1,0 +1,53 @@
+# One-shot: Cursor's git token can push but cannot write issues.
+# Actions GITHUB_TOKEN (issues: write) comments and closes #214.
+# Delete this workflow after the comment lands.
+name: Close issue #214
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment and close #214
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '850f1b68da9b14d851e3cf9e99431dbb4e90fdd0';
+            const body = [
+              `Fixed in ${sha}.`,
+              '',
+              '**Root cause:** `delete_party()` **was** on Neon Production. Prod build `6986782` logged `db-migrate: migrations applied` (0009 landed). DELETE never reached Postgres: `lib/delete-party.ts` did `const execute = db.execute` then called it unbound. Drizzle neon-http `execute` uses `this.dialect`, so prod threw `TypeError: Cannot read properties of undefined (reading \'dialect\')` → generic 500. Same bug silently broke `prune_draft_content_versions` on publish.',
+              '',
+              '**Fix:** `executeSql()` always calls `db.execute(query)` as a method. Production Vercel builds now refuse to skip migrate if `DATABASE_URL` is missing. No Neon console SQL needed.',
+              '',
+              '**Verify:** `DELETE /api/admin/trips/qa-drain-delete-me` with the host Bearer → **200** `{ "deleted": "qa-drain-delete-me" }`, then GET 404.',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 214,
+              per_page: 100,
+            });
+            if (!comments.some((c) => (c.body || '').includes(sha))) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: 214,
+                body,
+              });
+            }
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 214,
+              state: 'closed',
+            });
+            console.log('Closed #214');
