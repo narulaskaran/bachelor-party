@@ -214,4 +214,41 @@ describe("recordContentVersion", () => {
       Array.from({ length: CONTENT_VERSION_DRAFT_RETENTION }, (_, i) => i + 2 + 5),
     );
   });
+
+  it("prunes via execute as a method so neon-http keeps its dialect", async () => {
+    const mem = createMemoryDb();
+    const party = mem.seedParty({ slug: "cabin", adminToken: "tok-1" });
+
+    class NeonLike {
+      dialect = { name: "neon-http" };
+      select = mem.db.select.bind(mem.db);
+      insert = mem.db.insert.bind(mem.db);
+      delete = mem.db.delete.bind(mem.db);
+      async execute(query: unknown) {
+        if (this == null || this.dialect === undefined) {
+          throw new TypeError("Cannot read properties of undefined (reading 'dialect')");
+        }
+        return mem.db.execute(query);
+      }
+    }
+
+    await recordContentVersion(new NeonLike() as never, {
+      partyId: party.id as number,
+      state: "published",
+      content: content("Published v1"),
+      actorType: "host",
+      publishedAt: new Date(),
+    });
+    for (let i = 0; i < CONTENT_VERSION_DRAFT_RETENTION + 3; i++) {
+      await recordContentVersion(new NeonLike() as never, {
+        partyId: party.id as number,
+        state: "draft",
+        content: content(`Draft ${i}`),
+        actorType: "host",
+      });
+    }
+
+    const drafts = mem.contentVersions.filter((row) => row.state === "draft");
+    expect(drafts).toHaveLength(CONTENT_VERSION_DRAFT_RETENTION);
+  });
 });

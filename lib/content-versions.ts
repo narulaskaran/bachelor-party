@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { desc, eq, sql } from "drizzle-orm";
+import { executeSql } from "@/lib/db-execute";
 import { getDb, schema } from "@/lib/db";
 import type { PartyContent } from "@/lib/party-types";
 
@@ -38,11 +39,12 @@ function snapshotsMatch(a: unknown, b: unknown): boolean {
 }
 
 async function pruneDraftVersions(db: Db, partyId: number): Promise<void> {
-  const execute = (db as { execute?: (query: unknown) => Promise<unknown> }).execute;
-  if (typeof execute === "function") {
-    await execute(
+  if (
+    await executeSql(
+      db,
       sql`SELECT prune_draft_content_versions(${partyId}, ${CONTENT_VERSION_DRAFT_RETENTION})`,
-    );
+    )
+  ) {
     return;
   }
 

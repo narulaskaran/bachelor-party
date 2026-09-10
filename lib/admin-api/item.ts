@@ -141,7 +141,7 @@ export async function DELETE(request: Request, ctx: Params) {
   try {
     auth = await authorizePartyBySlug(request, slug);
   } catch (err) {
-    console.error("delete trip failed", err);
+    console.error("delete trip failed", err instanceof Error ? err.message : err, err);
     return NextResponse.json({ error: "Failed to delete trip" }, { status: 500 });
   }
   if (!auth.ok) return auth.error;
@@ -151,7 +151,7 @@ export async function DELETE(request: Request, ctx: Params) {
     await deletePartyRecord(db, party.id);
     return NextResponse.json({ deleted: slug });
   } catch (err) {
-    console.error("delete trip failed", err);
+    console.error("delete trip failed", err instanceof Error ? err.message : err, err);
     return NextResponse.json({ error: "Failed to delete trip" }, { status: 500 });
   }
 }

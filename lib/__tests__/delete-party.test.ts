@@ -54,4 +54,28 @@ describe("deletePartyRecord", () => {
     const query = sql`SELECT delete_party(${12})`;
     expect(JSON.stringify(query)).toMatch(/delete_party/);
   });
+
+  it("calls execute as a method so neon-http keeps its dialect", async () => {
+    const mem = createMemoryDb();
+    const party = mem.seedParty({ slug: "cabin", content });
+    mem.seedGuest({ partyId: party.id, name: "Alex", nameKey: "alex" });
+
+    class NeonLike {
+      dialect = { name: "neon-http" };
+      delete() {
+        throw new Error("must not sequential-delete");
+      }
+      async execute(query: unknown) {
+        if (this == null || this.dialect === undefined) {
+          throw new TypeError("Cannot read properties of undefined (reading 'dialect')");
+        }
+        return mem.db.execute(query);
+      }
+    }
+
+    await deletePartyRecord(new NeonLike() as never, party.id as number);
+
+    expect(mem.parties).toHaveLength(0);
+    expect(mem.guests).toHaveLength(0);
+  });
 });

@@ -1,4 +1,5 @@
 import { eq, sql, type SQL, type SQLWrapper } from "drizzle-orm";
+import { executeSql } from "@/lib/db-execute";
 import { schema } from "@/lib/db";
 
 type PartyTable = typeof schema.parties | typeof schema.guests | typeof schema.contentVersions;
@@ -16,11 +17,7 @@ type Db = {
  * to in-order deletes of versions, guests, then the party row.
  */
 export async function deletePartyRecord(db: Db, partyId: number): Promise<void> {
-  const execute = db.execute;
-  if (typeof execute === "function") {
-    await execute(sql`SELECT delete_party(${partyId})`);
-    return;
-  }
+  if (await executeSql(db, sql`SELECT delete_party(${partyId})`)) return;
 
   await db.delete(schema.contentVersions).where(eq(schema.contentVersions.partyId, partyId));
   await db.delete(schema.guests).where(eq(schema.guests.partyId, partyId));
