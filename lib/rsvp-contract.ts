@@ -139,7 +139,9 @@ export function summarizeRsvps(
     (summary, response) => {
       summary.responses += 1;
       summary[response.attendanceStatus === "not-attending" ? "notAttending" : response.attendanceStatus] += 1;
-      if (response.attendanceStatus !== "not-attending") summary.expectedPeople += response.partySize;
+      if (response.attendanceStatus !== "not-attending") {
+        summary.expectedPeople += response.partySize ?? 1;
+      }
       return summary;
     },
     { responses: 0, attending: 0, maybe: 0, notAttending: 0, expectedPeople: 0 },
