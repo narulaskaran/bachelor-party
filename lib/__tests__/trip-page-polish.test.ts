@@ -129,7 +129,7 @@ describe("trip page polish", () => {
       }),
     );
     expect(html).toContain("Order is set — times may slip.");
-    expect(html).toContain("Step 1");
+    expect(html).toContain("Stop 1");
     expect(html).not.toContain(">01<");
     expect(html).not.toContain(">02<");
     expect(html).toContain("text-sm text-muted-foreground");

@@ -75,6 +75,8 @@ export function ScheduleSection({
               <ol className="relative border-l border-border py-6 pl-4 sm:pl-6">
                 {day.entries.map((entry, entryIndex) => {
                   const key = isKeyEvent(entry);
+                  const when = scheduleEntryWhen(day, entry, entryIndex);
+                  const clock = Boolean(entry.time?.trim());
                   return (
                     <li key={`${day.key}-${entryIndex}`} className="relative pb-8 last:pb-0">
                       <span
@@ -88,11 +90,19 @@ export function ScheduleSection({
                         <div
                           className={cn(
                             "w-16 shrink-0 break-words text-sm sm:w-24",
-                            entry.time?.trim() ? "font-mono" : "font-sans tabular-nums",
+                            entry.time?.trim() ? "font-mono" : "font-sans",
                             key ? "text-primary" : "text-muted-foreground",
                           )}
                         >
-                          {scheduleEntryWhen(day, entry, entryIndex)}
+                          {clock ? (
+                            when
+                          ) : !day.timed ? (
+                            <span className="inline-flex rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                              {when}
+                            </span>
+                          ) : (
+                            when
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className={"font-medium" + (key ? " text-primary" : "")}>
@@ -141,7 +151,7 @@ export function ScheduleSection({
   );
 }
 
-/** Prefer a saved clock; untimed slots use "Step N" so they never look like 01:00. */
+/** Saved clocks stay clocks; untimed slots are Stop N; missing timed slots are an em dash. */
 export function scheduleEntryWhen(
   day: Pick<ScheduleDay, "timed">,
   entry: Pick<ScheduleEntry, "time">,
@@ -149,8 +159,8 @@ export function scheduleEntryWhen(
 ): string {
   const clock = entry.time?.trim();
   if (clock) return formatClockTime(clock);
-  if (!day.timed) return `Step ${entryIndex + 1}`;
-  return "TBD";
+  if (!day.timed) return `Stop ${entryIndex + 1}`;
+  return "—";
 }
 
 function formatDate(iso: string) {

@@ -108,8 +108,8 @@ describe("ScheduleSection", () => {
         ],
       }),
     );
-    expect(html).toContain("Step 1");
-    expect(html).toContain("Step 2");
+    expect(html).toContain("Stop 1");
+    expect(html).toContain("Stop 2");
     expect(html).not.toContain(">01<");
     expect(html).not.toContain(">02<");
     expect(html).toContain("Order is set — times may slip.");
