@@ -71,18 +71,24 @@ export function RsvpSectionView({
           </p>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {guests.map((guest) => (
+            {guests.map((guest) => {
+              const status = guest.attendanceStatus === "maybe" ? "Maybe" : "Yes";
+              return (
               <Card key={guest.id}>
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold tracking-tight">
+                  <CardTitle
+                    className="text-lg font-semibold tracking-tight"
+                    aria-label={`${guest.name}, ${status}`}
+                  >
                     {guest.name}
                     <span className="ml-2 text-sm font-normal text-muted-foreground">
-                      {guest.attendanceStatus === "maybe" ? "Maybe" : "Yes"}
+                      {` · ${status}`}
                     </span>
                   </CardTitle>
                 </CardHeader>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
