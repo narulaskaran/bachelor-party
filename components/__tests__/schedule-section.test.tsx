@@ -47,10 +47,12 @@ describe("ScheduleSection", () => {
   it("labels key events and paints time, title, and dot with the primary color", () => {
     const html = renderToStaticMarkup(createElement(ScheduleSection, { schedule: [friday] }));
     expect(html).toContain("Key event");
-    expect(html).toContain("Highlighted entries are key events.");
+    expect(html).toContain("Times are shown for every entry. Highlighted entries are key events.");
     expect(html).toContain("Check in at the lodge");
     expect(html).toContain("text-primary");
     expect(html).toContain("bg-primary");
+    expect(html).toContain("Day 01");
+    expect(html).not.toContain("Day01");
     expect(html).toContain("11:00 AM");
     expect(html).toContain("font-mono text-sm");
     expect(html).toContain("w-14 shrink-0 break-words font-mono text-sm sm:w-20");
@@ -61,6 +63,33 @@ describe("ScheduleSection", () => {
     expect(html).toContain("text-sm text-muted-foreground");
     expect(html).not.toContain("text-muted-foreground/80");
     expect(html).toContain("inline-flex rounded-full border border-primary/30");
+  });
+
+  it("spaces Day labels and the key-event count, and shows non-key times", () => {
+    const html = renderToStaticMarkup(
+      createElement(ScheduleSection, {
+        schedule: [
+          {
+            ...friday,
+            timed: false,
+            entries: [
+              { time: "8:00PM", title: "Clubs" },
+              { time: "11:00 PM", title: "Late snack", marquee: true },
+            ],
+          },
+        ],
+        picker: { onToggle: () => undefined },
+      }),
+    );
+    expect(html).toContain("Day 01");
+    expect(html).not.toContain("Day01");
+    expect(html).toContain("1 key event");
+    expect(html).not.toMatch(/1key event/i);
+    expect(html).toContain("8:00 PM");
+    expect(html).toContain("11:00 PM");
+    expect(html).toContain("Times are shown for every entry");
+    expect(html).toContain(">Day 01</span>");
+    expect(html).toContain(">1 key event<");
   });
 
   it("keeps a human day label and omits Plan or a weekday duplicate", () => {
@@ -128,15 +157,15 @@ describe("HostScheduleView", () => {
       />,
     );
 
-    expect(screen.getByText(/1 key event$/i)).toBeTruthy();
+    expect(screen.getByText("1 key event")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: /mark arrivals window as a key event/i }));
     await user.click(
       screen.getByRole("button", { name: /mark check in at the lodge as a key event/i }),
     );
-    expect(screen.getByText(/3 key events/i)).toBeTruthy();
+    expect(screen.getByText("3 key events")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: /unmark group dinner as a key event/i }));
-    expect(screen.getByText(/2 key events/i)).toBeTruthy();
+    expect(screen.getByText("2 key events")).toBeTruthy();
   });
 
   it("hides the key events picker when there is no schedule", () => {

@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { formatGuestWhen, formatGuestWhere } from "@/lib/guest-when";
+import { formatClockTime, formatGuestWhen, formatGuestWhere } from "@/lib/guest-when";
 import { scheduleFromRows } from "@/lib/schedule-rows";
+
+describe("formatClockTime", () => {
+  it("normalizes 12-hour clocks to a single spaced AM/PM form", () => {
+    expect(formatClockTime("8:00PM")).toBe("8:00 PM");
+    expect(formatClockTime("8:00 PM")).toBe("8:00 PM");
+    expect(formatClockTime("08:00 pm")).toBe("8:00 PM");
+    expect(formatClockTime("9:30 p.m.")).toBe("9:30 PM");
+    expect(formatClockTime("11:00 AM")).toBe("11:00 AM");
+    expect(formatClockTime("19:00")).toBe("7:00 PM");
+  });
+});
 
 describe("formatGuestWhen", () => {
   it("shows a zoned clock and hides an unzoned clock as time TBD", () => {

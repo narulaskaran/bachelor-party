@@ -1,5 +1,6 @@
-import type { ScheduleDay } from "@/lib/party-types";
+import type { ScheduleDay, ScheduleEntry } from "@/lib/party-types";
 import { KEY_EVENT_HINT, isKeyEvent, keyEventCount } from "@/lib/key-events";
+import { formatClockTime } from "@/lib/guest-when";
 import { nonemptySchedule } from "@/lib/trip-sections";
 import { kickerClass, sectionTitleClass } from "@/lib/type";
 import { cn } from "@/lib/utils";
@@ -25,15 +26,22 @@ export function ScheduleSection({
     <section id={id} className="scroll-mt-20 py-10 sm:py-12">
       <h2 className={sectionTitleClass}>{picker ? "Key events" : "Schedule"}</h2>
       {picker ? (
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">{KEY_EVENT_HINT}</p>
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+          {KEY_EVENT_HINT} Times are shown for every entry.
+        </p>
       ) : (
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">Highlighted entries are key events.</p>
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+          Times are shown for every entry. Highlighted entries are key events.
+        </p>
       )}
 
       <div className="mx-auto mt-8 flex max-w-3xl flex-col">
         {days.map((day, dayIndex) => {
           const marked = keyEventCount(day.entries);
           const headingLabel = guestDayLabel(day);
+          const dayName = `Day ${String(dayIndex + 1).padStart(2, "0")}`;
+          const keyCountLabel =
+            picker && marked > 0 ? `${marked} key event${marked === 1 ? "" : "s"}` : null;
           return (
             <section key={day.key} aria-labelledby={`${day.key}-heading`}>
               <div
@@ -41,18 +49,22 @@ export function ScheduleSection({
                 className="sticky top-[3.75rem] z-10 -mx-4 border-b border-border bg-background px-4 py-3 sm:mx-0 sm:rounded-md sm:border"
               >
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="text-sm text-primary">
-                    Day {String(dayIndex + 1).padStart(2, "0")}
-                  </span>
+                  <span className="text-sm text-primary">{dayName}</span>
+                  <span className="sr-only">, </span>
                   <span className="text-lg font-semibold tracking-tight">{day.weekday}</span>
+                  <span className="sr-only">, </span>
                   <span className={kickerClass}>{formatDate(day.date)}</span>
                   {headingLabel ? (
-                    <span className={kickerClass}>{headingLabel}</span>
+                    <>
+                      <span className="sr-only">, </span>
+                      <span className={kickerClass}>{headingLabel}</span>
+                    </>
                   ) : null}
-                  {picker && marked > 0 ? (
-                    <span className="text-xs text-muted-foreground">
-                      {marked} key event{marked === 1 ? "" : "s"}
-                    </span>
+                  {keyCountLabel ? (
+                    <>
+                      <span className="sr-only">, </span>
+                      <span className="text-xs text-muted-foreground">{keyCountLabel}</span>
+                    </>
                   ) : null}
                 </div>
                 {!day.timed && (
@@ -79,7 +91,7 @@ export function ScheduleSection({
                             (key ? "text-primary" : "text-muted-foreground")
                           }
                         >
-                          {day.timed ? entry.time : String(entryIndex + 1).padStart(2, "0")}
+                          {scheduleEntryWhen(day, entry, entryIndex)}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className={"font-medium" + (key ? " text-primary" : "")}>
@@ -126,6 +138,18 @@ export function ScheduleSection({
       </div>
     </section>
   );
+}
+
+/** Prefer a saved clock on every entry; untimed days still show 01/02 until those are restyled. */
+export function scheduleEntryWhen(
+  day: Pick<ScheduleDay, "timed">,
+  entry: Pick<ScheduleEntry, "time">,
+  entryIndex: number,
+): string {
+  const clock = entry.time?.trim();
+  if (clock) return formatClockTime(clock);
+  if (!day.timed) return String(entryIndex + 1).padStart(2, "0");
+  return "TBD";
 }
 
 function formatDate(iso: string) {

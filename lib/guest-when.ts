@@ -5,8 +5,21 @@ import { settledTimeZone } from "@/lib/timezones";
 /** Neutral When copy when dates are missing or invalid. Never format an inverted range. */
 export const GUEST_WHEN_PLACEHOLDER = "When TBD";
 
+/** One guest-facing clock: `8:00 PM` (space before AM/PM, no zero-padded hour). */
 export function formatClockTime(value: string): string {
   const trimmed = value.trim();
+  const withMeridiem = /^([01]?\d|2[0-3]):([0-5]\d)\s*([AaPp])\.?m\.?$/i.exec(trimmed);
+  if (withMeridiem) {
+    const hour24or12 = Number(withMeridiem[1]);
+    const minute = withMeridiem[2];
+    if (hour24or12 > 12) {
+      const suffix = hour24or12 >= 12 ? "PM" : "AM";
+      return `${hour24or12 % 12 || 12}:${minute} ${suffix}`;
+    }
+    const suffix = withMeridiem[3].toUpperCase() === "P" ? "PM" : "AM";
+    const hour = hour24or12 === 0 ? 12 : hour24or12;
+    return `${hour}:${minute} ${suffix}`;
+  }
   const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(trimmed);
   if (!match) return trimmed;
   const hour = Number(match[1]);
