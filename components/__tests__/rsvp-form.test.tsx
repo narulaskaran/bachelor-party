@@ -148,7 +148,8 @@ describe("RsvpForm", () => {
     expect(screen.getByLabelText("Yes")).toBeTruthy();
     expect(screen.getByLabelText("Maybe")).toBeTruthy();
     expect(screen.getByLabelText("No")).toBeTruthy();
-    expect(screen.queryByLabelText(/plus-one name/i)).toBeNull();
+    expect(screen.queryByLabelText(/plus-one name/i)).toBeTruthy();
+    expect((screen.getByLabelText(/plus-one name/i) as HTMLInputElement).value).toBe("Taylor");
     fireEvent.click(screen.getByLabelText("Yes"));
     expect((screen.getByLabelText(/plus-one name/i) as HTMLInputElement).value).toBe("Taylor");
   });

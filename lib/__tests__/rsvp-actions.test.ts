@@ -347,6 +347,70 @@ describe("submitGuestInfo merge upsert", () => {
     });
   });
 
+  it("keeps plus-one name and party size when Yes is edited to Maybe without the plus-one field", async () => {
+    const { submitGuestInfo } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    const party = mockParty(mem, 1, { plusOnePolicy: "allowed" });
+    mem.seedGuest({
+      partyId: party.id,
+      guestToken: TOKEN_ALEX,
+      name: "Alex",
+      plusOneName: "Plus One Pete",
+      partySize: 2,
+      attendanceStatus: "attending",
+    });
+    cookieStore.get.mockReturnValue({ value: TOKEN_ALEX });
+
+    const maybe = await submitGuestInfo(null, form({
+      name: "Alex",
+      attendance: "maybe",
+    }));
+    expect(maybe).toEqual({ ok: true });
+    expect(mem.guests[0]).toMatchObject({
+      attendanceStatus: "maybe",
+      plusOneName: "Plus One Pete",
+      partySize: 2,
+    });
+
+    const yesAgain = await submitGuestInfo(null, form({
+      name: "Alex",
+      attendance: "attending",
+      plusOneName: "Plus One Pete",
+    }));
+    expect(yesAgain).toEqual({ ok: true });
+    expect(mem.guests[0]).toMatchObject({
+      attendanceStatus: "attending",
+      plusOneName: "Plus One Pete",
+      partySize: 2,
+    });
+  });
+
+  it("clears plus-one data when the guest switches to No", async () => {
+    const { submitGuestInfo } = await import("@/lib/rsvp-actions");
+    const mem = createMemoryDb();
+    const party = mockParty(mem, 1, { plusOnePolicy: "allowed" });
+    mem.seedGuest({
+      partyId: party.id,
+      guestToken: TOKEN_ALEX,
+      name: "Alex",
+      plusOneName: "Pete",
+      partySize: 2,
+      attendanceStatus: "attending",
+    });
+    cookieStore.get.mockReturnValue({ value: TOKEN_ALEX });
+
+    const result = await submitGuestInfo(null, form({
+      name: "Alex",
+      attendance: "not-attending",
+    }));
+    expect(result).toEqual({ ok: true });
+    expect(mem.guests[0]).toMatchObject({
+      attendanceStatus: "not-attending",
+      plusOneName: null,
+      partySize: 0,
+    });
+  });
+
   it("clears a previously saved plus-one when the response no longer includes one", async () => {
     const { submitGuestInfo } = await import("@/lib/rsvp-actions");
     const mem = createMemoryDb();

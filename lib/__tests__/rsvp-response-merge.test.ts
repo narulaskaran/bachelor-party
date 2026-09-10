@@ -34,4 +34,16 @@ describe("guest identity and RSVP response merge", () => {
       plusOneName: "Taylor",
     });
   });
+
+  it("keeps plus-one name and party size when attendance becomes maybe without those fields", () => {
+    const merged = mergeGuestRow(
+      base({ attendanceStatus: "attending", partySize: 2, plusOneName: "Pete" }),
+      base({ attendanceStatus: "maybe", partySize: undefined, plusOneName: undefined }),
+    );
+    expect(merged).toMatchObject({
+      attendanceStatus: "maybe",
+      partySize: 2,
+      plusOneName: "Pete",
+    });
+  });
 });

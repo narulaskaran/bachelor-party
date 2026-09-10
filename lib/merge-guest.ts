@@ -112,6 +112,7 @@ export function mergeGuestRow(
   if (!existing) return incoming;
 
   const merged: GuestPatch = {
+    ...existing,
     ...incoming,
     activityPrefs: {
       ...(existing.activityPrefs ?? {}),
@@ -125,7 +126,8 @@ export function mergeGuestRow(
     merged[field] = explicitClears.has(field) ? null : (existing[field] ?? null);
   }
 
-  if (incoming.plusOneName !== undefined) merged.plusOneName = incoming.plusOneName;
+  if (incoming.plusOneName === undefined) merged.plusOneName = existing.plusOneName;
+  if (incoming.partySize === undefined) merged.partySize = existing.partySize;
 
   return merged;
 }

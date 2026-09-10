@@ -7,8 +7,10 @@ export type RsvpAttendance = (typeof RSVP_ATTENDANCE)[number];
 
 export type RsvpResponse = {
   attendanceStatus: RsvpAttendance;
-  partySize: number;
-  plusOneName: string | null;
+  /** Omitted when the form did not send a size so an edit can keep the stored value. */
+  partySize?: number;
+  /** `undefined` keeps the stored name; `null` clears it. */
+  plusOneName?: string | null;
 };
 
 export type RsvpSubmission = {
@@ -45,25 +47,38 @@ export function parseRsvpSubmission(
   }
   const attendanceStatus = rawAttendance;
 
-  const rawPlusOneName = String(input.plusOneName ?? "").trim();
+  const plusOneOmitted = input.plusOneName === undefined;
+  const rawPlusOneName = plusOneOmitted ? "" : String(input.plusOneName ?? "").trim();
   if (rawPlusOneName.length > 80) {
     return { ok: false, error: "Plus-one name must be 80 characters or fewer." };
   }
+  const plusOneApplies =
+    attendanceStatus === "attending" || attendanceStatus === "maybe";
   const namedPlusOne =
-    attendanceStatus === "attending" && plusOneAllowed(config) && rawPlusOneName
+    plusOneApplies && plusOneAllowed(config) && rawPlusOneName
       ? rawPlusOneName
-      : null;
+      : plusOneOmitted && plusOneApplies
+        ? undefined
+        : null;
 
   const hasPartySizeField =
     !(input.partySize == null || input.partySize === "") ||
     !(input.plusOneCount == null || input.plusOneCount === "");
 
   if (!hasPartySizeField) {
-    const partySize =
-      attendanceStatus === "not-attending" ? 0 : namedPlusOne ? 2 : 1;
+    if (attendanceStatus === "not-attending") {
+      return {
+        ok: true,
+        value: { attendanceStatus, partySize: 0, plusOneName: null },
+      };
+    }
+    if (plusOneOmitted && namedPlusOne === undefined) {
+      return { ok: true, value: { attendanceStatus } };
+    }
+    const partySize = namedPlusOne ? 2 : 1;
     return {
       ok: true,
-      value: { attendanceStatus, partySize, plusOneName: namedPlusOne },
+      value: { attendanceStatus, partySize, plusOneName: namedPlusOne ?? null },
     };
   }
 
@@ -104,7 +119,7 @@ export function parseRsvpSubmission(
     value: {
       attendanceStatus,
       partySize,
-      plusOneName: partySize >= 2 ? namedPlusOne : null,
+      plusOneName: partySize >= 2 ? (namedPlusOne ?? null) : null,
     },
   };
 }

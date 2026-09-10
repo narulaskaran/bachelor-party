@@ -108,7 +108,9 @@ export async function submitGuestInfo(
     attendance: formData.get("attendance") ?? undefined,
     partySize: formData.get("partySize") ?? undefined,
     plusOneCount: formData.get("plusOneCount") ?? undefined,
-    plusOneName: formData.get("plusOneName") || undefined,
+    plusOneName: formData.has("plusOneName")
+      ? String(formData.get("plusOneName") ?? "")
+      : undefined,
     phone: formData.get("phone") || undefined,
     arrivalFlight: formData.get("arrivalFlight") || undefined,
     arrivalTime: formData.get("arrivalTime") || undefined,
@@ -175,14 +177,21 @@ export async function submitGuestInfo(
       incoming,
       existing ? clears : new Set(),
     );
+    const saved = {
+      ...row,
+      partySize:
+        row.partySize ??
+        (row.attendanceStatus === "not-attending" ? 0 : 1),
+      plusOneName: row.plusOneName ?? null,
+    };
 
     if (existing) {
       await db
         .update(schema.guests)
-        .set({ ...row, updatedAt: sql`now()` })
+        .set({ ...saved, updatedAt: sql`now()` })
         .where(eq(schema.guests.id, existing.id));
     } else {
-      await db.insert(schema.guests).values({ ...row, guestToken });
+      await db.insert(schema.guests).values({ ...saved, guestToken });
     }
   } catch (err) {
     console.error("submitGuestInfo failed", err);

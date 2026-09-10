@@ -100,7 +100,33 @@ describe("RSVP readiness contract", () => {
       parseRsvpSubmission({ attendance: "maybe", plusOneName: "Taylor" }, plusOnesAllowed),
     ).toEqual({
       ok: true,
-      value: { attendanceStatus: "maybe", partySize: 1, plusOneName: null },
+      value: { attendanceStatus: "maybe", partySize: 2, plusOneName: "Taylor" },
+    });
+    expect(parseRsvpSubmission({ attendance: "maybe" }, plusOnesAllowed)).toEqual({
+      ok: true,
+      value: { attendanceStatus: "maybe" },
+    });
+  });
+
+  it("preserves plus-one data across Yes to Maybe when the name field is omitted", () => {
+    expect(
+      parseRsvpSubmission(
+        { attendance: "attending", plusOneName: "Pete" },
+        plusOnesAllowed,
+      ),
+    ).toEqual({
+      ok: true,
+      value: { attendanceStatus: "attending", partySize: 2, plusOneName: "Pete" },
+    });
+    expect(parseRsvpSubmission({ attendance: "maybe" }, plusOnesAllowed)).toEqual({
+      ok: true,
+      value: { attendanceStatus: "maybe" },
+    });
+    expect(
+      parseRsvpSubmission({ attendance: "not-attending" }, plusOnesAllowed),
+    ).toEqual({
+      ok: true,
+      value: { attendanceStatus: "not-attending", partySize: 0, plusOneName: null },
     });
   });
 

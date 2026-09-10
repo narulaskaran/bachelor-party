@@ -155,7 +155,7 @@ function LiveRsvpForm({
             </label>
           ))}
         </fieldset>
-        {allowPlusOne && attendance === "attending" ? (
+        {allowPlusOne && (attendance === "attending" || attendance === "maybe") ? (
           <div className="space-y-2">
             <Label htmlFor="plusOneName">Plus-one name (optional)</Label>
             <HadField name="plusOneName" value={existing?.plusOneName} />
