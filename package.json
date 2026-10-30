@@ -24,7 +24,7 @@
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/analytics": "^2.0.1",
-    "ai": "^7.0.145",
+    "ai": "^7.0.154",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.3",
